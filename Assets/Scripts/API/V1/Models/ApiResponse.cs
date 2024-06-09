@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Neocortex.API
 {
@@ -8,5 +9,6 @@ namespace Neocortex.API
         public string message;
         public string action;
         public string transcription;
+        public AudioClip audio;
     }
 }

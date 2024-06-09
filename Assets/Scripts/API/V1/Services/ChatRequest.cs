@@ -13,13 +13,15 @@ namespace Neocortex.API
 
         public async Task<ApiResponse> Send(string id, string message)
         {
-            messages.Add(new Message() { content = message, role = "user"});
+            messages.Add(new Message() { content = message, role = "user" });
+            
+            var payload = new { messages = messages.ToArray() };
             
             ApiRequest request = new ApiRequest()
             {
                 method = UnityWebRequest.kHttpVerbPOST,
                 url = $"{BASE_URL}/{id}",
-                payload = GetBytes(messages)
+                payload = GetBytes(payload)
             };
             
             return await Send(request);

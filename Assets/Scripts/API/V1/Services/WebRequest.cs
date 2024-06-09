@@ -19,7 +19,9 @@ namespace Neocortex.API
             webRequest.SetRequestHeader("Content-Type", "application/json");
             webRequest.SetRequestHeader("x-api-key", settings.apiKey);
             webRequest.uploadHandler = new UploadHandlerRaw(apiRequest.payload);
-            webRequest.downloadHandler = new DownloadHandlerBuffer();
+            webRequest.downloadHandler = apiRequest.isAudio
+                ? new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG)
+                : new DownloadHandlerBuffer();
 
             AsyncOperation asyncOperation = webRequest.SendWebRequest();
 
@@ -27,38 +29,31 @@ namespace Neocortex.API
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
-                Debug.Log(webRequest.downloadHandler.text);
-                return JsonConvert.DeserializeObject<ApiResponse>(webRequest.downloadHandler.text, new JsonSerializerSettings
+                if (apiRequest.isAudio)
                 {
-                    NullValueHandling = NullValueHandling.Ignore
-                });
+                    return new ApiResponse()
+                    {
+                        audio = DownloadHandlerAudioClip.GetContent(webRequest)
+                    };
+                }
+                else
+                {
+                    return JsonConvert.DeserializeObject<ApiResponse>(webRequest.downloadHandler.text, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                }
             }
-             
+            
             Debug.LogError($"[{webRequest.error}] {webRequest.downloadHandler.text}");
             return null;
         }
 
-        protected byte[] GetBytes(List<Message> messages)
+        protected byte[] GetBytes(object payload)
         {
-            var payload = new
-            {
-                messages = messages.ToArray()
-            };
-            
             string json = JsonConvert.SerializeObject(payload);
 
             return System.Text.Encoding.UTF8.GetBytes(json);
-        }
-        
-        private string ParseResponse(string response)
-        {
-            return response
-                .Replace("0:", "")
-                .Replace("\"\n\"", "")
-                .Replace("\n", "")
-                .Replace("\\n", "")
-                .Replace("\\", "")
-                [1..^1];
         }
     }
 }

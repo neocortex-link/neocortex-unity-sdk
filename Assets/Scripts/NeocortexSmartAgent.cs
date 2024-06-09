@@ -7,12 +7,12 @@ public class NeocortexSmartAgent : MonoBehaviour
     [SerializeField] private string id;
 
     private ChatRequest chatRequest;
-    private TranscriptionRequest transcriptionRequest;
+    private AudioRequest audioRequest;
 
     private void Awake()
     {
         chatRequest = new ChatRequest();
-        transcriptionRequest = new TranscriptionRequest();
+        audioRequest = new AudioRequest();
     }
 
     public async Task<string> Send(string message)
@@ -21,9 +21,9 @@ public class NeocortexSmartAgent : MonoBehaviour
         return response.message;
     }
     
-    public async Task<string> Send(byte[] audio)
+    public async Task<AudioClip> Send(byte[] audio)
     {
-        ApiResponse response = await transcriptionRequest.Send(id, audio);
-        return response.transcription;
+        ApiResponse response = await audioRequest.Send(id, audio);
+        return response.audio;
     }
 }

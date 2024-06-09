@@ -8,5 +8,6 @@ namespace Neocortex.API
         public string url;
         public string method;
         public byte[] payload;
+        public bool isAudio;
     }
 }

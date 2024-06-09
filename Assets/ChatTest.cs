@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class TestScript : MonoBehaviour
+public class ChatTest : MonoBehaviour
 {
     [SerializeField] private InputField inputField;
     [SerializeField] private Button submitButton;
