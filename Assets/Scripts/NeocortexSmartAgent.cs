@@ -1,6 +1,7 @@
+using System;
 using UnityEngine;
 using Neocortex.API;
-using System.Threading.Tasks;
+using Neocortex.Data;
 
 public class NeocortexSmartAgent : MonoBehaviour
 {
@@ -8,22 +9,26 @@ public class NeocortexSmartAgent : MonoBehaviour
 
     private ChatRequest chatRequest;
     private AudioRequest audioRequest;
+    
+    public event Action<ChatResponse> OnChatResponseReceived;
+    public event Action<AudioClip> OnAudioResponseReceived;
+    public event Action<string> OnTranscriptionReceived; 
 
-    private void Awake()
+    private void Start()
     {
         chatRequest = new ChatRequest();
         audioRequest = new AudioRequest();
     }
 
-    public async Task<string> Send(string message)
+    public async void Send(string message)
     {
-        ApiResponse response = await chatRequest.Send(id, message);
-        return response.message;
+        ChatResponse response = await chatRequest.Send(id, message);
+        OnChatResponseReceived?.Invoke(response);
     }
     
-    public async Task<AudioClip> Send(byte[] audio)
+    public async void Send(byte[] audio)
     {
-        ApiResponse response = await audioRequest.Send(id, audio);
-        return response.audio;
+        AudioClip response = await audioRequest.Send(id, audio, OnTranscriptionReceived, OnChatResponseReceived);
+        OnAudioResponseReceived?.Invoke(response);
     }
 }

@@ -1,3 +1,6 @@
+using System;
+using UnityEngine;
+using Neocortex.Data;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
 
@@ -5,15 +8,18 @@ namespace Neocortex.API
 {
     public class AudioRequest : WebRequest
     {
-        private const string BASE_URL = "http://api.localhost:3000/v1/audio"; //"https://api.neocortex.link/v1/audio";
+        private const string BASE_URL = "https://api.neocortex.link/v1/audio";
         
         private readonly TranscriptionRequest transcriptionRequest = new TranscriptionRequest();
         private readonly ChatRequest chatRequest = new ChatRequest();
-
-        public async Task<ApiResponse> Send(string id, byte[] audio)
+        
+        public async Task<AudioClip> Send(string id, byte[] audio, Action<string> onTranscriptionReceived, Action<ChatResponse> onChatResponseReceived)
         {
-            ApiResponse transcriptionResponse = await transcriptionRequest.Send(id, audio);
-            ApiResponse chatResponse = await chatRequest.Send(id, transcriptionResponse.transcription);
+            string transcription = await transcriptionRequest.Send(id, audio);
+            onTranscriptionReceived?.Invoke(transcription);
+            
+            ChatResponse chatResponse = await chatRequest.Send(id, transcription);
+            onChatResponseReceived?.Invoke(chatResponse);
             
             var payload = new { text = chatResponse.message };
             
@@ -25,7 +31,9 @@ namespace Neocortex.API
                 isAudio = true
             };
             
-            return await Send(request);
+            ApiResponse response = await Send(request);
+
+            return response.audio;
         }
     }
 }

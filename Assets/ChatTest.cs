@@ -1,4 +1,5 @@
 using UnityEngine;
+using Neocortex.Data;
 using UnityEngine.UI;
 
 public class ChatTest : MonoBehaviour
@@ -12,15 +13,30 @@ public class ChatTest : MonoBehaviour
     private void Start()
     {
         agent = GetComponent<NeocortexSmartAgent>();
+        agent.OnChatResponseReceived += OnResponseReceived;
+        
         submitButton.onClick.AddListener(Submit);
     }
-    
-    private async void Submit()
+
+    private void OnResponseReceived(ChatResponse response)
+    {
+        outputText.text += $"Agent: {response.message}\n";
+
+        string action = response.action;
+        if (!string.IsNullOrEmpty(action))
+        {
+            outputText.text += $"[ACTION] {action}\n";
+        }
+        
+        submitButton.interactable = true;
+    }
+
+    private void Submit()
     {
         outputText.text += $"You: {inputField.text}\n";
+        agent.Send(inputField.text);
+        
         submitButton.interactable = false;
-        string response = await agent.Send(inputField.text);
-        submitButton.interactable = true;
-        outputText.text += $"Agent: {response}\n";
+        inputField.text = "";
     }
 }

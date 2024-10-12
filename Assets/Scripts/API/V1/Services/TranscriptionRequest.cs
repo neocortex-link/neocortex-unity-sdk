@@ -5,9 +5,9 @@ namespace Neocortex.API
 {
     public class TranscriptionRequest : WebRequest
     {
-        private const string BASE_URL = "http://api.localhost:3000/v1/transcribe"; //"https://api.neocortex.link/v1/transcribe";
+        private const string BASE_URL = "https://api.neocortex.link/v1/transcribe";
         
-        public async Task<ApiResponse> Send(string id, byte[] audio)
+        public async Task<string> Send(string id, byte[] audio)
         {
             ApiRequest request = new ApiRequest()
             {
@@ -16,7 +16,9 @@ namespace Neocortex.API
                 payload = audio
             };
             
-            return await Send(request);
+            ApiResponse response = await Send(request);
+            
+            return response.transcription;
         }
     }
 }

@@ -7,11 +7,11 @@ namespace Neocortex.API
 {
     public class ChatRequest : WebRequest
     {
-        private const string BASE_URL = "http://api.localhost:3000/v1/chat"; //"https://api.neocortex.link/v1/chat";
+        private const string BASE_URL = "https://api.neocortex.link/v1/chat";
         
         private List<Message> messages = new List<Message>();
 
-        public async Task<ApiResponse> Send(string id, string message)
+        public async Task<ChatResponse> Send(string id, string message)
         {
             messages.Add(new Message() { content = message, role = "user" });
             
@@ -24,7 +24,13 @@ namespace Neocortex.API
                 payload = GetBytes(payload)
             };
             
-            return await Send(request);
+            ApiResponse response = await Send(request);
+
+            return new ChatResponse()
+            {
+                message = response.message,
+                action = response.action,
+            };
         }
     }
 }
