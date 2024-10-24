@@ -64,5 +64,5 @@ crashlytics-build.properties
 **/Samples.meta
 
 # Resources folder and meta files
-/[Rr]esources
-/[Rr]esources.meta
+[Rr]esources
+[Rr]esources.meta

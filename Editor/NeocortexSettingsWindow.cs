@@ -22,8 +22,13 @@ namespace Neocortex.Editor
 
             if (settings == null)
             {
+                if (!System.IO.Directory.Exists("Assets/Resources/Neocortex"))
+                {
+                    System.IO.Directory.CreateDirectory("Assets/Resources/Neocortex");
+                }
+                
                 settings = CreateInstance<NeocortexSettings>();
-                AssetDatabase.CreateAsset(settings, "Assets/Resources/NeocortexSettings.asset");
+                AssetDatabase.CreateAsset(settings, "Assets/Resources/Neocortex/NeocortexSettings.asset");
                 AssetDatabase.SaveAssets();
             }
         }
