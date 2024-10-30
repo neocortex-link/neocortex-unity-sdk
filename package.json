@@ -1,0 +1,30 @@
+{
+  "name": "link.neocortex.sdk",
+  "version": "0.0.1",
+  "displayName": "Neocortex Unity SDK",
+  "description": "",
+  "unity": "2020.3",
+  "unityRelease": "0f1",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2"
+  },
+  "keywords": [
+    "conversational ai",
+    "smart npc",
+    "npcs",
+    "character",
+    "character ai"
+  ],
+  "author": {
+    "name": "Neocortex",
+    "email": "contact@neocortex.link",
+    "url": "https://neocortex.link"
+  },
+  "samples": [
+    {
+      "displayName": "Text and Audio Samples",
+      "description": "Quick start samples for Text-to-Text and Audio-to-Audio interactions.",
+      "path": "Samples~/Text and Audio Samples"
+    }
+  ]
+}
