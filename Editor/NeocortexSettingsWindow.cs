@@ -12,7 +12,7 @@ namespace Neocortex.Editor
         public static void ShowWindow()
         {
             NeocortexSettingsWindow window = GetWindow<NeocortexSettingsWindow>("Neocortex Settings");
-            window.minSize = window.maxSize = new Vector2(512, 124);
+            window.minSize = window.maxSize = new Vector2(512, 96);
             window.ShowUtility();
         }
 
@@ -35,14 +35,29 @@ namespace Neocortex.Editor
 
         private void OnGUI()
         {
-            GUILayout.Label("API Key", EditorStyles.boldLabel);
-            settings.apiKey = EditorGUILayout.PasswordField("Enter API Key", settings.apiKey);
+            EditorGUILayout.BeginVertical("Box");
+            GUILayout.Label("API Key Management", EditorStyles.boldLabel);
+            EditorGUILayout.BeginHorizontal();
+            settings.apiKey = EditorGUILayout.PasswordField("API Key", settings.apiKey, GUILayout.ExpandWidth(true));
 
-            if (GUILayout.Button("Save API Key"))
+            // very light green
+            GUI.color = new Color(0.8f, 1f, 0.8f, 1f );
+            if (GUILayout.Button("Save", GUILayout.Width(64)))
             {
                 EditorUtility.SetDirty(settings);
                 AssetDatabase.SaveAssets();
             }
+            GUI.color = Color.white;
+            
+            if (GUILayout.Button("Create", GUILayout.Width(64)))
+            {
+                Application.OpenURL("https://neocortex.link/dashboard/api-keys");
+            }
+            
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space();
+            EditorGUILayout.HelpBox("You can create an API key in the Neocortex Dashboard, API Keys page.", MessageType.Info);
+            EditorGUILayout.EndVertical();
         }
     }
 }
