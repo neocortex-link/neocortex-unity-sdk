@@ -10,13 +10,12 @@ namespace Neocortex.Samples
         [SerializeField] private Button submitButton;
         [SerializeField] private Text outputText;
 
-        private NeocortexSmartAgent agent;
+        [Header("Neocortex Components")]
+        [SerializeField] private NeocortexSmartAgent agent;
 
         private void Start()
         {
-            agent = GetComponent<NeocortexSmartAgent>();
             agent.OnChatResponseReceived += OnResponseReceived;
-
             submitButton.onClick.AddListener(Submit);
         }
 

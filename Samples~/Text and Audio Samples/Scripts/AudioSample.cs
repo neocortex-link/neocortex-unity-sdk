@@ -9,18 +9,16 @@ namespace Neocortex.Samples
         [SerializeField] private Image amplitudeBar;
         [SerializeField] private Text messages;
         [SerializeField] private AudioSource audioSource;
-
-        private NeocortexAudioReceiver audioReceiver;
-        private NeocortexSmartAgent agent;
+        
+        [Header("Neocortex Components")]
+        [SerializeField] private NeocortexAudioReceiver audioReceiver;
+        [SerializeField] private NeocortexSmartAgent agent;
 
         private void Start()
         {
-            agent = GetComponent<NeocortexSmartAgent>();
             agent.OnTranscriptionReceived += OnTranscriptionReceived;
             agent.OnChatResponseReceived += OnChatResponseReceived;
             agent.OnAudioResponseReceived += OnAudioResponseReceived;
-
-            audioReceiver = GetComponent<NeocortexAudioReceiver>();
             audioReceiver.OnAudioRecorded += OnAudioRecorded;
             StartMicrophone();
         }

@@ -407,7 +407,7 @@ GameObject:
   - component: {fileID: 540140215}
   - component: {fileID: 540140218}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: Audio Test Canvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -513,6 +513,8 @@ MonoBehaviour:
   amplitudeBar: {fileID: 1326546900}
   messages: {fileID: 1929638368}
   audioSource: {fileID: 640536234}
+  audioReceiver: {fileID: 1850851987}
+  agent: {fileID: 1850851988}
 --- !u!1 &640536232
 GameObject:
   m_ObjectHideFlags: 0
