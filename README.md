@@ -22,6 +22,11 @@ To start using the Neocortex SDK, you need to initialize it with your Neocortex 
 - Go to `Tools` > `Neocortex Settings`
 - Paste the API key in the `API Key` field and click on the `Save` button
 
+<p align="center">
+  <img width="382" alt="neocortex_unity_settings" src="https://github.com/user-attachments/assets/517f906a-889a-48ee-a39b-a19daaff5648">
+</p>
+
+
 ### Create a new Neocortex project
 - Go to the [Neocortex web platform](https://neocortex.link/dashboard/projects) and create a new project
 - Copy the project ID from the project details page
@@ -34,6 +39,10 @@ After setting up the Neocortex SDK in your Unity project, you can start using th
 
 ### Neocortex Smart Agent component
 The `Neocortex Smart Agent` component is the main component that allows you to interact with the Neocortex project. 
+
+<p align="center">
+  <img width="393" alt="neocortex_unity_smart_agent_component" src="https://github.com/user-attachments/assets/9613bb88-87a9-4ba5-b412-d404c0bf63e3">
+</p>
 
 **public async void Send(string message)**
   - Sends a message to the Neocortex project
@@ -110,6 +119,10 @@ The `NeocortexAudioReceiver` component is used to record audio data from the mic
 - pick the microphone device to use
 - set the amplitude threshold for when to start and stop recording
 - set the max wait time for the recording to automatically stop if no sound is detected
+
+<p align="center">
+  <img width="394" alt="neocortex_unity_audio_receiver_component" src="https://github.com/user-attachments/assets/58b17620-fec7-4c85-af38-699f292ce08e">
+</p>
 
 **public void StartMicrophone()**
   - Starts recording audio from the microphone
