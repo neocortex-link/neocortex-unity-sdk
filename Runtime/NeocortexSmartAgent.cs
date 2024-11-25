@@ -7,7 +7,7 @@ namespace Neocortex
 {
     public class NeocortexSmartAgent : MonoBehaviour
     {
-        [SerializeField] private string id;
+        [SerializeField] private string projectId;
 
         private ChatRequest chatRequest;
         private AudioRequest audioRequest;
@@ -24,13 +24,13 @@ namespace Neocortex
 
         public async void Send(string message)
         {
-            ChatResponse response = await chatRequest.Send(id, message);
+            ChatResponse response = await chatRequest.Send(projectId, message);
             OnChatResponseReceived?.Invoke(response);
         }
 
         public async void Send(byte[] audio)
         {
-            AudioClip response = await audioRequest.Send(id, audio, OnTranscriptionReceived, OnChatResponseReceived);
+            AudioClip response = await audioRequest.Send(projectId, audio, OnTranscriptionReceived, OnChatResponseReceived);
             OnAudioResponseReceived?.Invoke(response);
         }
     }
