@@ -18,7 +18,7 @@ namespace Neocortex.Editor
 
         private void OnEnable()
         {
-            settings = Resources.Load<NeocortexSettings>("NeocortexSettings");
+            settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
 
             if (settings == null)
             {
