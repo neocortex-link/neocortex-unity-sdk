@@ -1,3 +1,4 @@
+using System;
 using Neocortex.Data;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
@@ -11,8 +12,13 @@ namespace Neocortex.API
         
         private List<Message> messages = new List<Message>();
 
-        public async Task<ChatResponse> Send(string id, string message)
+        public async Task<ChatResponse> Send(string projectId, string message)
         {
+            if(string.IsNullOrEmpty(projectId))
+            {
+                throw new Exception("Project ID is required");
+            }
+            
             messages.Add(new Message() { content = message, role = "user" });
             
             var payload = new { messages = messages.ToArray() };
@@ -20,7 +26,7 @@ namespace Neocortex.API
             ApiRequest request = new ApiRequest()
             {
                 method = UnityWebRequest.kHttpVerbPOST,
-                url = $"{BASE_URL}/{id}",
+                url = $"{BASE_URL}/{projectId}",
                 payload = GetBytes(payload)
             };
             

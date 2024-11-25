@@ -13,12 +13,17 @@ namespace Neocortex.API
         private readonly TranscriptionRequest transcriptionRequest = new TranscriptionRequest();
         private readonly ChatRequest chatRequest = new ChatRequest();
         
-        public async Task<AudioClip> Send(string id, byte[] audio, Action<string> onTranscriptionReceived, Action<ChatResponse> onChatResponseReceived)
+        public async Task<AudioClip> Send(string projectId, byte[] audio, Action<string> onTranscriptionReceived, Action<ChatResponse> onChatResponseReceived)
         {
-            string transcription = await transcriptionRequest.Send(id, audio);
+            if(string.IsNullOrEmpty(projectId))
+            {
+                throw new Exception("Project ID is required");
+            }
+            
+            string transcription = await transcriptionRequest.Send(projectId, audio);
             onTranscriptionReceived?.Invoke(transcription);
             
-            ChatResponse chatResponse = await chatRequest.Send(id, transcription);
+            ChatResponse chatResponse = await chatRequest.Send(projectId, transcription);
             onChatResponseReceived?.Invoke(chatResponse);
             
             var payload = new { text = chatResponse.message };
@@ -26,7 +31,7 @@ namespace Neocortex.API
             ApiRequest request = new ApiRequest()
             {
                 method = UnityWebRequest.kHttpVerbPOST,
-                url = $"{BASE_URL}/{id}",
+                url = $"{BASE_URL}/{projectId}",
                 payload = GetBytes(payload),
                 isAudio = true
             };
