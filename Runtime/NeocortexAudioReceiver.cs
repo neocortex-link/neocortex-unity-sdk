@@ -1,5 +1,7 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 namespace Neocortex
 {
@@ -10,17 +12,20 @@ namespace Neocortex
         private const int AMPLITUDE_MULTIPLIER = 10;
         
         private AudioClip audioClip;
-        private float elapsedWaitTime;
         private bool initialized;
         
         public string SelectedMicrophone { get; set; }
-        public float Amplitude { get; set; }
-        public bool IsRecording { get; set; }
-        
+        public float Amplitude { get; private set; }
+        public bool IsRecording { get; private set; }
+        public float ElapsedWaitTime { get; set; }
+
+        public bool UsePushToTalk => usePushToTalk;
+
         public event UnityAction<byte[]> OnAudioRecorded;
         
         [SerializeField, Range(0, 1)] private float amplitudeTreshold = 0.1f;
         [SerializeField] private float maxWaitTime = 1f;
+        [SerializeField] private bool usePushToTalk;
         
         public void StartMicrophone()
         {
@@ -32,6 +37,10 @@ namespace Neocortex
         {
             Microphone.End(SelectedMicrophone);
             IsRecording = false;
+            if (usePushToTalk)
+            {
+                AudioRecorded();
+            }
         }
         
         private void Update()
@@ -40,6 +49,8 @@ namespace Neocortex
             
             int position = Microphone.GetPosition(SelectedMicrophone);
             UpdateAmplitude(position, audioClip);
+
+            if (usePushToTalk) return;
             
             if(!IsRecording && Amplitude > amplitudeTreshold)
             {
@@ -50,30 +61,35 @@ namespace Neocortex
             {
                 if (Amplitude < amplitudeTreshold)
                 {
-                    elapsedWaitTime += Time.deltaTime;
+                    ElapsedWaitTime += Time.deltaTime;
                 
-                    if(elapsedWaitTime >= maxWaitTime)
+                    if(ElapsedWaitTime >= maxWaitTime)
                     {
                         IsRecording = false;
-                        elapsedWaitTime = 0;
-                        AudioClip trimmed = audioClip.Trim();
-                        
-                        if (trimmed.samples > FREQUENCY)
-                        {
-                            Microphone.End(SelectedMicrophone);
-                            byte[] data = trimmed.EncodeToWav();
-                            OnAudioRecorded?.Invoke(data);
-                        }
-                        else
-                        {
-                            Debug.Log("Audio too short");
-                        }
+                        ElapsedWaitTime = 0;
+                        AudioRecorded();
                     }
                 }
                 else
                 {
-                    elapsedWaitTime = 0;
+                    ElapsedWaitTime = 0;
                 }
+            }
+        }
+
+        private void AudioRecorded()
+        {
+            AudioClip trimmed = audioClip.Trim();
+                        
+            if (trimmed.samples > FREQUENCY)
+            {
+                Microphone.End(SelectedMicrophone);
+                byte[] data = trimmed.EncodeToWav();
+                OnAudioRecorded?.Invoke(data);
+            }
+            else
+            {
+                Debug.Log("Audio too short");
             }
         }
         
@@ -90,6 +106,14 @@ namespace Neocortex
             }
         
             Amplitude = Mathf.Clamp01(sum / AUDIO_SAMPLE_WINDOW * AMPLITUDE_MULTIPLIER);
+        }
+
+        private void OnDestroy()
+        {
+            if (initialized)
+            {
+                Microphone.End(SelectedMicrophone);
+            }
         }
     }
 }
