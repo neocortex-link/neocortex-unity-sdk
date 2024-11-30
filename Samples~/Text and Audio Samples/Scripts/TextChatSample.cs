@@ -1,0 +1,39 @@
+using UnityEngine;
+using Neocortex.Data;
+
+namespace Neocortex.Samples
+{
+    public class TextChatSample : MonoBehaviour
+    {
+        [SerializeField] private NeocortexTextChatInput chatInput;
+        [SerializeField] private NeocortexSmartAgent smartAgent;
+        [SerializeField] private NeocortexThinkingIndicator thinkingIndicator;
+        [SerializeField] private NeocortexChatPanel chatPanel;
+
+        private void Start()
+        {
+            smartAgent.OnChatResponseReceived += OnResponseReceived;
+            chatInput.OnSendButtonClicked.AddListener(Submit);
+        }
+
+        private void OnResponseReceived(ChatResponse response)
+        {
+            chatPanel.AddMessage(response.message, false);
+
+            string action = response.action;
+            if (!string.IsNullOrEmpty(action))
+            {
+                Debug.Log($"[ACTION] {action}");
+            }
+
+            thinkingIndicator.Display(false);
+        }
+
+        private void Submit(string message)
+        {
+            chatPanel.AddMessage(message, true);
+            smartAgent.Send(message);
+            thinkingIndicator.Display(true);
+        }
+    }
+}
