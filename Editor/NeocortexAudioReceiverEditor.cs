@@ -4,9 +4,9 @@ using UnityEngine;
 namespace Neocortex.Editor
 {
     [CustomEditor(typeof(NeocortexAudioReceiver))]
-    public class AudioReceiverEditor : UnityEditor.Editor
+    public class NeocortexAudioReceiverEditor : UnityEditor.Editor
     {
-        private const string MIC_INDEX_KEY = "neocortex-mix-index";
+        private const string MIC_INDEX_KEY = "neocortex-mic-index";
         
         private string[] microphoneOptions;
         private int selectedMicrophoneIndex;
@@ -36,6 +36,11 @@ namespace Neocortex.Editor
             {
                 EditorGUILayout.LabelField("No microphones available.");
             }
+            
+            GUILayout.Space(8);
+            SerializedProperty onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
+            EditorGUILayout.PropertyField(onAudioRecorded);
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }
