@@ -83,16 +83,7 @@ namespace Neocortex
         private void AudioRecorded()
         {
             AudioClip trimmed = audioClip.Trim();
-                        
-            if (trimmed.samples > FREQUENCY)
-            {
-                Microphone.End(SelectedMicrophone);
-                OnAudioRecorded?.Invoke(trimmed);
-            }
-            else
-            {
-                OnRecordingFailed?.Invoke("Audio is too short, minimum length is 1 second.");
-            }
+            OnAudioRecorded?.Invoke(trimmed);
         }
         
         private void UpdateAmplitude()

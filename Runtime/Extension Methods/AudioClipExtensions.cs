@@ -19,8 +19,8 @@ namespace Neocortex
 
             if (sampleList.Count > 0)
             {
-                var tempClip = AudioClip.Create("TempClip", sampleList.Count, audioClip.channels, audioClip.frequency,
-                    false);
+                var lengthSamples = Mathf.Max(sampleList.Count, audioClip.frequency);
+                var tempClip = AudioClip.Create("TempClip", lengthSamples, audioClip.channels, audioClip.frequency, false);
                 tempClip.SetData(sampleList.ToArray(), 0);
 
                 return tempClip;
