@@ -20,6 +20,12 @@ namespace Neocortex
         {
             var messageItem = Instantiate(messageItemPrefab, content);
             messageItem.SetMessage(text, isUser);
+            StartCoroutine(ScrollToBottom());
+        }
+
+        private IEnumerator ScrollToBottom()
+        {
+            yield return new WaitForEndOfFrame();
             verticalNormalizedPosition = 0;
         }
     }
