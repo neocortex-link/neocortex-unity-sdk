@@ -1994,6 +1994,9 @@ MonoBehaviour:
   OnAudioRecorded:
     m_PersistentCalls:
       m_Calls: []
+  OnRecordingFailed:
+    m_PersistentCalls:
+      m_Calls: []
   amplitudeTreshold: 0.1
   maxWaitTime: 1
   usePushToTalk: 0
