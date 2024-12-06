@@ -44,38 +44,108 @@ The `Neocortex Smart Agent` component is the main component that allows you to i
   <img width="393" alt="neocortex_unity_smart_agent_component" src="https://github.com/user-attachments/assets/9613bb88-87a9-4ba5-b412-d404c0bf63e3">
 </p>
 
-**public async void Send(string message)**
-  - Sends a message to the Neocortex project
+**public async void TextToText(string message)**
+  - Send a text message to the Neocortex project, and expect a text response.
   - Parameters:
-    - `message`: The message to send
+    - `message`: The text message to send.
   - Example:
     ```csharp
     var smartAgent = GetComponent<NeocortexSmartAgent>();
-    smartAgent.Send("Hello, Neocortex!");
+    smartAgent.OnChatResponseReceived.AddListener((response) =>
+    {
+        Debug.Log($"Message: {response.message}");
+        Debug.Log($"Action: {response.action}");
+    });
+    smartAgent.TextToText("Hello, Neocortex!");
     ```
 
-**public async void Send(byte[] audio)**
-  - Sends an audio clip to the Neocortex project. This method is used with `NeocortexAudioReceiver` component to send audio data to the Neocortex project.
+**public async void TextToAudio(string message)**
+  - Send a text message to the Neocortex project, and expect a audio response.
   - Parameters:
-    - `audio`: The audio data to send
+    - `message`: The text message to send.
+  - Example:
+    ```csharp
+    var audioSource = GetComponent<AudioSource>();
+    var smartAgent = GetComponent<NeocortexSmartAgent>();
+    smartAgent.OnChatResponseReceived.AddListener((response) =>
+    {
+        Debug.Log($"Message: {response.message}");
+        Debug.Log($"Action: {response.action}");
+    });
+    smartAgent.OnAudioResponseReceived.AddListener((audioClip) =>
+    {
+        audioSource.clip = audioClip;
+        audioSource.Play();
+    });
+    
+    smartAgent.TextToAudio("Hello, Neocortex!");
+    ```
+
+**public async void AudioToText(AudioClip audio)**
+  - Sends an audio clip to the Neocortex project. This method is used with `NeocortexAudioReceiver` component to send audio data.
+  - Parameters:
+    - `audioClip`: The audio clip to send.
   - Example:
     ```csharp
     var smartAgent = GetComponent<NeocortexSmartAgent>();
-    var audioReceiver = GetComponent<NeocortexAudioReceiver>();
-    audioReceiver.OnAudioRecorded += (audioData) =>
+    smartAgent.OnTranscriptionReceived.AddListener((message) =>
     {
-        smartAgent.Send(audioData);
-    };
+        Debug.Log($"You: {message}");
+    });
 
-    // Start recording audio for 5 seconds
+    var audioReceiver = GetComponent<NeocortexAudioReceiver>();
+    audioReceiver.OnAudioRecorded.AddListener((audioClip) =>
+    {
+        Debug.Log($"Audio Data Length: {audioClip.samples}");
+        smartAgent.AudioToText(audioClip);
+    });
+
+    // Start recording audio for 3 seconds
     audioReceiver.StartMicrophone();
-    await Task.Delay(5000);
+    await Task.Delay(3000);
     audioReceiver.StopMicrophone();
     ```
-**public event Action<ChatResponse> OnChatResponseReceived**
-  - Event that is triggered when the Neocortex project responds to a message
+
+**public async void AudioToAudio(AudioClip audio)**
+  - Sends an audio clip to the Neocortex project and expects an audio response. This method is used with `NeocortexAudioReceiver` component to send audio data.
   - Parameters:
-    - `response`: The response from the Neocortex project
+    - `audioClip`: The audio clip to send.
+  - Example:
+    ```csharp
+    var audioSource = GetComponent<AudioSource>();
+    var smartAgent = GetComponent<NeocortexSmartAgent>();
+    smartAgent.OnAudioResponseReceived.AddListener((audioClip) =>
+    {
+        audioSource.clip = audioClip;
+        audioSource.Play();
+    });
+    smartAgent.OnTranscriptionReceived.AddListener((message) =>
+    {
+        Debug.Log($"You: {message}");
+    });
+    smartAgent.OnChatResponseReceived.AddListener((response) =>
+    {
+        Debug.Log($"Message: {response.message}");
+        Debug.Log($"Action: {response.action}");
+    });
+
+    var audioReceiver = GetComponent<NeocortexAudioReceiver>();
+    audioReceiver.OnAudioRecorded.AddListener((audioClip) =>
+    {
+        Debug.Log($"Audio Data Length: {audioClip.samples}");
+        smartAgent.AudioToAudio(audioClip);
+    });
+
+    // Start recording audio for 3 seconds
+    audioReceiver.StartMicrophone();
+    await Task.Delay(3000);
+    audioReceiver.StopMicrophone();
+    ```
+
+**public UnityEvent<ChatResponse> OnChatResponseReceived**
+  - Event that is triggered when the Neocortex project responds to a text message.
+  - Parameters:
+    - `response`: The response from the Neocortex project.
   - Example:
     ```csharp
     var smartAgent = GetComponent<NeocortexSmartAgent>();
@@ -86,10 +156,10 @@ The `Neocortex Smart Agent` component is the main component that allows you to i
     };
     ```
 
-**public event Action<string> OnTranscriptionReceived**
-  - Event that is triggered when the Neocortex project transcribes an audio message to text
+**public UnityEvent<string> OnTranscriptionReceived**
+  - Event that is triggered when the Neocortex project transcribes an audio message to text.
   - Parameters:
-    - `message`: The transcribed message
+    - `message`: The transcribed audio message.
   - Example:
     ```csharp
     var smartAgent = GetComponent<NeocortexSmartAgent>();
@@ -99,10 +169,10 @@ The `Neocortex Smart Agent` component is the main component that allows you to i
     };
     ```
 
-**public event Action<AudioClip> OnAudioResponseReceived**
-  - Event that is triggered when the Neocortex project responds with an audio message
+**public UnityEvent<AudioClip> OnAudioResponseReceived**
+  - Event that is triggered when the Neocortex project responds with an audio message.
   - Parameters:
-    - `audioClip`: The audio clip received from the Neocortex project
+    - `audioClip`: The audio clip received from the Neocortex project.
   - Example:
     ```csharp
     var audioSource = GetComponent<AudioSource>();
@@ -111,6 +181,19 @@ The `Neocortex Smart Agent` component is the main component that allows you to i
     {
         audioSource.clip = audioClip;
         audioSource.Play();
+    };
+    ```
+
+**public UnityEvent<string> OnRequestFailed**
+  - Event that is triggered when a request to the Neocortex project fails.
+  - Parameters:
+    - `error`: The error message.
+  - Example:
+    ```csharp
+    var smartAgent = GetComponent<NeocortexSmartAgent>();
+    smartAgent.OnRequestFailed += (error) =>
+    {
+        Debug.LogError(error);
     };
     ```
 
@@ -140,17 +223,17 @@ The `NeocortexAudioReceiver` component is used to record audio data from the mic
   audioReceiver.StopMicrophone();
   ```
 
-**public event UnityAction<byte[]> OnAudioRecorded**
-  - Event that is triggered when audio data is recorded from the microphone
-  - Parameters:
-    - `audioData`: The recorded audio data
+**public UnityEvent<AudioClip> OnAudioRecorded OnAudioRecorded**
+  - Event that is triggered when audio data is recorded from the microphone.
+  - Returns:
+    - `audioClip`: The recorded audio clip.
   - Example:
   ```csharp
   var audioReceiver = GetComponent<NeocortexAudioReceiver>();
-  audioReceiver.OnAudioRecorded += (audioData) =>
+  audioReceiver.OnAudioRecorded.AddListener((audioClip) =>
   {
-      Debug.Log($"Audio Data Length: {audioData.Length}");
-  };
+      Debug.Log($"Audio Data Length: {audioClip.samples}");
+  });
   ```
 
 ## Sample Projects
