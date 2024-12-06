@@ -21,7 +21,7 @@ namespace Neocortex
 
         public bool UsePushToTalk => usePushToTalk;
 
-        public event UnityAction<byte[]> OnAudioRecorded;
+        [HideInInspector] public UnityEvent<AudioClip> OnAudioRecorded;
         
         [SerializeField, Range(0, 1)] private float amplitudeTreshold = 0.1f;
         [SerializeField] private float maxWaitTime = 1f;
@@ -84,8 +84,7 @@ namespace Neocortex
             if (trimmed.samples > FREQUENCY)
             {
                 Microphone.End(SelectedMicrophone);
-                byte[] data = trimmed.EncodeToWav();
-                OnAudioRecorded?.Invoke(data);
+                OnAudioRecorded?.Invoke(trimmed);
             }
             else
             {
