@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.Serialization;
 
 namespace Neocortex
 {
@@ -16,12 +15,13 @@ namespace Neocortex
         
         public string SelectedMicrophone { get; set; }
         public float Amplitude { get; private set; }
-        public bool IsRecording { get; private set; }
-        public float ElapsedWaitTime { get; set; }
+        public bool IsUserSpeaking { get; private set; }
+        public float ElapsedWaitTime { get; private set; }
 
         public bool UsePushToTalk => usePushToTalk;
 
         [HideInInspector] public UnityEvent<AudioClip> OnAudioRecorded;
+        [HideInInspector] public UnityEvent<string> OnRecordingFailed;
         
         [SerializeField, Range(0, 1)] private float amplitudeTreshold = 0.1f;
         [SerializeField] private float maxWaitTime = 1f;
@@ -29,35 +29,39 @@ namespace Neocortex
         
         public void StartMicrophone()
         {
-            audioClip = Microphone.Start(SelectedMicrophone, true, 999, FREQUENCY);
-            initialized = true;
+            try
+            {
+                audioClip = Microphone.Start(SelectedMicrophone, true, 999, FREQUENCY);
+                initialized = true;
+            }
+            catch (Exception e)
+            {
+                OnRecordingFailed?.Invoke(e.Message);
+            }
         }
         
         public void StopMicrophone()
         {
             Microphone.End(SelectedMicrophone);
-            IsRecording = false;
-            if (usePushToTalk)
-            {
-                AudioRecorded();
-            }
+            initialized = false;
+            IsUserSpeaking = false;
+            AudioRecorded();
         }
         
         private void Update()
         {
             if (!initialized) return;
             
-            int position = Microphone.GetPosition(SelectedMicrophone);
-            UpdateAmplitude(position, audioClip);
+            UpdateAmplitude();
 
             if (usePushToTalk) return;
             
-            if(!IsRecording && Amplitude > amplitudeTreshold)
+            if(!IsUserSpeaking && Amplitude > amplitudeTreshold)
             {
-                IsRecording = true;
+                IsUserSpeaking = true;
             }
             
-            if (IsRecording)
+            if (IsUserSpeaking)
             {
                 if (Amplitude < amplitudeTreshold)
                 {
@@ -65,9 +69,8 @@ namespace Neocortex
                 
                     if(ElapsedWaitTime >= maxWaitTime)
                     {
-                        IsRecording = false;
                         ElapsedWaitTime = 0;
-                        AudioRecorded();
+                        StopMicrophone();
                     }
                 }
                 else
@@ -88,12 +91,13 @@ namespace Neocortex
             }
             else
             {
-                Debug.Log("Audio too short");
+                OnRecordingFailed?.Invoke("Audio is too short, minimum length is 1 second.");
             }
         }
         
-        private void UpdateAmplitude(int clipPosition, AudioClip audioClip)
+        private void UpdateAmplitude()
         {
+            int clipPosition = Microphone.GetPosition(SelectedMicrophone);
             int startPosition = Mathf.Max(0, clipPosition - AUDIO_SAMPLE_WINDOW);
             float[] audioSamples = new float[AUDIO_SAMPLE_WINDOW];
             audioClip.GetData(audioSamples, startPosition);
