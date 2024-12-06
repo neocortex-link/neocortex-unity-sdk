@@ -16,10 +16,10 @@ namespace Neocortex.Samples
         
         private void Start()
         {
-            agent.OnTranscriptionReceived += OnTranscriptionReceived;
-            agent.OnChatResponseReceived += OnChatResponseReceived;
-            agent.OnAudioResponseReceived += OnAudioResponseReceived;
-            audioReceiver.OnAudioRecorded += OnAudioRecorded;
+            agent.OnTranscriptionReceived.AddListener(OnTranscriptionReceived);
+            agent.OnChatResponseReceived.AddListener(OnChatResponseReceived);
+            agent.OnAudioResponseReceived.AddListener(OnAudioResponseReceived);
+            audioReceiver.OnAudioRecorded.AddListener(OnAudioRecorded);
         }
 
         private void StartMicrophone()
@@ -27,9 +27,9 @@ namespace Neocortex.Samples
             audioReceiver.StartMicrophone();
         }
         
-        private void OnAudioRecorded(byte[] data)
+        private void OnAudioRecorded(AudioClip clip)
         {
-            agent.Send(data);
+            agent.AudioToAudio(clip);
             thinking.Display(true);
             audioChatInput.SetChatState(false);
         }

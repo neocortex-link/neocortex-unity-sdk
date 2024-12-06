@@ -12,7 +12,7 @@ namespace Neocortex.Samples
 
         private void Start()
         {
-            smartAgent.OnChatResponseReceived += OnResponseReceived;
+            smartAgent.OnChatResponseReceived.AddListener(OnResponseReceived);
             chatInput.OnSendButtonClicked.AddListener(Submit);
         }
 
@@ -32,7 +32,7 @@ namespace Neocortex.Samples
         private void Submit(string message)
         {
             chatPanel.AddMessage(message, true);
-            smartAgent.Send(message);
+            smartAgent.TextToText(message);
             thinkingIndicator.Display(true);
         }
     }

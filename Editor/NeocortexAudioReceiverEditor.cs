@@ -4,12 +4,15 @@ using UnityEngine;
 namespace Neocortex.Editor
 {
     [CustomEditor(typeof(NeocortexAudioReceiver))]
-    public class AudioReceiverEditor : UnityEditor.Editor
+    public class NeocortexAudioReceiverEditor : UnityEditor.Editor
     {
-        private const string MIC_INDEX_KEY = "neocortex-mix-index";
+        private const string MIC_INDEX_KEY = "neocortex-mic-index";
         
         private string[] microphoneOptions;
         private int selectedMicrophoneIndex;
+        
+        private SerializedProperty onAudioRecorded;
+        private SerializedProperty onRecordingFailed;
         
         private void OnEnable()
         {
@@ -18,6 +21,9 @@ namespace Neocortex.Editor
             
             NeocortexAudioReceiver audioReceiver = (NeocortexAudioReceiver)target;
             audioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+            
+            onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
+            onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
         }
         
         public override void OnInspectorGUI()
@@ -36,6 +42,14 @@ namespace Neocortex.Editor
             {
                 EditorGUILayout.LabelField("No microphones available.");
             }
+            
+            GUILayout.Space(8);
+            EditorGUILayout.PropertyField(onAudioRecorded);
+            serializedObject.ApplyModifiedProperties();
+            
+            GUILayout.Space(8);
+            EditorGUILayout.PropertyField(onRecordingFailed);
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

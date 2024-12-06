@@ -10,14 +10,14 @@ namespace Neocortex.API
     {
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
 
-        protected async Task<ApiResponse> Send(ApiRequest apiRequest)
+        protected async Task<ApiResponse> Send(ApiPayload apiRequest)
         {
             UnityWebRequest webRequest = new UnityWebRequest();
             webRequest.url = apiRequest.url;
             webRequest.method = apiRequest.method;
             webRequest.SetRequestHeader("Content-Type", "application/json");
             webRequest.SetRequestHeader("x-api-key", settings.apiKey);
-            webRequest.uploadHandler = new UploadHandlerRaw(apiRequest.payload);
+            webRequest.uploadHandler = new UploadHandlerRaw(apiRequest.data);
             webRequest.downloadHandler = apiRequest.isAudio
                 ? new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG)
                 : new DownloadHandlerBuffer();

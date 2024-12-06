@@ -1991,6 +1991,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5cadf2230178ed44f84eb2a32c3cb1ed, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  OnAudioRecorded:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRecordingFailed:
+    m_PersistentCalls:
+      m_Calls: []
   amplitudeTreshold: 0.1
   maxWaitTime: 1
   usePushToTalk: 0
@@ -2007,6 +2013,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   projectId: 
+  OnChatResponseReceived:
+    m_PersistentCalls:
+      m_Calls: []
+  OnAudioResponseReceived:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTranscriptionReceived:
+    m_PersistentCalls:
+      m_Calls: []
+  OnRequestFailed:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &1850851989
 Transform:
   m_ObjectHideFlags: 0
