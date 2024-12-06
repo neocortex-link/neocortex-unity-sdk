@@ -11,6 +11,9 @@ namespace Neocortex.Editor
         private string[] microphoneOptions;
         private int selectedMicrophoneIndex;
         
+        private SerializedProperty onAudioRecorded;
+        private SerializedProperty onRecordingFailed;
+        
         private void OnEnable()
         {
             microphoneOptions = Microphone.devices;
@@ -18,6 +21,9 @@ namespace Neocortex.Editor
             
             NeocortexAudioReceiver audioReceiver = (NeocortexAudioReceiver)target;
             audioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+            
+            onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
+            onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
         }
         
         public override void OnInspectorGUI()
@@ -38,8 +44,11 @@ namespace Neocortex.Editor
             }
             
             GUILayout.Space(8);
-            SerializedProperty onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
             EditorGUILayout.PropertyField(onAudioRecorded);
+            serializedObject.ApplyModifiedProperties();
+            
+            GUILayout.Space(8);
+            EditorGUILayout.PropertyField(onRecordingFailed);
             serializedObject.ApplyModifiedProperties();
         }
     }
