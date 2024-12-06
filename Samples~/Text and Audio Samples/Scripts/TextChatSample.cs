@@ -32,7 +32,7 @@ namespace Neocortex.Samples
         private void Submit(string message)
         {
             chatPanel.AddMessage(message, true);
-            smartAgent.SendTextToText(message);
+            smartAgent.TextToText(message);
             thinkingIndicator.Display(true);
         }
     }

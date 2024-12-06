@@ -29,7 +29,7 @@ namespace Neocortex.Samples
         
         private void OnAudioRecorded(AudioClip clip)
         {
-            agent.SendAudioToAudio(clip);
+            agent.AudioToAudio(clip);
             thinking.Display(true);
             audioChatInput.SetChatState(false);
         }

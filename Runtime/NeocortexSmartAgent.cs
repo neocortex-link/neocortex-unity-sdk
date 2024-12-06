@@ -25,24 +25,24 @@ namespace Neocortex
             apiRequest.OnRequestFailed += OnRequestFailed.Invoke;
         }
         
-        public void SendTextToText(string message)
+        public void TextToText(string message)
         {
             apiRequest.Send<string, string>(projectId, message);
         }
         
-        public void SendAudioToAudio(AudioClip audio)
-        {
-            apiRequest.Send<AudioClip, AudioClip>(projectId, audio);
-        }
-        
-        public void SendAudioToText(AudioClip audio)
-        {
-            apiRequest.Send<AudioClip, string>(projectId, audio);
-        }
-        
-        public void SendTextToAudio(string message)
+        public void TextToAudio(string message)
         {
             apiRequest.Send<string, AudioClip>(projectId, message);
+        }
+        
+        public void AudioToText(AudioClip audioClip)
+        {
+            apiRequest.Send<AudioClip, string>(projectId, audioClip);
+        }
+        
+        public void AudioToAudio(AudioClip audioClip)
+        {
+            apiRequest.Send<AudioClip, AudioClip>(projectId, audioClip);
         }
     }
 }
