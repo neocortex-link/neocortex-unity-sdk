@@ -8,7 +8,7 @@ namespace Neocortex.Editor
     {
         private static NeocortexSettings settings;
 
-        [MenuItem("Tools/Neocortex Settings", false, 0)]
+        [MenuItem("Tools/Neocortex/API Key Setup", false, 0)]
         public static void ShowWindow()
         {
             NeocortexSettingsWindow window = GetWindow<NeocortexSettingsWindow>("Neocortex Settings");

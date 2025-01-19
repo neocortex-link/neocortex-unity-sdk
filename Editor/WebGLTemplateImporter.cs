@@ -16,7 +16,8 @@ namespace Neocortex.Editor
             EditorApplication.delayCall += OnEditorLoaded;
         }
 
-        private static void OnEditorLoaded()
+        [MenuItem("Tools/Neocortex/Import WebGL Template", false, 0)]
+        public static void OnEditorLoaded()
         {
             if (EditorPrefs.HasKey(ImportCompletedKey) && Directory.Exists(DestinationFolder))
             {
