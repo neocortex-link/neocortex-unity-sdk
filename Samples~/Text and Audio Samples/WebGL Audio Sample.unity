@@ -1596,7 +1596,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ca435556c6be1543960b903caa7eb2a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  usePushToTalk: 1
+  usePushToTalk: 0
   OnAudioRecorded:
     m_PersistentCalls:
       m_Calls: []
