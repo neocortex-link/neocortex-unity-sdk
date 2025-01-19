@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>{{{ PRODUCT_NAME }}}</title>
+  <link rel="stylesheet" href="TemplateData/style.css">
+  <link rel="shortcut icon" href="TemplateData/favicon.ico" />
+</head>
+
+<body>
+  <div id="unity-container" class="unity-desktop">
+    <div id="canvas-wrap">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"> </div>
+
+    <div id="unity-footer">
+      <div id="unity-fullscreen-button"></div>
+      <div id="unity-build-title">{{{ PRODUCT_NAME }}}</div>
+    </div>
+  </div>
+  <script src="TemplateData/Global.js"></script>
+  <script src="TemplateData/UnitySetup.js"></script>
+  <script src="TemplateData/MicRoutines.js"></script>
+</body>
+
+</html>
