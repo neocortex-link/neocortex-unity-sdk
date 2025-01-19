@@ -7,9 +7,8 @@ namespace Neocortex.Editor
     [InitializeOnLoad]
     public class WebGLTemplateImporter
     {
-        private const string SourceFolder = "Packages/link.neocortex.sdk/WebGLTemplates/Necortex";
-        private const string DestinationFolder = "Assets/WebGLTemplates/Necortex";
-        
+        private const string SourceFolder = "Packages/link.neocortex.sdk/WebGLTemplates/Neocortex";
+        private const string DestinationFolder = "Assets/WebGLTemplates/Neocortex";
         private const string ImportCompletedKey = "Neocortex.WebGLTemplateImported";
 
         static WebGLTemplateImporter()
@@ -21,24 +20,10 @@ namespace Neocortex.Editor
         {
             if (EditorPrefs.HasKey(ImportCompletedKey))
             {
-                Debug.Log("[WebGLTemplateImporter] WebGL Template already imported. Skipping.");
                 return;
             }
             
-            if (Directory.Exists(DestinationFolder))
-            {
-                Debug.Log($"WebGL Template already exists at {DestinationFolder}.");
-                return;
-            }
-
-            if (!Directory.Exists(SourceFolder))
-            {
-                Debug.LogWarning($"Source WebGL Template folder not found: {SourceFolder}");
-                return;
-            }
-
-            try
-            {
+            try{
                 CopyDirectory(SourceFolder, DestinationFolder);
                 AssetDatabase.Refresh();
                 Debug.Log($"WebGL Template copied to {DestinationFolder} successfully.");
