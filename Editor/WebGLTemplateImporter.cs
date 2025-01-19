@@ -17,7 +17,20 @@ namespace Neocortex.Editor
         }
 
         [MenuItem("Tools/Neocortex/Import WebGL Template", false, 0)]
-        public static void OnEditorLoaded()
+        public static void ImportWebGLTemplate()
+        {
+            if (EditorUtility.DisplayDialog("Import WebGL Template", "This will overwrite any changes you have made in the WebGL template. Are you sure you want to continue?", "Yes", "No"))
+            {
+                if (Directory.Exists(DestinationFolder))
+                {
+                    Directory.Delete(DestinationFolder, recursive: true);
+                }
+                
+                OnEditorLoaded();
+            }
+        }
+        
+        private static void OnEditorLoaded()
         {
             if (EditorPrefs.HasKey(ImportCompletedKey) && Directory.Exists(DestinationFolder))
             {
