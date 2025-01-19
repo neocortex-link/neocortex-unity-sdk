@@ -18,11 +18,13 @@ namespace Neocortex.Editor
 
         private static void OnEditorLoaded()
         {
-            if (EditorPrefs.HasKey(ImportCompletedKey))
+            if (EditorPrefs.HasKey(ImportCompletedKey) && Directory.Exists(DestinationFolder))
             {
                 return;
             }
             
+            EditorPrefs.DeleteKey(ImportCompletedKey);
+
             try{
                 CopyDirectory(SourceFolder, DestinationFolder);
                 AssetDatabase.Refresh();
