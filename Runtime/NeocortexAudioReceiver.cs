@@ -1,7 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.Serialization;
 
 namespace Neocortex
 {
@@ -19,7 +17,6 @@ namespace Neocortex
         
         [SerializeField, Range(0, 1)] private float amplitudeThreshold = 0.1f;
         [SerializeField] private float maxWaitTime = 1f;
-        [SerializeField] private bool usePushToTalk;
         
         public override void StartMicrophone()
         {
@@ -48,7 +45,7 @@ namespace Neocortex
             
             UpdateAmplitude();
 
-            if (usePushToTalk) return;
+            if (UsePushToTalk) return;
             
             if(!IsUserSpeaking && Amplitude > amplitudeThreshold)
             {

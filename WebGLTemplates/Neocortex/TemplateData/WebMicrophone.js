@@ -53,6 +53,7 @@ function stopRecording()
 	audioContext.close().catch((err) => console.error("Error closing audio context:", err));
 	audioContext = null;
 
+	console.log("Recording stopped.");
 	unityGame.SendMessage(objectName, "NotifyRecordingChange", MicrophoneState.NotActive);
 }
 
@@ -98,6 +99,8 @@ function processAudio(e)
 	{
 		isUserSpeaking = true;
 	}
+	
+	console.log("Amplitude: " + amplitude, "Elapsed wait time: " + elapsedWaitTime);
 	
 	if(isUserSpeaking)
 	{

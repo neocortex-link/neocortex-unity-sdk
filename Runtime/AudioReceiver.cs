@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -5,7 +6,8 @@ namespace Neocortex
 {
     public abstract class AudioReceiver: MonoBehaviour
     {
-        public bool UsePushToTalk { get; protected set; }
+        [SerializeField] private bool usePushToTalk;
+        public bool UsePushToTalk { get => usePushToTalk; protected set => usePushToTalk = value; }
         public float Amplitude { get; protected set; }
         public float ElapsedWaitTime { get; protected set; }
         

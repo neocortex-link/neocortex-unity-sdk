@@ -26,7 +26,6 @@ namespace Neocortex
         
         [SerializeField, Range(0, 1)] private float amplitudeThreshold = 0.1f;
         [SerializeField] private float maxWaitTime = 1f;
-        [SerializeField] private bool usePushToTalk;
         
         public void Awake()
         {
@@ -34,7 +33,7 @@ namespace Neocortex
             currentBuffer.Buffer = new float[BUFFER_SIZE];
             
             #if UNITY_WEBGL && !UNITY_EDITOR
-            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, usePushToTalk);
+            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, UsePushToTalk);
             WebGL_RecordingUpdatePointer(currentBuffer.Buffer);
             #endif
         }
