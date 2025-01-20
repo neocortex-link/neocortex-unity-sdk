@@ -74,7 +74,14 @@ namespace Neocortex
         private void AudioRecorded()
         {
             AudioClip trimmed = audioClip.Trim();
-            OnAudioRecorded?.Invoke(trimmed);
+            if (!trimmed)
+            {
+                StartMicrophone();
+            }
+            else
+            {
+                OnAudioRecorded?.Invoke(trimmed);
+            }
         }
         
         private void UpdateAmplitude()

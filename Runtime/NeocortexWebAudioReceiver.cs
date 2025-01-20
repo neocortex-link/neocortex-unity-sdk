@@ -133,7 +133,14 @@ namespace Neocortex
             audioClip.SetData(pcm, 0);
             
             AudioClip trimmed = audioClip.Trim();
-            OnAudioRecorded?.Invoke(trimmed);
+            if (!trimmed)
+            {
+                StartMicrophone();
+            }
+            else
+            {
+                OnAudioRecorded?.Invoke(trimmed);
+            }
         }
     }
 }

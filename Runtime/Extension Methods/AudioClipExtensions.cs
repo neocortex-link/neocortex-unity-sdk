@@ -19,7 +19,7 @@ namespace Neocortex
 
             // if audio is shorter than 0.2 seconds, return null
             // this is to prevent sound such as mouse clicks from being sent
-            if (sampleList.Count < audioClip.frequency / 5)
+            if (sampleList.Count < audioClip.frequency / 4)
             {
                 return null;
             }
