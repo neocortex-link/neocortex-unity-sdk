@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Neocortex.Editor
 {
-    [CustomEditor(typeof(NeocortexAudioReceiver))]
-    public class NeocortexAudioReceiverEditor : UnityEditor.Editor
+    [CustomEditor(typeof(AudioReceiver), true)]
+    public class AudioReceiverEditor : UnityEditor.Editor
     {
         private const string MIC_INDEX_KEY = "neocortex-mic-index";
         
@@ -18,9 +18,11 @@ namespace Neocortex.Editor
         {
             microphoneOptions = Microphone.devices;
             selectedMicrophoneIndex = PlayerPrefs.GetInt(MIC_INDEX_KEY, 0);
+
+            AudioReceiver audioReceiver = (AudioReceiver)target;
             
-            NeocortexAudioReceiver audioReceiver = (NeocortexAudioReceiver)target;
-            audioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+            if(audioReceiver is NeocortexAudioReceiver neocortexAudioReceiver)
+                neocortexAudioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
             
             onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
             onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
@@ -30,13 +32,13 @@ namespace Neocortex.Editor
         {
             DrawDefaultInspector();
             
-            NeocortexAudioReceiver audioReceiver = (NeocortexAudioReceiver)target;
-
-            if (microphoneOptions is { Length: > 0 })
+            AudioReceiver audioReceiver = (AudioReceiver)target;
+            
+            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexAudioReceiver neocortexAudioReceiver)
             {
                 selectedMicrophoneIndex = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
                 PlayerPrefs.SetInt(MIC_INDEX_KEY, selectedMicrophoneIndex);
-                audioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+                neocortexAudioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
             }
             else
             {

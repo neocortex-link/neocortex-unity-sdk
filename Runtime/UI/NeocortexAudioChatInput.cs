@@ -6,7 +6,7 @@ namespace Neocortex
 {
     public class NeocortexAudioChatInput : UIBehaviour
     {
-        [SerializeField] private NeocortexAudioReceiver audioReceiver;
+        [SerializeField] private AudioReceiver audioReceiver;
         
         [Header("Amplitude Bar")]
         [SerializeField] private RectTransform amplitudeBar;
@@ -21,9 +21,9 @@ namespace Neocortex
         [SerializeField] private NeocortexPushToTalkButton pushToTalkButton;
         private bool isPushToTalkActive;
 
-        protected override void Awake()
+        protected override void Start()
         {
-            base.Awake();
+            base.Start();
             chatState.SetActive(!audioReceiver.UsePushToTalk);
             pushToTalkButton.gameObject.SetActive(audioReceiver.UsePushToTalk);
             pushToTalkButton.OnButtonPressed.AddListener(() => OnPushToTalk(true));

@@ -8,7 +8,7 @@ namespace Neocortex.Samples
         [SerializeField] private AudioSource audioSource;
         
         [Header("Neocortex Components")]
-        [SerializeField] private NeocortexAudioReceiver audioReceiver;
+        [SerializeField] private AudioReceiver audioReceiver;
         [SerializeField] private NeocortexSmartAgent agent;
         [SerializeField] private NeocortexThinkingIndicator thinking;
         [SerializeField] private NeocortexChatPanel chatPanel;
