@@ -2,6 +2,8 @@
 The Neocortex Unity SDK is a Unity package that allows you to easily integrate Neocortex into your Unity project.
 The SDK provides a set of APIs that allow you to interact with the projects created on the Neocortex web platform.
 
+You can find more about the Unity SDK integration here in our documentatons: https://neocortex.link/docs/integrations/unity/quick-start
+
 ## Requirements
 - Neocortex account [Sign Up Here](https://neocortex.link/register)
 - Unity 2021.3 or above [Download Here](https://unity3d.com/get-unity/download)
