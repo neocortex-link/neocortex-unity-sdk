@@ -17,6 +17,13 @@ namespace Neocortex
 
             sampleList.RemoveAll(sample => Mathf.Abs(sample) < treshold);
 
+            // if audio is shorter than 0.2 seconds, return null
+            // this is to prevent sound such as mouse clicks from being sent
+            if (sampleList.Count < audioClip.frequency / 5)
+            {
+                return null;
+            }
+
             if (sampleList.Count > 0)
             {
                 var lengthSamples = Mathf.Max(sampleList.Count, audioClip.frequency);
