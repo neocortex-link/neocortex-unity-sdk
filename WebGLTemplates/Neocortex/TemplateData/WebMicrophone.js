@@ -19,14 +19,14 @@ let elapsedWaitTime = 0;
 
 const MicrophoneState =
 {
-	NotActive: 	0,
-	Booting: 	1,
-	Recording: 	2
+	NotActive: 0,
+	Booting: 1,
+	Recording: 2
 }
 
 async function startRecording() {
 	unityGame.SendMessage(objectName, "NotifyRecordingChange", MicrophoneState.Booting);
-	
+
 	try {
 		const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 		startMicrophone(stream);
@@ -37,51 +37,47 @@ async function startRecording() {
 	}
 }
 
-function stopRecording()
-{
-	if(audioContext == null)
+function stopRecording() {
+	if (audioContext == null)
 		return;
-	
+
 	isUserSpeaking = false;
 
 	recorder.disconnect(audioContext.destination);
 	recorder = null;
-	
+
 	microphoneStream.disconnect(recorder);
 	microphoneStream = null;
-	
+
 	audioContext.close().catch((err) => console.error("Error closing audio context:", err));
 	audioContext = null;
 
-	console.log("Recording stopped.");
 	unityGame.SendMessage(objectName, "NotifyRecordingChange", MicrophoneState.NotActive);
 }
 
-function startMicrophone(stream)
-{	
+function startMicrophone(stream) {
 	const audioTracks = stream.getAudioTracks();
 	const sampleRate = audioTracks[0].getSettings().sampleRate || 48000;
-	
+
 	audioContext = new AudioContext({ sampleRate });
 	microphoneStream = audioContext.createMediaStreamSource(stream);
 
 	const numberOfInputChannels = 1;
 	const numberOfOutputChannels = 1;
-	
-	recorder = audioContext.createScriptProcessor 
+
+	recorder = audioContext.createScriptProcessor
 		? audioContext.createScriptProcessor(bufferSize, numberOfInputChannels, numberOfOutputChannels)
 		: audioContext.createJavaScriptNode(bufferSize, numberOfInputChannels, numberOfOutputChannels);
-	
+
 	recorder.onaudioprocess = processAudio;
 
 	microphoneStream.connect(recorder);
 	recorder.connect(audioContext.destination)
 
-    unityGame.SendMessage(objectName, "NotifyRecordingChange", MicrophoneState.Recording);
+	unityGame.SendMessage(objectName, "NotifyRecordingChange", MicrophoneState.Recording);
 }
 
-function processAudio(e)
-{
+function processAudio(e) {
 	dstPtr = floatPCMPointer;
 	floatPCM = e.inputBuffer.getChannelData(0);
 	unityGame.SendMessage(objectName, "LogWrittenBuffer", floatPCM.length);
@@ -90,32 +86,25 @@ function processAudio(e)
 	writeTarg.set(floatPCM);
 
 	updateAmplitude(floatPCM);
-	
-	if(usePushToTalk) return;
+
+	if (usePushToTalk) return;
 
 	const deltaTime = bufferSize / audioContext.sampleRate;
-	
-	if(!isUserSpeaking && amplitude > amplitudeThreshold)
-	{
+
+	if (!isUserSpeaking && amplitude > amplitudeThreshold) {
 		isUserSpeaking = true;
 	}
-	
-	console.log("Amplitude: " + amplitude, "Elapsed wait time: " + elapsedWaitTime);
-	
-	if(isUserSpeaking)
-	{
-		if(amplitude < amplitudeThreshold)
-		{
+
+	if (isUserSpeaking) {
+		if (amplitude < amplitudeThreshold) {
 			elapsedWaitTime += deltaTime;
-			
-			if(elapsedWaitTime >= maxWaitTime)
-			{
+
+			if (elapsedWaitTime >= maxWaitTime) {
 				elapsedWaitTime = 0;
 				stopRecording();
 			}
 		}
-		else
-		{
+		else {
 			elapsedWaitTime = 0;
 		}
 
@@ -123,15 +112,12 @@ function processAudio(e)
 	}
 }
 
-function updateAmplitude(floatPCM)
-{
-	// Calculate amplitude (RMS)
+function updateAmplitude(floatPCM) {
 	let sum = 0;
 	for (let i = 0; i < floatPCM.length; i++) {
 		sum += floatPCM[i] * floatPCM[i];
 	}
 	amplitude = Math.sqrt(sum / floatPCM.length) * amplitudeMultiplier;
 
-	// Send amplitude to Unity
 	unityGame.SendMessage(objectName, "UpdateAmplitude", amplitude);
 }
