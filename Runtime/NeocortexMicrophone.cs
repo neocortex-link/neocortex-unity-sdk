@@ -12,7 +12,7 @@ namespace Neocortex
                 return Microphone.devices;
                 #else
                 Debug.Log("Use browser settings for microphone access.");
-                return new { "Use browser settings for microphone access." };
+                return new string[] { "Use browser settings for microphone access." };
                 #endif
             }
         }
