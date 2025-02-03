@@ -39,14 +39,15 @@ namespace Neocortex.Editor
             
             EditorPrefs.DeleteKey(ImportCompletedKey);
 
-            try{
+            try
+            {
                 CopyDirectory(SourceFolder, DestinationFolder);
                 AssetDatabase.Refresh();
                 Debug.Log($"WebGL Template copied to {DestinationFolder} successfully.");
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to copy WebGL Template: {ex.Message}");
+                Debug.LogWarning($"Failed to copy WebGL Template: {ex.Message}");
             }
         }
 
