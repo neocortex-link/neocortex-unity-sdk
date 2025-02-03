@@ -4,6 +4,8 @@ using UnityEngine.EventSystems;
 
 namespace Neocortex
 {
+    [SelectionBase]
+    [AddComponentMenu("Neocortex/Audio Chat Input", 0)]
     public class NeocortexAudioChatInput : UIBehaviour
     {
         [SerializeField] private AudioReceiver audioReceiver;

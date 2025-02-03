@@ -1,4 +1,3 @@
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -6,7 +5,7 @@ namespace Neocortex
 {
     [SelectionBase]
     [RequireComponent(typeof(Animator))]
-    [AddComponentMenu("UI/Neocortex/Thinking Indicator")]
+    [AddComponentMenu("Neocortex/Thinking Indicator", 0)]
     public sealed class NeocortexThinkingIndicator : UIBehaviour
     {
         private readonly static int IS_VISIBLE = Animator.StringToHash("IsVisible");

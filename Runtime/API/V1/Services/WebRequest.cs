@@ -12,6 +12,12 @@ namespace Neocortex.API
 
         protected async Task<ApiResponse> Send(ApiPayload apiRequest)
         {
+            if (settings == null || string.IsNullOrEmpty(settings.apiKey))
+            {
+                Debug.LogError("API Key is required. Please add it in the Tools > Neocortex > API Key Setup.");
+                return null;
+            }
+            
             UnityWebRequest webRequest = new UnityWebRequest();
             webRequest.url = apiRequest.url;
             webRequest.method = apiRequest.method;

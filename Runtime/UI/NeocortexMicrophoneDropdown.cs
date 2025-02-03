@@ -13,7 +13,7 @@ namespace Neocortex
             
             options.Clear();
             
-            foreach (string device in Microphone.devices)
+            foreach (string device in NeocortexMicrophone.devices)
             {
                 options.Add(new OptionData(device));
             }

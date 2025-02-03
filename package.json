@@ -1,6 +1,6 @@
 {
   "name": "link.neocortex.sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "displayName": "Neocortex Unity SDK",
   "description": "Conversational AI for Games Simplified. With Neocortex SDK, create dynamic in-game conversations with AI-powered smart characters using our node-based editor and SDKs.",
   "unity": "2020.3",
@@ -14,7 +14,11 @@
     "npcs",
     "character",
     "character ai",
-    "game ai"
+    "game ai",
+    "smart agent",
+    "game agent",
+    "agentic ai",
+    "agentic npc"
   ],
   "author": {
     "name": "Neocortex",
