@@ -17,8 +17,6 @@ namespace Neocortex
         {
             #if !UNITY_WEBGL || UNITY_EDITOR
             Microphone.End(deviceName);
-            #else
-            return null;
             #endif
         }
         
