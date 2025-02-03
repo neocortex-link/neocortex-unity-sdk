@@ -8,27 +8,27 @@ namespace Neocortex
         {
             #if !UNITY_WEBGL || UNITY_EDITOR
             return Microphone.Start(deviceName, loop, lengthSec, frequency);
-            #endif
-            
+            #else
             return null;
+            #endif
         }
         
         public static void End(string deviceName)
         {
             #if !UNITY_WEBGL || UNITY_EDITOR
             Microphone.End(deviceName);
+            #else
+            return null;
             #endif
-            
-            return;
         }
         
         public static int GetPosition(string deviceName)
         {
             #if !UNITY_WEBGL || UNITY_EDITOR
             return Microphone.GetPosition(deviceName);
-            #endif
-            
+            #else
             return 0;
+            #endif
         }
     }
 }
