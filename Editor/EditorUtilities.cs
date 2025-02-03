@@ -19,7 +19,7 @@ namespace Neocortex
         /// <param name="callback">Actions to take once component is created in the canvas.</param>
         public static void CreateInCanvas<T>(string name, Action<Canvas, T> callback) where T: UIBehaviour
         {
-            var canvas = FindObjectOfType<Canvas>();
+            var canvas = FindFirstObjectByType<Canvas>();
             if (Selection.activeTransform == null)
             {
                 if (canvas == null)
@@ -43,7 +43,7 @@ namespace Neocortex
                 }
             }
 
-            var eventSystem = FindObjectOfType<EventSystem>();
+            var eventSystem = FindFirstObjectByType<EventSystem>();
             if (eventSystem == null)
             {
                 eventSystem = LoadAndInstantiate<EventSystem>(EVENT_SYSTEM_FILE_NAME);
