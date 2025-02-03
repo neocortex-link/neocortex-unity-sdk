@@ -5,7 +5,7 @@ using System.Collections;
 namespace Neocortex
 {
     [SelectionBase]
-    [AddComponentMenu("UI/Neocortex/Chat Panel")]
+    [AddComponentMenu("Neocortex/Chat Panel", 0)]
     public class NeocortexChatPanel : ScrollRect
     {
         private NeocortexMessage messageItemPrefab;

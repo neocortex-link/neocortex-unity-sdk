@@ -5,6 +5,8 @@ using UnityEngine.EventSystems;
 
 namespace Neocortex
 {
+    [SelectionBase]
+    [AddComponentMenu("Neocortex/Text Chat Input", 0)]
     public class NeocortexTextChatInput : UIBehaviour
     {
         [SerializeField] private InputField inputField;
