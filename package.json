@@ -1,12 +1,12 @@
 {
   "name": "link.neocortex.sdk",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "displayName": "Neocortex Unity SDK",
   "description": "Conversational AI for Games Simplified. With Neocortex SDK, create dynamic in-game conversations with AI-powered smart characters using our node-based editor and SDKs.",
-  "unity": "2020.3",
-  "unityRelease": "0f1",
+  "unity": "2021.3",
+  "unityRelease": "35f1",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.0.2"
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "keywords": [
     "conversational ai",
