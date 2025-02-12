@@ -1,4 +1,5 @@
 using UnityEngine;
+using Neocortex.Data;
 using UnityEngine.UI;
 using System.Collections;
 
@@ -8,6 +9,7 @@ namespace Neocortex
     [AddComponentMenu("Neocortex/Chat Panel", 0)]
     public class NeocortexChatPanel : ScrollRect
     {
+        public WritingDirection writingDirection;
         private NeocortexMessage messageItemPrefab;
 
         protected override void Start()
@@ -19,7 +21,7 @@ namespace Neocortex
         public void AddMessage(string text, bool isUser)
         {
             var messageItem = Instantiate(messageItemPrefab, content);
-            messageItem.SetMessage(text, isUser);
+            messageItem.SetMessage(text, isUser, writingDirection == WritingDirection.LeftToRight);
             StartCoroutine(ScrollToBottom());
         }
 
