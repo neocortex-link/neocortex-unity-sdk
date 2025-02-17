@@ -1,13 +1,12 @@
 using System;
 using UnityEngine;
 using Neocortex.Data;
+using Newtonsoft.Json;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 
 namespace Neocortex.API
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public class ApiRequest : WebRequest
     {
         private const string BASE_URL = "https://api.neocortex.link/v1";
@@ -50,7 +49,12 @@ namespace Neocortex.API
                         data = (input as AudioClip).EncodeToWav()
                     };
             
-                    ApiResponse response = await Send(payload);
+                    UnityWebRequest request = await Send(payload);
+                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                    
                     messages.Add(new Message() { content = response.transcription, role = "user" });
                     OnTranscriptionReceived?.Invoke(response.transcription);
                 }
@@ -69,7 +73,12 @@ namespace Neocortex.API
                         data = GetBytes(data)
                     };
             
-                    ApiResponse response = await Send(payload);
+                    UnityWebRequest request = await Send(payload);
+                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                    
                     messages.Add(new Message() { content = response.message, role = "assistant" });
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
@@ -88,8 +97,10 @@ namespace Neocortex.API
                         dataType = ApiResponseDataType.Audio
                     };
                 
-                    ApiResponse response = await Send(payload);
-                    OnAudioResponseReceived?.Invoke(response.data as AudioClip);
+                    UnityWebRequest request = await Send(payload);
+                    AudioClip audioClip = DownloadHandlerAudioClip.GetContent(request);
+                    
+                    OnAudioResponseReceived?.Invoke(audioClip);
                 }
             }
             catch (Exception e)

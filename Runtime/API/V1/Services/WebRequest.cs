@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
@@ -12,21 +11,20 @@ namespace Neocortex.API
     {
         protected Dictionary<string, string> Headers = new ();
 
-        protected async Task<ApiResponse> Send(ApiPayload apiRequest)
+        protected async Task<UnityWebRequest> Send(ApiPayload payload)
         {
-            
             UnityWebRequest webRequest = new UnityWebRequest();
-            webRequest.url = apiRequest.url;
-            webRequest.method = apiRequest.method;
+            webRequest.url = payload.url;
+            webRequest.method = payload.method;
 
             foreach (var header in Headers)
             {
                 webRequest.SetRequestHeader(header.Key, header.Value);
             }
             
-            webRequest.uploadHandler = new UploadHandlerRaw(apiRequest.data);
+            webRequest.uploadHandler = new UploadHandlerRaw(payload.data);
 
-            switch (apiRequest.dataType)
+            switch (payload.dataType)
             {
                 case ApiResponseDataType.Text:
                     webRequest.downloadHandler = new DownloadHandlerBuffer();
@@ -45,24 +43,7 @@ namespace Neocortex.API
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
-                switch (apiRequest.dataType)
-                {
-                    case ApiResponseDataType.Text:
-                        return JsonConvert.DeserializeObject<ApiResponse>(webRequest.downloadHandler.text, new JsonSerializerSettings
-                        {
-                            NullValueHandling = NullValueHandling.Ignore
-                        });
-                    case ApiResponseDataType.Audio:
-                        return new ApiResponse()
-                        {
-                            data = DownloadHandlerAudioClip.GetContent(webRequest)
-                        };
-                    case ApiResponseDataType.Texture:
-                        return new ApiResponse()
-                        {
-                            data = DownloadHandlerTexture.GetContent(webRequest)
-                        };
-                }
+                return webRequest;
             }
             
             Debug.LogError($"[{webRequest.error}] {webRequest.downloadHandler.text}");
