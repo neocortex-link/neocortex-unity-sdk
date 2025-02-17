@@ -1,32 +1,43 @@
+using System;
 using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
+using System.Collections.Generic;
 
 namespace Neocortex.API
 {
     public class WebRequest
     {
-        private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
+        protected Dictionary<string, string> Headers = new ();
 
         protected async Task<ApiResponse> Send(ApiPayload apiRequest)
         {
-            if (settings == null || string.IsNullOrEmpty(settings.apiKey))
-            {
-                Debug.LogError("API Key is required. Please add it in the Tools > Neocortex > API Key Setup.");
-                return null;
-            }
             
             UnityWebRequest webRequest = new UnityWebRequest();
             webRequest.url = apiRequest.url;
             webRequest.method = apiRequest.method;
-            webRequest.SetRequestHeader("Content-Type", "application/json");
-            webRequest.SetRequestHeader("x-api-key", settings.apiKey);
+
+            foreach (var header in Headers)
+            {
+                webRequest.SetRequestHeader(header.Key, header.Value);
+            }
+            
             webRequest.uploadHandler = new UploadHandlerRaw(apiRequest.data);
-            webRequest.downloadHandler = apiRequest.isAudio
-                ? new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG)
-                : new DownloadHandlerBuffer();
+
+            switch (apiRequest.dataType)
+            {
+                case ApiResponseDataType.Text:
+                    webRequest.downloadHandler = new DownloadHandlerBuffer();
+                    break;
+                case ApiResponseDataType.Audio:
+                    webRequest.downloadHandler = new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG);
+                    break;
+                case ApiResponseDataType.Texture:
+                    webRequest.downloadHandler = new DownloadHandlerTexture(true);
+                    break;
+            }
 
             AsyncOperation asyncOperation = webRequest.SendWebRequest();
 
@@ -34,19 +45,23 @@ namespace Neocortex.API
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
-                if (apiRequest.isAudio)
+                switch (apiRequest.dataType)
                 {
-                    return new ApiResponse()
-                    {
-                        audio = DownloadHandlerAudioClip.GetContent(webRequest)
-                    };
-                }
-                else
-                {
-                    return JsonConvert.DeserializeObject<ApiResponse>(webRequest.downloadHandler.text, new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore
-                    });
+                    case ApiResponseDataType.Text:
+                        return JsonConvert.DeserializeObject<ApiResponse>(webRequest.downloadHandler.text, new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore
+                        });
+                    case ApiResponseDataType.Audio:
+                        return new ApiResponse()
+                        {
+                            data = DownloadHandlerAudioClip.GetContent(webRequest)
+                        };
+                    case ApiResponseDataType.Texture:
+                        return new ApiResponse()
+                        {
+                            data = DownloadHandlerTexture.GetContent(webRequest)
+                        };
                 }
             }
             
