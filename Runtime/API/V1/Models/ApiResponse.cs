@@ -9,6 +9,6 @@ namespace Neocortex.API
         public string message;
         public string action;
         public string transcription;
-        public AudioClip audio;
+        public object data;
     }
 }
