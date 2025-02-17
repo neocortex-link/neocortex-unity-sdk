@@ -11,6 +11,7 @@ namespace Neocortex.API
     public class ApiRequest : WebRequest
     {
         private const string BASE_URL = "https://api.neocortex.link/v1";
+        private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         
         public event Action<string> OnTranscriptionReceived;
         public event Action<AudioClip> OnAudioResponseReceived;
@@ -28,6 +29,17 @@ namespace Neocortex.API
                 {
                     throw new Exception("Project ID is required");
                 }
+                
+                if (settings == null || string.IsNullOrEmpty(settings.apiKey))
+                {
+                    throw new Exception("API Key is required. Please add it in the Tools > Neocortex > API Key Setup.");
+                }
+
+                Headers = new Dictionary<string, string>()
+                {
+                    { "Content-Type", "application/json" },
+                    { "x-api-key", settings.apiKey }
+                };
             
                 // here transcription request
                 if (typeof(TInput) == typeof(AudioClip))
@@ -73,11 +85,11 @@ namespace Neocortex.API
                     {
                         url = $"{BASE_URL}/audio/{projectId}",
                         data = GetBytes(new { text = messages[^1].content }),
-                        isAudio = true
+                        dataType = ApiResponseDataType.Audio
                     };
                 
                     ApiResponse response = await Send(payload);
-                    OnAudioResponseReceived?.Invoke(response.audio);
+                    OnAudioResponseReceived?.Invoke(response.data as AudioClip);
                 }
             }
             catch (Exception e)

@@ -1,4 +1,5 @@
 using System;
+using Neocortex.Data;
 using UnityEngine.Networking;
 
 namespace Neocortex.API
@@ -9,6 +10,6 @@ namespace Neocortex.API
         public string url;
         public string method = UnityWebRequest.kHttpVerbPOST;
         public byte[] data;
-        public bool isAudio;
+        public ApiResponseDataType dataType;
     }
 }
