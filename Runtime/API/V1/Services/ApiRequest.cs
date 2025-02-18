@@ -1,16 +1,16 @@
 using System;
 using UnityEngine;
 using Neocortex.Data;
+using Newtonsoft.Json;
+using UnityEngine.Networking;
 using System.Collections.Generic;
 
 namespace Neocortex.API
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public class ApiRequest : WebRequest
     {
         private const string BASE_URL = "https://api.neocortex.link/v1";
+        private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         
         public event Action<string> OnTranscriptionReceived;
         public event Action<AudioClip> OnAudioResponseReceived;
@@ -28,6 +28,17 @@ namespace Neocortex.API
                 {
                     throw new Exception("Project ID is required");
                 }
+                
+                if (settings == null || string.IsNullOrEmpty(settings.apiKey))
+                {
+                    throw new Exception("API Key is required. Please add it in the Tools > Neocortex > API Key Setup.");
+                }
+
+                Headers = new Dictionary<string, string>()
+                {
+                    { "Content-Type", "application/json" },
+                    { "x-api-key", settings.apiKey }
+                };
             
                 // here transcription request
                 if (typeof(TInput) == typeof(AudioClip))
@@ -38,7 +49,12 @@ namespace Neocortex.API
                         data = (input as AudioClip).EncodeToWav()
                     };
             
-                    ApiResponse response = await Send(payload);
+                    UnityWebRequest request = await Send(payload);
+                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                    
                     messages.Add(new Message() { content = response.transcription, role = "user" });
                     OnTranscriptionReceived?.Invoke(response.transcription);
                 }
@@ -57,7 +73,12 @@ namespace Neocortex.API
                         data = GetBytes(data)
                     };
             
-                    ApiResponse response = await Send(payload);
+                    UnityWebRequest request = await Send(payload);
+                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore
+                    });
+                    
                     messages.Add(new Message() { content = response.message, role = "assistant" });
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
@@ -73,11 +94,13 @@ namespace Neocortex.API
                     {
                         url = $"{BASE_URL}/audio/{projectId}",
                         data = GetBytes(new { text = messages[^1].content }),
-                        isAudio = true
+                        dataType = ApiResponseDataType.Audio
                     };
                 
-                    ApiResponse response = await Send(payload);
-                    OnAudioResponseReceived?.Invoke(response.audio);
+                    UnityWebRequest request = await Send(payload);
+                    AudioClip audioClip = DownloadHandlerAudioClip.GetContent(request);
+                    
+                    OnAudioResponseReceived?.Invoke(audioClip);
                 }
             }
             catch (Exception e)
