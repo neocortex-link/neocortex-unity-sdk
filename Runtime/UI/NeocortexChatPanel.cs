@@ -9,8 +9,11 @@ namespace Neocortex
     [AddComponentMenu("Neocortex/Chat Panel", 0)]
     public class NeocortexChatPanel : ScrollRect
     {
-        public WritingDirection writingDirection;
+        [SerializeField] private NeocortexMessage writingIndicator;
+
         private NeocortexMessage messageItemPrefab;
+        
+        public WritingDirection writingDirection;
 
         protected override void Start()
         {
@@ -20,8 +23,15 @@ namespace Neocortex
 
         public void AddMessage(string text, bool isUser)
         {
+            var isLTR = writingDirection == WritingDirection.LeftToRight;
+            
             var messageItem = Instantiate(messageItemPrefab, content);
-            messageItem.SetMessage(text, isUser, writingDirection == WritingDirection.LeftToRight);
+            messageItem.SetMessage(text, isUser, isLTR);
+
+            writingIndicator.gameObject.SetActive(isUser);
+            writingIndicator.transform.SetAsLastSibling();
+            writingIndicator.SetMessage("", !isUser, isLTR);
+            
             StartCoroutine(ScrollToBottom());
         }
 
