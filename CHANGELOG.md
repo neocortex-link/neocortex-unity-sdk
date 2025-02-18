@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.3] - 18 February 2024
 - Various UI Elements fixes
 - Web Request class decoupling
+- Writing Indicator for Chat Panel
 
 ## [0.3.2] - 12 February 2024
 - Right-to-Left language support in Chat Panel 

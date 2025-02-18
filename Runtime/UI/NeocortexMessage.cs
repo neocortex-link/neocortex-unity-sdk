@@ -25,8 +25,11 @@ namespace Neocortex
 
         public void SetMessage(string text, bool isUser, bool isLTR = false)
         {
-            message.text = isLTR ? text : text.CorrectRTL();
-            message.color = isUser ? Color.white : Color.black;
+            if (message)
+            {
+                message.text = isLTR ? text : text.CorrectRTL();
+                message.color = isUser ? Color.white : Color.black;
+            }
             background.color = isUser ? userMessageColor : agentMessageColor;
 
             bool isLeftAligned = isUser ? !isLTR : isLTR;
