@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
 using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine.Networking;
 using System.Collections.Generic;
@@ -9,7 +12,9 @@ namespace Neocortex.API
 {
     public class WebRequest
     {
-        protected Dictionary<string, string> Headers = new ();
+        public float Progress { get; private set; }
+        protected Dictionary<string, string> Headers = new();
+        protected CancellationTokenSource CtxSource = new();
 
         protected async Task<UnityWebRequest> Send(ApiPayload payload)
         {
@@ -39,8 +44,18 @@ namespace Neocortex.API
 
             AsyncOperation asyncOperation = webRequest.SendWebRequest();
 
-            while (!asyncOperation.isDone) await Task.Yield();
-
+            while (!asyncOperation.isDone)
+            {
+                if (CtxSource != null && CtxSource.IsCancellationRequested)
+                {
+                    webRequest.Abort();
+                }
+                
+                Progress = asyncOperation.progress;
+                
+                await Task.Yield();
+            }
+            
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
                 return webRequest;
@@ -48,6 +63,11 @@ namespace Neocortex.API
             
             Debug.LogError($"[{webRequest.error}] {webRequest.downloadHandler.text}");
             return null;
+        }
+
+        public void Abort()
+        {
+            CtxSource.Cancel();
         }
 
         protected byte[] GetBytes(object payload)
