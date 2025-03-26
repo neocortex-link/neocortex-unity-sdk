@@ -6,8 +6,6 @@ namespace Neocortex.Editor
     [CustomEditor(typeof(AudioReceiver), true)]
     public class AudioReceiverEditor : UnityEditor.Editor
     {
-        private const string MIC_INDEX_KEY = "neocortex-mic-index";
-        
         private string[] microphoneOptions;
         private int selectedMicrophoneIndex;
         
@@ -17,12 +15,7 @@ namespace Neocortex.Editor
         private void OnEnable()
         {
             microphoneOptions = Microphone.devices;
-            selectedMicrophoneIndex = PlayerPrefs.GetInt(MIC_INDEX_KEY, 0);
-
-            AudioReceiver audioReceiver = (AudioReceiver)target;
-            
-            if(audioReceiver is NeocortexAudioReceiver neocortexAudioReceiver)
-                neocortexAudioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+            selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
             
             onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
             onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
@@ -34,11 +27,10 @@ namespace Neocortex.Editor
             
             AudioReceiver audioReceiver = (AudioReceiver)target;
             
-            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexAudioReceiver neocortexAudioReceiver)
+            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexAudioReceiver)
             {
                 selectedMicrophoneIndex = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
-                PlayerPrefs.SetInt(MIC_INDEX_KEY, selectedMicrophoneIndex);
-                neocortexAudioReceiver.SelectedMicrophone = microphoneOptions[selectedMicrophoneIndex];
+                PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, selectedMicrophoneIndex);
             }
             else
             {
