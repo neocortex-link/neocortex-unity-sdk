@@ -22,7 +22,7 @@ namespace Neocortex
         {
             try
             {
-                SelectedMicrophone = Microphone.devices[PlayerPrefs.GetInt(MIC_INDEX_KEY, 0)];
+                SelectedMicrophone = NeocortexMicrophone.devices[PlayerPrefs.GetInt(MIC_INDEX_KEY, 0)];
                 audioClip = NeocortexMicrophone.Start(SelectedMicrophone, true, 999, FREQUENCY);
                 initialized = true;
             }
