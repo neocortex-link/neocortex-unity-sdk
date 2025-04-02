@@ -2,40 +2,63 @@ using System;
 using System.IO;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Neocortex
 {
     public static class AudioClipExtensions
     {
         private const int HeaderSize = 44;
-
-        public static AudioClip Trim(this AudioClip audioClip, float treshold = 0.002f)
+        
+        public static AudioClip Trim(this AudioClip audioClip, float threshold = 0.001f)
         {
             float[] samples = new float[audioClip.samples];
             audioClip.GetData(samples, 0);
-            List<float> sampleList = new List<float>(samples);
+            List<float> outputSamples = new List<float>();
 
-            sampleList.RemoveAll(sample => Mathf.Abs(sample) < treshold);
+            int silenceMinSamples = Mathf.RoundToInt(audioClip.frequency * 0.2f); // 0.2 seconds
 
-            // if audio is shorter than 0.2 seconds, return null
-            // this is to prevent sound such as mouse clicks from being sent
-            if (sampleList.Count < audioClip.frequency / 4)
+            int i = 0;
+            while (i < samples.Length)
+            {
+                if (Mathf.Abs(samples[i]) < threshold)
+                {
+                    int silentStart = i;
+                    
+                    while (i < samples.Length && Mathf.Abs(samples[i]) < threshold)
+                    {
+                        i++;
+                    }
+                    
+                    int silentLength = i - silentStart;
+                    if (silentLength < silenceMinSamples)
+                    {
+                        for (int j = silentStart; j < i; j++)
+                        {
+                            outputSamples.Add(samples[j]);
+                        }
+                    }
+                }
+                else
+                {
+                    outputSamples.Add(samples[i]);
+                    i++;
+                }
+            }
+
+            // Remove 0.2 or shorter loud segments, could mouse click etc
+            if (outputSamples.Count <= silenceMinSamples)
             {
                 return null;
             }
 
-            if (sampleList.Count > 0)
-            {
-                var lengthSamples = Mathf.Max(sampleList.Count, audioClip.frequency);
-                var tempClip = AudioClip.Create("TempClip", lengthSamples, audioClip.channels, audioClip.frequency, false);
-                tempClip.SetData(sampleList.ToArray(), 0);
+            int lengthSamples = Mathf.Max(outputSamples.Count, audioClip.frequency);
+            AudioClip tempClip = AudioClip.Create("TempClip", lengthSamples, audioClip.channels, audioClip.frequency, false);
+            tempClip.SetData(outputSamples.ToArray(), 0);
 
-                return tempClip;
-            }
-
-            return null;
+            return tempClip;
         }
-
+        
         public static byte[] EncodeToWav(this AudioClip clip)
         {
             return Encode(clip);
@@ -47,6 +70,9 @@ namespace Neocortex
             Convert(memoryStream, clip);
             WriteHeader(memoryStream, clip);
             byte[] bytes = memoryStream.GetBuffer();
+            
+            // Check out the result for audio quality
+            // File.WriteAllBytes(Application.persistentDataPath + "/input.wav", bytes);
 
             return bytes;
         }

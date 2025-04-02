@@ -55,8 +55,6 @@ namespace Neocortex
         // called from JS
         public void NotifyRecordingChange(int newRecordingState)
         {
-            Debug.Log("NotifyRecordingChange: " + newRecordingState);
-            
             if((int)microphoneState == newRecordingState) return;
 
             MicrophoneState oldState = microphoneState;
