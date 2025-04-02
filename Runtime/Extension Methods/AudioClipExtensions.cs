@@ -10,52 +10,52 @@ namespace Neocortex
     {
         private const int HeaderSize = 44;
         
-        public static AudioClip Trim(this AudioClip audioClip, float threshold = 0.01f, float minSilenceDuration = 0.1f)
+        public static AudioClip Trim(this AudioClip audioClip, float threshold = 0.001f)
         {
             float[] samples = new float[audioClip.samples];
             audioClip.GetData(samples, 0);
-            int sampleRate = audioClip.frequency;
-            int channels = audioClip.channels;
-            
-            int minSilenceSamples = (int)(minSilenceDuration * sampleRate);
+            List<float> outputSamples = new List<float>();
 
-            List<float> newSamples = new List<float>();
+            int silenceMinSamples = Mathf.RoundToInt(audioClip.frequency * 0.2f); // 0.2 seconds
+
             int i = 0;
             while (i < samples.Length)
             {
-                if (Mathf.Abs(samples[i]) >= threshold)
+                if (Mathf.Abs(samples[i]) < threshold)
                 {
-                    newSamples.Add(samples[i]);
-                    i++;
-                }
-                else
-                {
-                    int silenceStart = i;
+                    int silentStart = i;
+                    
                     while (i < samples.Length && Mathf.Abs(samples[i]) < threshold)
                     {
                         i++;
                     }
-                    int silenceLength = i - silenceStart;
                     
-                    if (silenceLength < minSilenceSamples)
+                    int silentLength = i - silentStart;
+                    if (silentLength < silenceMinSamples)
                     {
-                        for (int j = silenceStart; j < i; j++)
+                        for (int j = silentStart; j < i; j++)
                         {
-                            newSamples.Add(samples[j]);
+                            outputSamples.Add(samples[j]);
                         }
                     }
                 }
+                else
+                {
+                    outputSamples.Add(samples[i]);
+                    i++;
+                }
             }
-            
-            if (newSamples.Count < sampleRate / 4)
+
+            // Remove 0.2 or shorter loud segments, could mouse click etc
+            if (outputSamples.Count <= silenceMinSamples)
             {
                 return null;
             }
-            
-            int newLength = Mathf.Max(newSamples.Count, sampleRate);
-            AudioClip tempClip = AudioClip.Create("TempClip", newLength, channels, sampleRate, false);
-            tempClip.SetData(newSamples.ToArray(), 0);
-            
+
+            int lengthSamples = Mathf.Max(outputSamples.Count, audioClip.frequency);
+            AudioClip tempClip = AudioClip.Create("TempClip", lengthSamples, audioClip.channels, audioClip.frequency, false);
+            tempClip.SetData(outputSamples.ToArray(), 0);
+
             return tempClip;
         }
         
