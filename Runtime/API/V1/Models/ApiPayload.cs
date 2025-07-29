@@ -9,7 +9,7 @@ namespace Neocortex.API
     {
         public string url;
         public string method = UnityWebRequest.kHttpVerbPOST;
-        public byte[] data;
-        public ApiResponseDataType dataType;
+        public object data;
+        public ApiResponseType responseType;
     }
 }
