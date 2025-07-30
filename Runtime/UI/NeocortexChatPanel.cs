@@ -2,6 +2,7 @@ using UnityEngine;
 using Neocortex.Data;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace Neocortex
 {
@@ -12,6 +13,7 @@ namespace Neocortex
         [SerializeField] private NeocortexMessage writingIndicator;
 
         private NeocortexMessage messageItemPrefab;
+        private List<NeocortexMessage> messageItems = new();
         
         public WritingDirection writingDirection;
 
@@ -26,6 +28,7 @@ namespace Neocortex
             var isLTR = writingDirection == WritingDirection.LeftToRight;
             
             var messageItem = Instantiate(messageItemPrefab, content);
+            messageItems.Add(messageItem);
             messageItem.SetMessage(text, isUser, isLTR);
 
             writingIndicator.gameObject.SetActive(isUser);
@@ -33,6 +36,14 @@ namespace Neocortex
             writingIndicator.SetMessage("", !isUser, isLTR);
             
             StartCoroutine(ScrollToBottom());
+        }
+        
+        public void ClearMessages()
+        {
+            foreach (var messageItem in messageItems)
+            {
+                Destroy(messageItem.gameObject);
+            }
         }
 
         private IEnumerator ScrollToBottom()
