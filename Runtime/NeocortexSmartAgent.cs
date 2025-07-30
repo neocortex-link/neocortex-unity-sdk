@@ -15,13 +15,15 @@ namespace Neocortex
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived;
         [Space] public UnityEvent<string> OnTranscriptionReceived;
         [Space] public UnityEvent<string> OnRequestFailed;
+        [Space] public UnityEvent<Message[]> OnChatHistoryReceived;
 
-        private void Start()
+        private void Awake()
         {
             apiRequest = new ApiRequest();
             apiRequest.OnChatResponseReceived += OnChatResponseReceived.Invoke;
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += OnTranscriptionReceived.Invoke;
+            apiRequest.OnChatHistoryReceived += OnChatHistoryReceived.Invoke;
             apiRequest.OnRequestFailed += OnRequestFailed.Invoke;
         }
         
@@ -43,6 +45,21 @@ namespace Neocortex
         public void AudioToAudio(AudioClip audioClip)
         {
             apiRequest.Send<AudioClip, AudioClip>(projectId, audioClip);
+        }
+        
+        public void GetChatHistory(int limit = 10)
+        {
+            apiRequest.GetChatHistory(limit);
+        }
+
+        public string GetSessionID()
+        {
+            return PlayerPrefs.GetString("neocortex-session-id", "");
+        }
+        
+        public void CleanSessionID()
+        {
+            PlayerPrefs.SetString("neocortex-session-id", "");
         }
     }
 }

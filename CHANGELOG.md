@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 30 July 2025
+- Neocortex API V2 implementation in API Request class
+- Neocortex Smart Agent, GetChatHistory, Clean Session ID and Get Session ID methods
+- Text Chat History sample project
+- Chat Panel, Clean Messages method
+
 ## [0.3.7] - 2 April 2025
 - Audio trimming improved
 
@@ -23,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Writing Indicator for Chat Panel
 
 ## [0.3.2] - 12 February 2025
-- Right-to-Left language support in Chat Panel 
+- Right-to-Left language support in Chat Panel
 
 ## [0.3.1] - 3 February 2025
 - Microphone dropdown component

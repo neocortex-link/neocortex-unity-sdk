@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
@@ -18,27 +16,37 @@ namespace Neocortex.API
 
         protected async Task<UnityWebRequest> Send(ApiPayload payload)
         {
-            UnityWebRequest webRequest = new UnityWebRequest();
-            webRequest.url = payload.url;
-            webRequest.method = payload.method;
-
+            UnityWebRequest webRequest;
+            
+            if (payload.data is byte[] byteData)
+            {
+                webRequest = new UnityWebRequest(payload.url, payload.method)
+                {
+                    uploadHandler = new UploadHandlerRaw(byteData)
+                };
+            }
+            else if (payload.data is List<IMultipartFormSection> formData)
+            {
+                webRequest = UnityWebRequest.Post(payload.url, formData);
+            }
+            else
+            {
+                Debug.LogError("Unsupported payload type");
+                return null;
+            }
+            
             foreach (var header in Headers)
             {
                 webRequest.SetRequestHeader(header.Key, header.Value);
             }
             
-            webRequest.uploadHandler = new UploadHandlerRaw(payload.data);
-
-            switch (payload.dataType)
+            switch (payload.responseType)
             {
-                case ApiResponseDataType.Text:
+                case ApiResponseType.Text:
                     webRequest.downloadHandler = new DownloadHandlerBuffer();
                     break;
-                case ApiResponseDataType.Audio:
+                case ApiResponseType.Audio:
                     webRequest.downloadHandler = new DownloadHandlerAudioClip(string.Empty, AudioType.MPEG);
-                    break;
-                case ApiResponseDataType.Texture:
-                    webRequest.downloadHandler = new DownloadHandlerTexture(true);
                     break;
             }
 
