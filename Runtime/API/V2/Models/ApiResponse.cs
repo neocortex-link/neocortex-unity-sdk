@@ -1,4 +1,5 @@
 using System;
+using Neocortex.Data;
 
 namespace Neocortex.API
 {
@@ -8,5 +9,6 @@ namespace Neocortex.API
         public string sessionId;
         public string response;
         public string action;
+        public Emotions emotion { get; set; }
     }
 }

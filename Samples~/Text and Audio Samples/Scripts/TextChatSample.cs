@@ -26,6 +26,12 @@ namespace Neocortex.Samples
                 Debug.Log($"[ACTION] {action}");
             }
 
+            Emotions emotion = response.emotion;
+            if (emotion != Emotions.Neutral)
+            {
+                Debug.Log($"[EMOTION] {emotion.ToString()}");
+            }
+
             thinkingIndicator.Display(false);
         }
 

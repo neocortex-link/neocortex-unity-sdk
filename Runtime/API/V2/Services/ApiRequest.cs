@@ -4,6 +4,8 @@ using Neocortex.Data;
 using Newtonsoft.Json;
 using UnityEngine.Networking;
 using System.Collections.Generic;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace Neocortex.API
 {
@@ -11,7 +13,11 @@ namespace Neocortex.API
     {
         private const string BASE_URL = "https://api.neocortex.link/v2";
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
-        private readonly JsonSerializerSettings jsonSerializerSettings = new() { NullValueHandling = NullValueHandling.Ignore };
+        private readonly JsonSerializerSettings jsonSerializerSettings = new()
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            Converters = { new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() } }
+        };
         
         public event Action<string> OnTranscriptionReceived;
         public event Action<AudioClip> OnAudioResponseReceived;
@@ -62,10 +68,7 @@ namespace Neocortex.API
                     };
             
                     UnityWebRequest request = await Send(payload);
-                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore
-                    });
+                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
                     
                     message = response.response;
                     OnTranscriptionReceived?.Invoke(message);
@@ -101,7 +104,8 @@ namespace Neocortex.API
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
                         message = message,
-                        action = response.action
+                        action = response.action,
+                        emotion = response.emotion
                     });
                 }
 
