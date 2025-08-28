@@ -69,6 +69,13 @@ namespace Neocortex.API
                 return webRequest;
             }
             
+            if (payload.responseType == ApiResponseType.Audio && webRequest.result == UnityWebRequest.Result.ProtocolError)
+            {
+                string error = System.Text.Encoding.ASCII.GetString(webRequest.downloadHandler.data);
+                Debug.LogError($"[{webRequest.error}] {error}");
+                return null;           
+            }
+            
             Debug.LogError($"[{webRequest.error}] {webRequest.downloadHandler.text}");
             return null;
         }
