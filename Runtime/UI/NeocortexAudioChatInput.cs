@@ -28,8 +28,8 @@ namespace Neocortex
             base.Start();
             chatState.SetActive(!audioReceiver.UsePushToTalk);
             pushToTalkButton.gameObject.SetActive(audioReceiver.UsePushToTalk);
-            pushToTalkButton.OnButtonPressed.AddListener(() => OnPushToTalk(true));
-            pushToTalkButton.OnButtonReleased.AddListener(() => OnPushToTalk(false));
+            pushToTalkButton.OnButtonPressed.AddListener(OnButtonPressed);
+            pushToTalkButton.OnButtonReleased.AddListener(OnButtonReleased);
             
             if(!audioReceiver.UsePushToTalk) 
                 audioReceiver.StartMicrophone();
@@ -51,19 +51,23 @@ namespace Neocortex
             recordingIcon.SetActive(isRecording);
             waitingButton.SetActive(!isRecording);
         }
-        
-        private void OnPushToTalk(bool active)
+
+        private void OnButtonPressed()
         {
-            if (active)
+            if (!isPushToTalkActive)
             {
                 audioReceiver.StartMicrophone();
+                isPushToTalkActive = true;
             }
-            else
+        }
+        
+        private void OnButtonReleased()
+        {
+            if (isPushToTalkActive)
             {
                 audioReceiver.StopMicrophone();
+                isPushToTalkActive = false;
             }
-            
-            isPushToTalkActive = active;
         }
     }
 }
