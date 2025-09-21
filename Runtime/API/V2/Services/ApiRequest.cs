@@ -70,7 +70,7 @@ namespace Neocortex.API
                     UnityWebRequest request = await Send(payload);
                     ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
                     
-                    message = response.response;
+                    message = response.message;
                     OnTranscriptionReceived?.Invoke(message);
                 }
                 else
@@ -100,7 +100,7 @@ namespace Neocortex.API
 
                     PlayerPrefs.SetString("neocortex-session-id", response.sessionId);
                     
-                    message = response.response;
+                    message = response.message;
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
                         message = message,

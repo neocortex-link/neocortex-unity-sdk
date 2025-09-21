@@ -1,5 +1,8 @@
+using System.Linq;
 using UnityEngine;
 using Neocortex.Data;
+using Newtonsoft.Json;
+using System.Collections;
 
 namespace Neocortex.Samples
 {
@@ -10,9 +13,11 @@ namespace Neocortex.Samples
         [Header("Neocortex Components")]
         [SerializeField] private AudioReceiver audioReceiver;
         [SerializeField] private NeocortexSmartAgent agent;
-        [SerializeField] private NeocortexThinkingIndicator thinking;
         [SerializeField] private NeocortexChatPanel chatPanel;
         [SerializeField] private NeocortexAudioChatInput audioChatInput;
+        
+        [Space]
+        [SerializeField] private GameObject character;
         
         private void Start()
         {
@@ -30,7 +35,6 @@ namespace Neocortex.Samples
         private void OnAudioRecorded(AudioClip clip)
         {
             agent.AudioToAudio(clip);
-            thinking.Display(true);
             audioChatInput.SetChatState(false);
         }
 
@@ -42,11 +46,28 @@ namespace Neocortex.Samples
         private void OnChatResponseReceived(ChatResponse response)
         {
             chatPanel.AddMessage(response.message, false);
-
+            ObjectTagData subject = new ObjectTagData();
+            
+            object[] data = response.data;
+            if (data.Length > 0)
+            {
+                string dataString = JsonConvert.SerializeObject(data);
+                var objects = JsonConvert.DeserializeObject<ObjectTagData[]>(dataString);
+                
+                subject = objects.FirstOrDefault(o => o.isSubject);
+            }
+            
             string action = response.action;
             if (!string.IsNullOrEmpty(action))
             {
-                Debug.Log($"[ACTION] {action}");
+                if (action == "GO_TO_POINT")
+                {
+                    if (subject.isSubject)
+                    {
+                        Debug.Log($"GO_TO_POINT {subject.tag}");
+                        StartCoroutine(GoToPoint(subject.position));
+                    }
+                }
             }
             
             Emotions emotion = response.emotion;
@@ -63,8 +84,19 @@ namespace Neocortex.Samples
 
             Invoke(nameof(StartMicrophone), audioClip.length);
             
-            thinking.Display(false);
             audioChatInput.SetChatState(true);
+        }
+        
+        private IEnumerator GoToPoint(Vector3 point)
+        {
+            float progress = 0;
+            while (progress < 1)
+            {
+                yield return null;
+                progress += Time.deltaTime * 0.2f;
+                
+                character.transform.position = Vector3.Lerp(character.transform.position, point, progress);
+            }
         }
     }
 }

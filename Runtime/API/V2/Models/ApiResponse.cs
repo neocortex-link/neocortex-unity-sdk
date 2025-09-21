@@ -7,8 +7,9 @@ namespace Neocortex.API
     public class ApiResponse
     {
         public string sessionId;
-        public string response;
+        public string message;
         public string action;
-        public Emotions emotion { get; set; }
+        public Emotions emotion;
+        public object data;
     }
 }
