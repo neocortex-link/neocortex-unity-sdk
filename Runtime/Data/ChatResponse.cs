@@ -5,6 +5,6 @@ namespace Neocortex.Data
         public string message;
         public string action;
         public Emotions emotion;
-        public object[] data;
+        public Interactable[] metadata;
     }
 }
