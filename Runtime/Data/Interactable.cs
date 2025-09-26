@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace Neocortex
 {
     [Serializable]
-    public struct Interactable
+    public class Interactable
     {
         public string type;
         public string name;

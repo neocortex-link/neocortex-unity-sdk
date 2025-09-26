@@ -145,11 +145,14 @@ namespace Neocortex.API
         private string CreateMetadata()
         {
             NeocortexInteractable[] interactables = Object.FindObjectsByType<NeocortexInteractable>(FindObjectsSortMode.None);
-            var interactableList = interactables.Select(i => i.ToInteractable()).ToList();
-
-            string dataMessage = JsonConvert.SerializeObject(interactableList);
-
-            return dataMessage;
+            string metadata = "";
+            if (interactables.Length > 0)
+            {
+                var interactableList = interactables.Select(i => i.ToInteractable()).ToList();
+                metadata = JsonConvert.SerializeObject(interactableList);
+            }
+            
+            return metadata;
         }
 
         public async void GetChatHistory(int limit = 10)
