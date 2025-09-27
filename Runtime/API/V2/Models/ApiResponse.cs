@@ -9,6 +9,7 @@ namespace Neocortex.API
         public string sessionId;
         public string response;
         public string action;
-        public Emotions emotion { get; set; }
+        public Emotions emotion;
+        public Interactable[] metadata;
     }
 }

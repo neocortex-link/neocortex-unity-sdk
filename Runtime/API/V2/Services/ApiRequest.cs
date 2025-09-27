@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
@@ -6,6 +7,7 @@ using UnityEngine.Networking;
 using System.Collections.Generic;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
+using Object = UnityEngine.Object;
 
 namespace Neocortex.API
 {
@@ -18,13 +20,13 @@ namespace Neocortex.API
             NullValueHandling = NullValueHandling.Ignore,
             Converters = { new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() } }
         };
-        
+
         public event Action<string> OnTranscriptionReceived;
         public event Action<AudioClip> OnAudioResponseReceived;
         public event Action<ChatResponse> OnChatResponseReceived;
-        public event Action<string> OnRequestFailed; 
-        public event Action<Message[]> OnChatHistoryReceived; 
-        
+        public event Action<string> OnRequestFailed;
+        public event Action<Message[]> OnChatHistoryReceived;
+
         private string message;
 
         private void SetHeaders()
@@ -33,13 +35,13 @@ namespace Neocortex.API
             {
                 throw new Exception("API Key is required. Please add it in the Tools > Neocortex > API Key Setup.");
             }
-            
+
             Headers = new Dictionary<string, string>()
             {
                 { "x-api-key", settings.apiKey }
             };
         }
-        
+
         public async void Send<TInput, TOutput>(string characterId, TInput input)
         {
             try
@@ -50,7 +52,7 @@ namespace Neocortex.API
                 }
 
                 SetHeaders();
-            
+
                 // here transcription request
                 if (typeof(TInput) == typeof(AudioClip))
                 {
@@ -59,17 +61,17 @@ namespace Neocortex.API
                         new MultipartFormFileSection("audio", (input as AudioClip).EncodeToWav(), "audio.wav", "audio/wav"),
                         new MultipartFormDataSection("characterId", characterId)
                     };
-                    
+
                     ApiPayload payload = new ApiPayload()
                     {
                         url = $"{BASE_URL}/audio/transcribe",
                         data = form,
                         responseType = ApiResponseType.Text
                     };
-            
+
                     UnityWebRequest request = await Send(payload);
                     ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
-                    
+
                     message = response.response;
                     OnTranscriptionReceived?.Invoke(message);
                 }
@@ -77,7 +79,7 @@ namespace Neocortex.API
                 {
                     message = input as string;
                 }
-            
+
                 // here chat request
                 {
                     var data = new
@@ -85,27 +87,29 @@ namespace Neocortex.API
                         sessionId = PlayerPrefs.GetString("neocortex-session-id", ""),
                         playerId = SystemInfo.deviceUniqueIdentifier,
                         characterId,
-                        message
+                        message,
+                        metadata = CreateMetadata()
                     };
-                
+
                     ApiPayload payload = new ApiPayload()
                     {
                         url = $"{BASE_URL}/chat",
                         data = GetBytes(data),
                         responseType = ApiResponseType.Text
                     };
-            
+
                     UnityWebRequest request = await Send(payload);
                     ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
 
                     PlayerPrefs.SetString("neocortex-session-id", response.sessionId);
-                    
+
                     message = response.response;
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
                         message = message,
                         action = response.action,
-                        emotion = response.emotion
+                        emotion = response.emotion,
+                        metadata = response.metadata
                     });
                 }
 
@@ -117,17 +121,17 @@ namespace Neocortex.API
                         characterId,
                         message
                     };
-                    
+
                     ApiPayload payload = new ApiPayload()
                     {
                         url = $"{BASE_URL}/audio/generate",
                         data = GetBytes(data),
                         responseType = ApiResponseType.Audio
                     };
-                
+
                     UnityWebRequest request = await Send(payload);
                     AudioClip audioClip = DownloadHandlerAudioClip.GetContent(request);
-                    
+
                     OnAudioResponseReceived?.Invoke(audioClip);
                 }
             }
@@ -138,12 +142,25 @@ namespace Neocortex.API
             }
         }
 
+        private string CreateMetadata()
+        {
+            NeocortexInteractable[] interactables = Object.FindObjectsByType<NeocortexInteractable>(FindObjectsSortMode.None);
+            string metadata = "";
+            if (interactables.Length > 0)
+            {
+                var interactableList = interactables.Select(i => i.ToInteractable()).ToList();
+                metadata = JsonConvert.SerializeObject(interactableList);
+            }
+            
+            return metadata;
+        }
+
         public async void GetChatHistory(int limit = 10)
         {
             try
             {
                 SetHeaders();
-                
+
                 var data = new
                 {
                     limit,

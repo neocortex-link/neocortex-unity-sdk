@@ -2,8 +2,8 @@ using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
 using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine.Networking;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 
 namespace Neocortex.API
