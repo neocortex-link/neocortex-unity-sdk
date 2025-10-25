@@ -44,6 +44,8 @@ namespace Neocortex
             {
                 Destroy(messageItem.gameObject);
             }
+            
+            messageItems.Clear();
         }
 
         private IEnumerator ScrollToBottom()
