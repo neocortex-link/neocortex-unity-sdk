@@ -46,6 +46,7 @@ namespace Neocortex
             }
             
             messageItems.Clear();
+            writingIndicator.gameObject.SetActive(false);
         }
 
         private IEnumerator ScrollToBottom()
