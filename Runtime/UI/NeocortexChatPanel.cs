@@ -31,7 +31,7 @@ namespace Neocortex
             var messageItem = Instantiate(messageItemPrefab, content);
             messageItems.Add(messageItem);
             messageItem.SetMessage(text, isUser, isLTR);
-            messageItem.SetFont(fontOverwrite);
+            messageItem.OverwriteFont(fontOverwrite);
 
             writingIndicator.gameObject.SetActive(isUser);
             writingIndicator.transform.SetAsLastSibling();

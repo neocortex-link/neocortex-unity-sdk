@@ -36,9 +36,9 @@ namespace Neocortex
             rightPadding.SetActive(!isLeftAligned);
         }
 
-        public void SetFont(Font font)
+        public void OverwriteFont(Font font)
         {
-            if(font != null) message.font = font;
+            if(font) message.font = font;
         }
     }
 }

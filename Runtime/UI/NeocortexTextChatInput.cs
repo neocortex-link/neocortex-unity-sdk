@@ -21,7 +21,7 @@ namespace Neocortex
             base.Start();
             sendButton.onClick.AddListener(Send);
             inputField.onSubmit.AddListener(Send);
-            inputField.textComponent.font = fontOverwrite;
+            if(fontOverwrite) inputField.textComponent.font = fontOverwrite;
         }
         
         private void Send(string message)
