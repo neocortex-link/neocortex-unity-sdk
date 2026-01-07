@@ -11,6 +11,7 @@ namespace Neocortex
     public class NeocortexChatPanel : ScrollRect
     {
         [SerializeField] private NeocortexMessage writingIndicator;
+        [SerializeField] private Font fontOverwrite;
 
         private NeocortexMessage messageItemPrefab;
         private List<NeocortexMessage> messageItems = new();
@@ -30,6 +31,7 @@ namespace Neocortex
             var messageItem = Instantiate(messageItemPrefab, content);
             messageItems.Add(messageItem);
             messageItem.SetMessage(text, isUser, isLTR);
+            messageItem.SetFont(fontOverwrite);
 
             writingIndicator.gameObject.SetActive(isUser);
             writingIndicator.transform.SetAsLastSibling();

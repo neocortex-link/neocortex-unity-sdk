@@ -1,5 +1,3 @@
-using System.Globalization;
-using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -36,6 +34,11 @@ namespace Neocortex
             layoutGroup.childAlignment = isLeftAligned ? TextAnchor.UpperRight : TextAnchor.UpperLeft;
             leftPadding.SetActive(isLeftAligned);
             rightPadding.SetActive(!isLeftAligned);
+        }
+
+        public void SetFont(Font font)
+        {
+            if(font != null) message.font = font;
         }
     }
 }
