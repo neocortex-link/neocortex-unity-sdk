@@ -28,6 +28,7 @@ namespace Neocortex.API
         public event Action<Message[]> OnChatHistoryReceived;
 
         private string message;
+        private string emotion;
 
         private void SetHeaders()
         {
@@ -104,11 +105,12 @@ namespace Neocortex.API
                     PlayerPrefs.SetString("neocortex-session-id", response.sessionId);
 
                     message = response.response;
+                    emotion = response.emotion.ToString().ToUpper();
                     OnChatResponseReceived?.Invoke(new ChatResponse()
                     {
                         message = message,
-                        action = response.action,
                         emotion = response.emotion,
+                        action = response.action,
                         metadata = response.metadata
                     });
                 }
@@ -119,7 +121,8 @@ namespace Neocortex.API
                     var data = new
                     {
                         characterId,
-                        message
+                        message,
+                        emotion,
                     };
 
                     ApiPayload payload = new ApiPayload()

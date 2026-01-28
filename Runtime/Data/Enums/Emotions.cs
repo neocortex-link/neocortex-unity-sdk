@@ -3,6 +3,7 @@ namespace Neocortex.Data
   public enum Emotions
   {
     Neutral,
+    
     Happy,
     Pleased,
     Disappointed,
