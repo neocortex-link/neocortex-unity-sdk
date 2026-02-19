@@ -83,13 +83,16 @@ namespace Neocortex.API
 
                 // here chat request
                 {
+                    
+                    
                     var data = new
                     {
                         sessionId = PlayerPrefs.GetString("neocortex-session-id", ""),
                         playerId = SystemInfo.deviceUniqueIdentifier,
                         characterId,
                         message,
-                        metadata = CreateMetadata()
+                        metadata = CreateMetadata(),
+                        events = NeocortexEventLogger.GetLogs(),
                     };
 
                     ApiPayload payload = new ApiPayload()
