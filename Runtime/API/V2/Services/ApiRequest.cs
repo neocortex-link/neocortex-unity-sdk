@@ -111,6 +111,7 @@ namespace Neocortex.API
                         message = message,
                         emotion = response.emotion,
                         action = response.action,
+                        flowState =  response.flowState,
                         metadata = response.metadata
                     });
                 }
