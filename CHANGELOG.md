@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.7] 2 march 2026
 - Conversation flow state in API response
+- Player event logging 
 
 ## [0.4.6] 28 January 2026
 - Emotion in generated audio responses
