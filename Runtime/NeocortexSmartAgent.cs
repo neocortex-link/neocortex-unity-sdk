@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Neocortex.API;
 using Neocortex.Data;
@@ -9,7 +10,7 @@ namespace Neocortex
     {
         private ApiRequest apiRequest;
         
-        [SerializeField] private string projectId;
+        public string characterID;
 
         [Space] public UnityEvent<ChatResponse> OnChatResponseReceived;
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived;
@@ -29,37 +30,39 @@ namespace Neocortex
         
         public void TextToText(string message)
         {
-            apiRequest.Send<string, string>(projectId, message);
+            apiRequest.Send<string, string>(characterID, message);
         }
         
         public void TextToAudio(string message)
         {
-            apiRequest.Send<string, AudioClip>(projectId, message);
+            apiRequest.Send<string, AudioClip>(characterID, message);
         }
         
         public void AudioToText(AudioClip audioClip)
         {
-            apiRequest.Send<AudioClip, string>(projectId, audioClip);
+            apiRequest.Send<AudioClip, string>(characterID, audioClip);
         }
         
         public void AudioToAudio(AudioClip audioClip)
         {
-            apiRequest.Send<AudioClip, AudioClip>(projectId, audioClip);
+            apiRequest.Send<AudioClip, AudioClip>(characterID, audioClip);
         }
         
         public void GetChatHistory(int limit = 10)
         {
-            apiRequest.GetChatHistory(limit);
+            apiRequest.GetChatHistory(characterID, limit);
         }
 
+        [Obsolete("This method is replaced by NeocortexSessionManager.GetSessionID")]
         public string GetSessionID()
         {
-            return PlayerPrefs.GetString("neocortex-session-id", "");
+            return NeocortexSessionManager.GetSessionID(characterID);
         }
         
+        [Obsolete("This method is replaced by NeocortexSessionManager.CleanSessionID")]
         public void CleanSessionID()
         {
-            PlayerPrefs.SetString("neocortex-session-id", "");
+            NeocortexSessionManager.CleanSessionID(characterID);
         }
     }
 }

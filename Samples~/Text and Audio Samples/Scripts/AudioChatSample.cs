@@ -16,6 +16,7 @@ namespace Neocortex.Samples
         
         private void Start()
         {
+            NeocortexSessionManager.CleanSessionID(agent.characterID);
             agent.OnTranscriptionReceived.AddListener(OnTranscriptionReceived);
             agent.OnChatResponseReceived.AddListener(OnChatResponseReceived);
             agent.OnAudioResponseReceived.AddListener(OnAudioResponseReceived);
