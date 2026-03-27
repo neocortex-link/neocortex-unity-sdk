@@ -83,11 +83,9 @@ namespace Neocortex.API
 
                 // here chat request
                 {
-                    
-                    
                     var data = new
                     {
-                        sessionId = PlayerPrefs.GetString("neocortex-session-id", ""),
+                        sessionId = NeocortexSessionManager.GetSessionID(characterId),
                         playerId = SystemInfo.deviceUniqueIdentifier,
                         characterId,
                         message,
@@ -105,7 +103,7 @@ namespace Neocortex.API
                     UnityWebRequest request = await Send(payload);
                     ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
 
-                    PlayerPrefs.SetString("neocortex-session-id", response.sessionId);
+                    NeocortexSessionManager.SetSessionID(characterId, response.sessionId);
 
                     message = response.response;
                     emotion = response.emotion.ToString().ToUpper();
@@ -162,7 +160,7 @@ namespace Neocortex.API
             return metadata;
         }
 
-        public async void GetChatHistory(int limit = 10)
+        public async void GetChatHistory(string characterID, int limit = 10)
         {
             try
             {
@@ -171,7 +169,7 @@ namespace Neocortex.API
                 var data = new
                 {
                     limit,
-                    sessionId = PlayerPrefs.GetString("neocortex-session-id", ""),
+                    sessionId = NeocortexSessionManager.GetSessionID(characterID),
                 };
 
                 ApiPayload payload = new ApiPayload()
