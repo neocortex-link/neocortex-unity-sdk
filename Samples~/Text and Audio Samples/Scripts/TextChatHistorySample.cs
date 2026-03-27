@@ -17,7 +17,7 @@ namespace Neocortex.Samples
         
         private void Start()
         {
-            if (smartAgent.GetSessionID() == "")
+            if (NeocortexSessionManager.GetSessionID(smartAgent.characterID) == "")
             {   
                 newSessionButton.gameObject.SetActive(false);
             }
@@ -33,7 +33,7 @@ namespace Neocortex.Samples
 
         private void StartNewSession()
         {
-            smartAgent.CleanSessionID();
+            NeocortexSessionManager.GetSessionID(smartAgent.characterID);
             chatPanel.ClearMessages();
         }
 
