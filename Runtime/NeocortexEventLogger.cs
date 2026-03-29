@@ -2,8 +2,8 @@
 using System.Linq;
 using UnityEngine;
 using Neocortex.Data;
+using Newtonsoft.Json;
 using System.Collections.Generic;
-using Unity.Plastic.Newtonsoft.Json;
 
 namespace Neocortex
 {

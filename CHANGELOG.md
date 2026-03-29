@@ -4,10 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.8] 2 march 2026
+## [0.4.9] 29 March 2026
+- Json library reference bug fix
+
+## [0.4.8] 2 March 2026
 - Session Manager to cache multiple sessions IDs 
 
-## [0.4.7] 2 march 2026
+## [0.4.7] 2 March 2026
 - Conversation flow state in API response
 - Player event logging 
 
