@@ -14,10 +14,8 @@ namespace Neocortex.API
 {
     public class ApiRequest : WebRequest
     {
-        // Dev-only override hook, left null in shipped builds so the SDK always calls production.
         public static string BaseUrlOverride;
-        private static string BASE_URL =>
-            string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v2" : BaseUrlOverride;
+        private static string BaseURL => string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v2" : BaseUrlOverride;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
         {
@@ -76,7 +74,7 @@ namespace Neocortex.API
 
                     ApiPayload payload = new ApiPayload()
                     {
-                        url = $"{BASE_URL}/audio/transcribe",
+                        url = $"{BaseURL}/audio/transcribe",
                         data = form,
                         responseType = ApiResponseType.Text
                     };
@@ -107,7 +105,7 @@ namespace Neocortex.API
 
                     ApiPayload payload = new ApiPayload()
                     {
-                        url = $"{BASE_URL}/chat",
+                        url = $"{BaseURL}/chat",
                         data = GetBytes(data),
                         responseType = ApiResponseType.Text
                     };
@@ -181,7 +179,7 @@ namespace Neocortex.API
 
                 ApiPayload payload = new ApiPayload()
                 {
-                    url = $"{BASE_URL}/chat/session",
+                    url = $"{BaseURL}/chat/session",
                     data = GetBytes(data),
                     responseType = ApiResponseType.Text
                 };
@@ -252,7 +250,7 @@ namespace Neocortex.API
 
                 ApiPayload payload = new ApiPayload()
                 {
-                    url = $"{BASE_URL}/account",
+                    url = $"{BaseURL}/account",
                     method = UnityWebRequest.kHttpVerbGET,
                     responseType = ApiResponseType.Text
                 };
@@ -300,7 +298,7 @@ namespace Neocortex.API
 
                 ApiPayload payload = new ApiPayload()
                 {
-                    url = $"{BASE_URL}/usage{queryString}",
+                    url = $"{BaseURL}/usage{queryString}",
                     method = UnityWebRequest.kHttpVerbGET,
                     responseType = ApiResponseType.Text
                 };

@@ -16,7 +16,7 @@ namespace Neocortex.Editor
             EditorApplication.delayCall += OnEditorLoaded;
         }
 
-        [MenuItem("Tools/Neocortex/Import WebGL Template", false, 0)]
+        [MenuItem("Tools/Neocortex/Import WebGL Template", false, 1)]
         public static void ImportWebGLTemplate()
         {
             if (EditorUtility.DisplayDialog("Import WebGL Template", "This will overwrite any changes you have made in the WebGL template. Are you sure you want to continue?", "Yes", "No"))
