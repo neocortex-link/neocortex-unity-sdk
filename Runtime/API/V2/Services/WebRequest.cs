@@ -11,14 +11,23 @@ namespace Neocortex.API
     public class WebRequest
     {
         public float Progress { get; private set; }
+        public long LastResponseCode { get; private set; }
+        public string LastError { get; private set; }
         protected Dictionary<string, string> Headers = new();
         protected CancellationTokenSource CtxSource = new();
 
         protected async Task<UnityWebRequest> Send(ApiPayload payload)
         {
             UnityWebRequest webRequest;
-            
-            if (payload.data is byte[] byteData)
+
+            LastResponseCode = 0;
+            LastError = null;
+
+            if (payload.data == null)
+            {
+                webRequest = new UnityWebRequest(payload.url, payload.method);
+            }
+            else if (payload.data is byte[] byteData)
             {
                 webRequest = new UnityWebRequest(payload.url, payload.method)
                 {
@@ -69,14 +78,19 @@ namespace Neocortex.API
                 return webRequest;
             }
             
+            LastResponseCode = webRequest.responseCode;
+
             if (payload.responseType == ApiResponseType.Audio && webRequest.result == UnityWebRequest.Result.ProtocolError)
             {
                 string error = System.Text.Encoding.ASCII.GetString(webRequest.downloadHandler.data);
+                LastError = error;
                 Debug.LogError($"[{webRequest.error}] {error}");
-                return null;           
+                return null;
             }
-            
-            Debug.LogError($"[{webRequest.error}] {webRequest.downloadHandler.text}");
+
+            string body = webRequest.downloadHandler.text;
+            LastError = string.IsNullOrEmpty(body) ? webRequest.error : body;
+            Debug.LogError($"[{webRequest.error}] {body}");
             return null;
         }
 
