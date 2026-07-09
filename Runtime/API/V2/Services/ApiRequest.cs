@@ -4,6 +4,7 @@ using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
 using UnityEngine.Networking;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Serialization;
@@ -189,6 +190,105 @@ namespace Neocortex.API
                 OnRequestFailed?.Invoke(e.Message);
                 Debug.LogError(e.Message);
             }
+        }
+
+        /// <summary>
+        ///     Gets the developer account info (tier, owner email, remaining credits, next refresh).
+        ///     Read-only and unmetered. Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        public async Task<ApiAccountResponse> GetAccount()
+        {
+            try
+            {
+                SetHeaders();
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BASE_URL}/account",
+                    method = UnityWebRequest.kHttpVerbGET,
+                    responseType = ApiResponseType.Text
+                };
+
+                UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                return JsonConvert.DeserializeObject<ApiAccountResponse>(request.downloadHandler.text, jsonSerializerSettings);
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     Gets team credit status plus optional per-player / per-character usage.
+        ///     Read-only and unmetered. An unknown playerId returns zero usage, not an error.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        /// <param name="playerId">The external player id the game already uses for chat/sessions.</param>
+        /// <param name="characterId">The character (project) id to get usage for.</param>
+        public async Task<ApiUsageResponse> GetUsage(string playerId = null, string characterId = null)
+        {
+            try
+            {
+                SetHeaders();
+
+                List<string> query = new List<string>();
+                if (!string.IsNullOrEmpty(playerId))
+                {
+                    query.Add($"playerId={UnityWebRequest.EscapeURL(playerId)}");
+                }
+                if (!string.IsNullOrEmpty(characterId))
+                {
+                    query.Add($"characterId={UnityWebRequest.EscapeURL(characterId)}");
+                }
+
+                string queryString = query.Count > 0 ? $"?{string.Join("&", query)}" : "";
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BASE_URL}/usage{queryString}",
+                    method = UnityWebRequest.kHttpVerbGET,
+                    responseType = ApiResponseType.Text
+                };
+
+                UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                return JsonConvert.DeserializeObject<ApiUsageResponse>(request.downloadHandler.text, jsonSerializerSettings);
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        private string GetRequestError()
+        {
+            try
+            {
+                ApiErrorResponse error = JsonConvert.DeserializeObject<ApiErrorResponse>(LastError);
+                if (!string.IsNullOrEmpty(error?.error))
+                {
+                    return error.error;
+                }
+            }
+            catch
+            {
+                // Body was not the { "error": ... } shape; fall back to the raw text below.
+            }
+
+            return string.IsNullOrEmpty(LastError) ? $"Request failed ({LastResponseCode})" : LastError;
         }
     }
 }

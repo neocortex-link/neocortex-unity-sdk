@@ -238,5 +238,44 @@ The `NeocortexAudioReceiver` component is used to record audio data from the mic
   });
   ```
 
+### Account & Usage API
+The SDK exposes two read-only endpoints for gating smart NPC features. Calling them is free — they never cost a credit.
+
+**GET /account — `ApiRequest.GetAccount()`**
+  - Returns the developer account info: `tier` (`FREE` / `PRO` / `TEAM`), owner `email`, `creditsRemaining`, and `nextRefresh` (nullable).
+  - You can also view this in the editor under `Tools` > `Neocortex` > `Account Status`.
+  - Example:
+    ```csharp
+    var apiRequest = new ApiRequest();
+    ApiAccountResponse account = await apiRequest.GetAccount();
+    Debug.Log($"{account.tier}: {account.creditsRemaining} credits left");
+    ```
+
+**GET /usage — `ApiRequest.GetUsage(playerId, characterId)`**
+  - Returns the team credit `status` (`ok` / `low` / `empty`) and `creditsRemaining`, plus per-player usage when `playerId` is passed and per-character usage when `characterId` is passed. `overLimit` reflects caps configured in the dashboard. An unknown player returns zero usage, not an error.
+  - `playerId` is the external player id the game already uses for chat — by default the SDK sends `SystemInfo.deviceUniqueIdentifier`.
+
+**NeocortexUsageGate**
+  - A small helper that caches usage results and turns them into events, so you can gate features without polling. On request failure it raises `OnRequestFailed` and fails open instead of blocking the game.
+  - Example:
+    ```csharp
+    var usageGate = new NeocortexUsageGate();
+    usageGate.OnLowCredits += usage => Debug.LogWarning($"Low credits: {usage.creditsRemaining} left");
+    usageGate.OnCreditsEmpty += _ => DisableSmartNpcUi();
+    usageGate.OnPlayerOverLimit += _ => ShowDailyLimitMessage();
+    usageGate.OnCharacterOverLimit += _ => DisableThisNpc();
+
+    // Cheap to call before every message; cached within MinRefreshInterval (default 30s)
+    bool canChat = await usageGate.CanUseSmartNPC(characterId: smartAgent.characterID);
+    if (canChat)
+    {
+        smartAgent.TextToText(message);
+    }
+
+    // Optional: keep the flags warm in the background (low frequency)
+    usageGate.StartAutoRefresh(intervalSeconds: 300, characterId: smartAgent.characterID);
+    ```
+  - See `UsageGatingSample` in the samples for a full chat example.
+
 ## Sample Projects
 You can find sample projects that demonstrate how to use the Neocortex Unity SDK in the Package Manager window under the `Samples` section of the Neocortex package.

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- Read-only Account & Usage endpoints: `ApiRequest.GetAccount()` and `ApiRequest.GetUsage(playerId, characterId)`
+- `NeocortexUsageGate` helper with credit/limit events and `CanUseSmartNPC` for gating smart NPC features
+- Account Status editor window under Tools > Neocortex
+- GET support and error body capture in WebRequest
+- Usage gating sample script
+
 ## [0.4.9] 29 March 2026
 - Json library reference bug fix
 
