@@ -23,11 +23,15 @@ namespace Neocortex.Samples
             }
             
             newSessionButton.onClick.AddListener(StartNewSession);
-            
+
+            // Live replies drop in as chat lines; stored history stays whole (see OnChatHistoryReceived).
+            smartAgent.ChatLinesMode = ChatLinesMode.Text;
+
+            smartAgent.OnChatLineStarted.AddListener(OnChatLineStarted);
             smartAgent.OnChatResponseReceived.AddListener(OnResponseReceived);
             smartAgent.OnChatHistoryReceived.AddListener(OnChatHistoryReceived);
             chatInput.OnSendButtonClicked.AddListener(Submit);
-            
+
             smartAgent.GetChatHistory();
         }
 
@@ -45,17 +49,20 @@ namespace Neocortex.Samples
             }
         }
 
+        // Each chat line of a live reply drops in as its own bubble.
+        private void OnChatLineStarted(ChatLine line)
+        {
+            thinkingIndicator.Display(false);
+            chatPanel.AddMessage(line.text, false);
+        }
+
         private void OnResponseReceived(ChatResponse response)
         {
-            chatPanel.AddMessage(response.message, false);
-
             string action = response.action;
             if (!string.IsNullOrEmpty(action))
             {
                 Debug.Log($"[ACTION] {action}");
             }
-
-            thinkingIndicator.Display(false);
         }
 
         private void Submit(string message)

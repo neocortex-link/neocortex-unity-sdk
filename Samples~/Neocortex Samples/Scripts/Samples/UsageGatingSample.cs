@@ -26,14 +26,18 @@ namespace Neocortex.Samples
             usageGate.OnCharacterOverLimit += _ => Debug.LogWarning("[USAGE] This character has reached its usage cap.");
             usageGate.OnRequestFailed += error => Debug.LogWarning($"[USAGE] Usage check failed: {error}");
 
-            smartAgent.OnChatResponseReceived.AddListener(OnResponseReceived);
+            // Deliver replies as chat lines (ordered bubbles) instead of one joint message.
+            smartAgent.ChatLinesMode = ChatLinesMode.Text;
+
+            smartAgent.OnChatLineStarted.AddListener(OnChatLineStarted);
             chatInput.OnSendButtonClicked.AddListener(Submit);
         }
 
-        private void OnResponseReceived(ChatResponse response)
+        // Each chat line drops in as its own bubble.
+        private void OnChatLineStarted(ChatLine line)
         {
-            chatPanel.AddMessage(response.message, false);
             thinkingIndicator.Display(false);
+            chatPanel.AddMessage(line.text, false);
         }
 
         private async void Submit(string message)

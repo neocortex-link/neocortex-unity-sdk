@@ -12,27 +12,29 @@ namespace Neocortex.Samples
 
         private void Start()
         {
+            // Deliver replies as chat lines (ordered bubbles) instead of one joint message.
+            smartAgent.ChatLinesMode = ChatLinesMode.Text;
+
+            smartAgent.OnChatLineStarted.AddListener(OnChatLineStarted);
+            smartAgent.OnEmotionChanged.AddListener(emotion => Debug.Log($"[EMOTION] {emotion}"));
             smartAgent.OnChatResponseReceived.AddListener(OnResponseReceived);
             chatInput.OnSendButtonClicked.AddListener(Submit);
         }
 
+        // Each chat line drops in as its own bubble.
+        private void OnChatLineStarted(ChatLine line)
+        {
+            thinkingIndicator.Display(false);
+            chatPanel.AddMessage(line.text, false);
+        }
+
         private void OnResponseReceived(ChatResponse response)
         {
-            chatPanel.AddMessage(response.message, false);
-
             string action = response.action;
             if (!string.IsNullOrEmpty(action))
             {
                 Debug.Log($"[ACTION] {action}");
             }
-
-            Emotions emotion = response.emotion;
-            if (emotion != Emotions.Neutral)
-            {
-                Debug.Log($"[EMOTION] {emotion.ToString()}");
-            }
-
-            thinkingIndicator.Display(false);
         }
 
         private void Submit(string message)

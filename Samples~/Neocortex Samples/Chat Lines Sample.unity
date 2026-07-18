@@ -1968,7 +1968,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterID: cmrcf9xbf00187k50bz27j1i0
-  beatsMode: 1
+  chatLinesMode: 1
   audioSource: {fileID: 0}
   OnChatResponseReceived:
     m_PersistentCalls:
@@ -1985,7 +1985,7 @@ MonoBehaviour:
   OnChatHistoryReceived:
     m_PersistentCalls:
       m_Calls: []
-  OnBeatStarted:
+  OnChatLineStarted:
     m_PersistentCalls:
       m_Calls: []
   OnEmotionChanged:
@@ -2626,11 +2626,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 2093137171}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 244b99bcbc7cce2498a813ea4d0ff6a2, type: 3}
+  m_Script: {fileID: 11500000, guid: 91b27708f60061348969b3c172e503b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  chatLinesMode: 1
+  agent: {fileID: 1344663998}
   chatInput: {fileID: 1409374561}
-  smartAgent: {fileID: 1344663998}
   thinkingIndicator: {fileID: 1568135304}
   chatPanel: {fileID: 1644707239}
 --- !u!114 &2093137173
