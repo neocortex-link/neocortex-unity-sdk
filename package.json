@@ -27,9 +27,9 @@
   },
   "samples": [
     {
-      "displayName": "Text and Audio Samples",
-      "description": "Quick start samples for Text-to-Text and Audio-to-Audio interactions.",
-      "path": "Samples~/Text and Audio Samples"
+      "displayName": "Neocortex Samples",
+      "description": "Text, audio, and advanced samples: chat, chat lines, audio conversations, interactables, multi-character, and usage gating.",
+      "path": "Samples~/Neocortex Samples"
     }
   ]
 }

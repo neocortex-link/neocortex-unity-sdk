@@ -12,8 +12,15 @@ namespace Neocortex
         [SerializeField] private GameObject leftPadding;
         [SerializeField] private GameObject rightPadding;
 
-        private Color userMessageColor = new Color(0f, 0.5f, 0.9f);
-        private Color agentMessageColor = new Color(0.8f, 0.8f, 0.8f);
+        [Tooltip("Background color of the player's own message bubbles.")]
+        [SerializeField] private Color userMessageColor = new Color(0f, 0.5f, 0.9f);
+        [Tooltip("Background color of the agent's reply bubbles.")]
+        [SerializeField] private Color agentMessageColor = new Color(0.8f, 0.8f, 0.8f);
+        [Space]
+        [Tooltip("Text color inside the player's own message bubbles.")]
+        [SerializeField] private Color userTextColor = Color.white;
+        [Tooltip("Text color inside the agent's reply bubbles.")]
+        [SerializeField] private Color agentTextColor = Color.black;
 
         protected override void Start()
         {
@@ -26,7 +33,7 @@ namespace Neocortex
             if (message)
             {
                 message.text = isLTR ? text : text.CorrectRTL();
-                message.color = isUser ? Color.white : Color.black;
+                message.color = isUser ? userTextColor : agentTextColor;
             }
             background.color = isUser ? userMessageColor : agentMessageColor;
 

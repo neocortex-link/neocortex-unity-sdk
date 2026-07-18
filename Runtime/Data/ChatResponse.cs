@@ -7,8 +7,8 @@ namespace Neocortex.Data
         public string flowState;
         public Emotions emotion;
         public Interactable[] metadata;
-        // Ordered per-emotion chunks; only present when beats were requested (see
-        // NeocortexSmartAgent.BeatsMode). Null on older servers or when not requested.
-        public Beat[] beats;
+        // Ordered per-emotion chat lines that make up the reply; the server returns them with every
+        // character chat, and their text concatenated equals message. May be null/empty on an older server.
+        public ChatLine[] lines;
     }
 }

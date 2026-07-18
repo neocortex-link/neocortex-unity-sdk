@@ -90,6 +90,27 @@ namespace Neocortex
         }
 
         /// <summary>
+        ///     Returns usage, served from the cache while it is younger than
+        ///     <see cref="MinRefreshInterval"/>. Falls back to the last cached value when the
+        ///     request fails; null when nothing has ever been fetched. Safe to call often.
+        /// </summary>
+        public async Task<ApiUsageResponse> GetUsageCached(string playerId = null, string characterId = null)
+        {
+            playerId ??= SystemInfo.deviceUniqueIdentifier;
+
+            bool cacheIsFresh = LastUsage != null
+                                && lastQueryKey == GetQueryKey(playerId, characterId)
+                                && Time.realtimeSinceStartup - lastFetchTime < MinRefreshInterval;
+
+            if (cacheIsFresh)
+            {
+                return LastUsage;
+            }
+
+            return await RefreshUsage(playerId, characterId) ?? LastUsage;
+        }
+
+        /// <summary>
         ///     Returns false when team credits are empty or the player/character is over a
         ///     developer-configured cap. Uses the cached result when it is fresh, so it is safe to
         ///     call before every chat message. Fails open: when no usage data is available at all
@@ -97,17 +118,7 @@ namespace Neocortex
         /// </summary>
         public async Task<bool> CanUseSmartNPC(string playerId = null, string characterId = null)
         {
-            playerId ??= SystemInfo.deviceUniqueIdentifier;
-
-            ApiUsageResponse usage = LastUsage;
-            bool cacheIsFresh = usage != null
-                                && lastQueryKey == GetQueryKey(playerId, characterId)
-                                && Time.realtimeSinceStartup - lastFetchTime < MinRefreshInterval;
-
-            if (!cacheIsFresh)
-            {
-                usage = await RefreshUsage(playerId, characterId) ?? LastUsage;
-            }
+            ApiUsageResponse usage = await GetUsageCached(playerId, characterId);
 
             if (usage == null)
             {

@@ -32,13 +32,6 @@ namespace Neocortex.API
         private string message;
         private string emotion;
 
-        /// <summary>
-        ///     When true, chat requests ask the server to split the reply into ordered per-emotion
-        ///     <see cref="ApiResponse.beats"/> (character chat only). Requesting beats is free;
-        ///     what you do with them decides audio cost (see <see cref="GenerateAudio"/>).
-        /// </summary>
-        public bool RequestBeats { get; set; }
-
         private void SetHeaders()
         {
             if (settings == null || string.IsNullOrEmpty(settings.apiKey))
@@ -99,8 +92,7 @@ namespace Neocortex.API
                         characterId,
                         message,
                         metadata = CreateMetadata(),
-                        events = NeocortexEventLogger.GetLogs(),
-                        beats = RequestBeats ? (bool?)true : null,
+                        events = NeocortexEventLogger.GetLogs()
                     };
 
                     ApiPayload payload = new ApiPayload()
@@ -121,16 +113,10 @@ namespace Neocortex.API
                     {
                         message = message,
                         emotion = response.emotion,
-                        // Keep the scalar `action` populated for backward compatibility, and expose the
-                        // full ordered stack via `actions`. Either field is synthesized from the other so
-                        // the SDK works whether the backend sends `action`, `actions`, or both.
-                        action = response.action ?? response.actions?.FirstOrDefault(),
-                        actions = response.actions ?? (string.IsNullOrEmpty(response.action)
-                            ? Array.Empty<string>()
-                            : new[] { response.action }),
+                        action = response.action,
                         flowState =  response.flowState,
                         metadata = response.metadata,
-                        beats = response.beats
+                        lines = response.lines
                     });
                 }
 
@@ -198,8 +184,8 @@ namespace Neocortex.API
 
         /// <summary>
         ///     Generates speech for a piece of text, voiced in the given emotion.
-        ///     IMPORTANT: every call costs 1 audio credit — generating audio per beat multiplies
-        ///     the audio cost of a reply by the number of beats.
+        ///     IMPORTANT: every call costs 1 audio credit — generating audio per line multiplies
+        ///     the audio cost of a reply by the number of lines.
         ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
         /// </summary>
         public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion)
@@ -217,7 +203,7 @@ namespace Neocortex.API
 
                 ApiPayload payload = new ApiPayload()
                 {
-                    url = $"{BASE_URL}/audio/generate",
+                    url = $"{BaseURL}/audio/generate",
                     data = GetBytes(data),
                     responseType = ApiResponseType.Audio
                 };

@@ -13,7 +13,8 @@ namespace Neocortex
         [SerializeField] private NeocortexMessage writingIndicator;
         [SerializeField] private Font fontOverwrite;
 
-        private NeocortexMessage messageItemPrefab;
+        [Tooltip("Prefab spawned for each chat bubble. Leave empty to use the built-in default (Resources/Prefabs/Message); assign your own NeocortexMessage prefab to restyle every message.")]
+        [SerializeField] private NeocortexMessage messageItemPrefab;
         private List<NeocortexMessage> messageItems = new();
         
         public WritingDirection writingDirection;
@@ -21,7 +22,13 @@ namespace Neocortex
         protected override void Start()
         {
             base.Start();
-            messageItemPrefab = Resources.Load<NeocortexMessage>("Prefabs/Message");
+
+            // Only fall back to the built-in bubble when the developer hasn't supplied one,
+            // so a prefab assigned in the inspector is never overwritten by the default.
+            if (messageItemPrefab == null)
+            {
+                messageItemPrefab = Resources.Load<NeocortexMessage>("Prefabs/Message");
+            }
         }
 
         public void AddMessage(string text, bool isUser)

@@ -13,36 +13,39 @@ namespace Neocortex
     /// The main component for talking to a Neocortex character. Add it to a GameObject, set the
     /// Character ID, and call <see cref="TextToText"/> / <see cref="AudioToAudio"/> etc.
     ///
-    /// Optionally set <see cref="BeatsMode"/> to have replies delivered as ordered per-emotion
-    /// "beats" instead of one block of text:
+    /// Set <see cref="ChatLinesMode"/> to deliver replies as ordered <b>chat lines</b> — chunks that
+    /// drop in one after another as separate messages (with emotion per line) instead of one block
+    /// of text. The message drop is the same in every mode; the mode only decides the audio:
     /// <list type="bullet">
-    /// <item><see cref="Data.BeatsMode.Off"/> — normal single reply (default, unchanged).</item>
-    /// <item><see cref="Data.BeatsMode.TextAndEmotion"/> — reveal each beat via <see cref="OnBeatStarted"/>
-    /// and change emotion via <see cref="OnEmotionChanged"/>. No extra credit cost.</item>
-    /// <item><see cref="Data.BeatsMode.ExpressiveAudio"/> — also voice each beat in its own emotion.
-    /// WARNING: this costs ~1 audio credit PER BEAT (up to 4x a normal reply). Assign an
-    /// <c>AudioSource</c> and it degrades automatically when credits run low.</item>
+    /// <item><see cref="Data.ChatLinesMode.Off"/> — one whole reply (default, unchanged).</item>
+    /// <item><see cref="Data.ChatLinesMode.Text"/> — chat lines drop in, no audio. No extra cost.</item>
+    /// <item><see cref="Data.ChatLinesMode.SingleAudio"/> — lines drop in over ONE voice clip (1 credit).</item>
+    /// <item><see cref="Data.ChatLinesMode.PerLineAudio"/> — each line is voiced separately, in order.
+    /// WARNING: ~1 audio credit PER line (up to 4x). Needs an <c>AudioSource</c>; degrades on its own
+    /// when credits run low.</item>
     /// </list>
-    /// In any beats mode, calling a send method while the character is still speaking queues the
-    /// input and submits it once the current reply finishes (no barge-in).
+    /// Listen to <see cref="OnChatLineStarted"/> to show each message and <see cref="OnEmotionChanged"/>
+    /// to drive animation. Input sent while the character is still speaking is queued and submitted
+    /// when the reply finishes (no barge-in). Audio modes need an <see cref="AudioSource"/> assigned.
     /// </summary>
     public class NeocortexSmartAgent : MonoBehaviour
     {
-        // How many beat audio clips are generated at once in Expressive Audio mode.
+        // How many line clips are generated at once in Per-Line Audio mode.
         private const int MAX_CONCURRENT_AUDIO = 2;
-        // Seconds between beat reveals when there is no audio pacing them.
-        private const float BEAT_REVEAL_DELAY = 1f;
+        // Delay between chat-line message drops (the "one after another" cadence).
+        private const float LINE_DROP_DELAY = 0.5f;
 
         private ApiRequest apiRequest;
 
         public string characterID;
 
-        [Tooltip("Off: normal single reply.\n" +
-                 "Text And Emotion: reveal each beat as its own message and change emotion per beat (no extra cost).\n" +
-                 "Expressive Audio: also voice each beat — WARNING: costs ~1 audio credit PER BEAT (up to 4x).")]
-        [SerializeField] private BeatsMode beatsMode = BeatsMode.Off;
+        [Tooltip("Off: one normal reply.\n" +
+                 "Text: chat lines drop in as messages with emotion — no extra cost.\n" +
+                 "Single Audio: same, plus ONE voice clip for the whole reply (1 credit).\n" +
+                 "Per-Line Audio: same, but each line is voiced separately — WARNING: ~1 credit PER line (up to 4x).")]
+        [SerializeField] private ChatLinesMode chatLinesMode = ChatLinesMode.Off;
 
-        [Tooltip("Required for Expressive Audio mode; beat clips play here.")]
+        [Tooltip("Required for Single Audio and Per-Line Audio modes; line clips play here.")]
         [SerializeField] private AudioSource audioSource;
 
         [Space] public UnityEvent<ChatResponse> OnChatResponseReceived;
@@ -51,10 +54,10 @@ namespace Neocortex
         [Space] public UnityEvent<string> OnRequestFailed;
         [Space] public UnityEvent<Message[]> OnChatHistoryReceived;
 
-        [Header("Beats")]
-        [Tooltip("Raised when a beat starts (its text is ready to show).")]
-        [Space] public UnityEvent<Beat> OnBeatStarted;
-        [Tooltip("Raised with each beat's emotion, when the beat starts. Drive animation here.")]
+        [Header("Chat Lines")]
+        [Tooltip("Raised as each chat line drops in — add it to your chat panel here.")]
+        [Space] public UnityEvent<ChatLine> OnChatLineStarted;
+        [Tooltip("Raised with each line's emotion as it drops in. Drive animation here.")]
         [Space] public UnityEvent<Emotions> OnEmotionChanged;
         [Tooltip("Raised once the whole reply has finished playing.")]
         [Space] public UnityEvent OnReplyFinished;
@@ -67,30 +70,32 @@ namespace Neocortex
         private NeocortexUsageGate usageGate;
 
         /// <summary>
-        ///     Selects how replies are delivered. <see cref="Data.BeatsMode.ExpressiveAudio"/> costs
-        ///     ~1 audio credit per beat (up to 4x a normal reply); leave it off unless the extra
-        ///     expressiveness is worth the credits.
+        ///     How replies are delivered. <see cref="Data.ChatLinesMode.PerLineAudio"/> costs ~1 audio
+        ///     credit per line (up to 4x a normal reply); <see cref="Data.ChatLinesMode.SingleAudio"/>
+        ///     costs 1. Leave audio modes off unless the extra expressiveness is worth the credits.
         /// </summary>
-        public BeatsMode BeatsMode
+        public ChatLinesMode ChatLinesMode
         {
-            get => beatsMode;
-            set
-            {
-                beatsMode = value;
-                if (apiRequest != null)
-                {
-                    apiRequest.RequestBeats = value != BeatsMode.Off;
-                }
-            }
+            get => chatLinesMode;
+            set => chatLinesMode = value;
         }
 
-        /// <summary>True while a reply is pending or its beats are still being played back.</summary>
+        /// <summary>
+        ///     Audio source the audio chat-lines modes play through. Assign in the inspector, or set
+        ///     it from code before the first reply so a sample can hand the agent its own source.
+        /// </summary>
+        public AudioSource AudioSource
+        {
+            get => audioSource;
+            set => audioSource = value;
+        }
+
+        /// <summary>True while a reply is pending or its chat lines are still being played back.</summary>
         public bool IsSpeaking => state != ReplyState.Idle;
 
         private void Awake()
         {
             apiRequest = new ApiRequest();
-            apiRequest.RequestBeats = beatsMode != BeatsMode.Off;
             apiRequest.OnChatResponseReceived += HandleChatResponse;
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += OnTranscriptionReceived.Invoke;
@@ -100,7 +105,7 @@ namespace Neocortex
 
         private void OnDestroy()
         {
-            playbackToken++; // cancel any in-flight beat playback
+            playbackToken++; // cancel any in-flight chat-line playback
         }
 
         public void TextToText(string message)
@@ -110,9 +115,9 @@ namespace Neocortex
 
         public void TextToAudio(string message)
         {
-            // In beats mode, audio is produced per beat (or not at all), so route to text-only
-            // to avoid also paying for a separate full-reply clip.
-            if (beatsMode == BeatsMode.Off)
+            // In a chat-lines mode the agent produces audio itself (single or per line), so request
+            // text only — otherwise we'd also pay for a separate full-reply clip.
+            if (chatLinesMode == ChatLinesMode.Off)
             {
                 Dispatch(() => apiRequest.Send<string, AudioClip>(characterID, message));
             }
@@ -129,7 +134,7 @@ namespace Neocortex
 
         public void AudioToAudio(AudioClip audioClip)
         {
-            if (beatsMode == BeatsMode.Off)
+            if (chatLinesMode == ChatLinesMode.Off)
             {
                 Dispatch(() => apiRequest.Send<AudioClip, AudioClip>(characterID, audioClip));
             }
@@ -145,20 +150,19 @@ namespace Neocortex
         }
 
         /// <summary>
-        ///     Generates one audio clip for a single beat, voiced in that beat's emotion.
-        ///     IMPORTANT: each call costs 1 audio credit, so voicing every beat of a reply costs
-        ///     up to 4 credits instead of 1. Returns null when generation fails.
+        ///     Generates one audio clip for a chat line, voiced in its emotion.
+        ///     IMPORTANT: each call costs 1 audio credit.
         /// </summary>
-        public Task<AudioClip> GenerateBeatAudio(Beat beat)
+        public Task<AudioClip> GenerateChatLineAudio(ChatLine line)
         {
-            return apiRequest.GenerateAudio(characterID, beat.text, beat.emotion.ToString().ToUpper());
+            return apiRequest.GenerateAudio(characterID, line.text, line.emotion.ToString().ToUpper());
         }
 
-        // Sends immediately in Off mode (today's fire-and-forget behavior). In a beats mode, queues
-        // the input if the character is still speaking so nothing is submitted mid-reply.
+        // Sends immediately in Off mode (fire-and-forget, as before). In a chat-lines mode, queues
+        // the input while the character is still speaking so nothing is submitted mid-reply.
         private void Dispatch(Action send)
         {
-            if (beatsMode == BeatsMode.Off)
+            if (chatLinesMode == ChatLinesMode.Off)
             {
                 send();
                 return;
@@ -167,7 +171,6 @@ namespace Neocortex
             if (state != ReplyState.Idle)
             {
                 pendingInputs.Enqueue(send);
-                BeatLog($"Input received while speaking — queued (pending: {pendingInputs.Count}).");
                 return;
             }
 
@@ -179,36 +182,30 @@ namespace Neocortex
         {
             OnChatResponseReceived.Invoke(response);
 
-            if (beatsMode == BeatsMode.Off)
+            if (chatLinesMode == ChatLinesMode.Off)
             {
                 return;
             }
 
-            // No beats (older server, or none returned) → treat the whole reply as one beat.
-            Beat[] beats = response.beats != null && response.beats.Length > 0
-                ? response.beats
-                : new[] { new Beat { text = response.message, emotion = response.emotion } };
-
-            if (response.beats != null && response.beats.Length > 0)
-            {
-                string joined = string.Concat(response.beats.Select(b => b.text));
-                BeatLog($"Reply: {beats.Length} beat(s), mode={beatsMode}. Concat==response: {joined == response.message}");
-            }
-            else
-            {
-                BeatLog($"Reply had no beats (mode={beatsMode}) — playing as a single beat.");
-            }
+            // No lines (older server, or none returned) → treat the whole reply as one line.
+            ChatLine[] lines = response.lines != null && response.lines.Length > 0
+                ? response.lines
+                : new[] { new ChatLine { text = response.message, emotion = response.emotion } };
 
             state = ReplyState.Playing;
             int token = ++playbackToken;
 
-            if (beatsMode == BeatsMode.ExpressiveAudio)
+            switch (chatLinesMode)
             {
-                PlayExpressive(response, beats, token);
-            }
-            else
-            {
-                RevealBeats(beats, token);
+                case ChatLinesMode.PerLineAudio:
+                    PlayPerLineAudio(lines, token);
+                    break;
+                case ChatLinesMode.SingleAudio:
+                    PlaySingleAudio(lines, token);
+                    break;
+                default: // Text
+                    PlayTextOnly(lines, token);
+                    break;
             }
         }
 
@@ -217,80 +214,90 @@ namespace Neocortex
             OnRequestFailed.Invoke(error);
 
             // Only a failure of the chat request itself (before playback) should unblock the queue.
-            // Per-beat audio failures during playback are handled inline (text still shows, advance).
-            if (beatsMode != BeatsMode.Off && state == ReplyState.WaitingForReply)
+            // Per-line audio failures during playback are handled inline (text still shows, advance).
+            if (chatLinesMode != ChatLinesMode.Off && state == ReplyState.WaitingForReply)
             {
-                BeatLog($"Chat request failed before playback: {error}. Unblocking queue.");
                 state = ReplyState.Idle;
                 playbackToken++;
                 DispatchNext();
             }
         }
 
-        // Reveals each beat in order with a small delay, driving emotion per beat. No audio cost.
-        private async void RevealBeats(Beat[] beats, int token)
-        {
-            for (int i = 0; i < beats.Length; i++)
-            {
-                if (this == null || token != playbackToken) return;
-                BeginBeat(i, beats[i]);
-                if (i < beats.Length - 1)
-                {
-                    await WaitForSeconds(BEAT_REVEAL_DELAY, token);
-                }
-            }
+        // ── Playback ────────────────────────────────────────────────────────────────────────────
 
+        private async void PlayTextOnly(ChatLine[] lines, int token)
+        {
+            await DropLines(lines, token);
             if (this == null || token != playbackToken) return;
             FinishReply(token);
         }
 
-        private async void PlayExpressive(ChatResponse response, Beat[] beats, int token)
+        private async void PlaySingleAudio(ChatLine[] lines, int token)
         {
             if (audioSource == null)
             {
-                Debug.LogWarning("[Neocortex] Beats Mode is Expressive Audio but no AudioSource is assigned. Playing text only (no audio credits spent).", this);
-                RevealBeats(beats, token);
+                Debug.LogWarning("[Neocortex] Single Audio chat-lines mode needs an AudioSource. Showing text only (no credits spent).", this);
+                await DropLines(lines, token);
+                if (this == null || token != playbackToken) return;
+                FinishReply(token);
                 return;
             }
 
-            // Credit-aware: don't burn N credits per reply when the balance is low or empty.
+            // Don't spend a credit we don't have.
+            if (await IsOutOfCredits(token))
+            {
+                if (this == null || token != playbackToken) return;
+                await DropLines(lines, token);
+                if (this == null || token != playbackToken) return;
+                FinishReply(token);
+                return;
+            }
+
+            await PlayOneClipAndDrop(JoinText(lines), lines, token);
+            if (this == null || token != playbackToken) return;
+            FinishReply(token);
+        }
+
+        private async void PlayPerLineAudio(ChatLine[] lines, int token)
+        {
+            if (audioSource == null)
+            {
+                Debug.LogWarning("[Neocortex] Per-Line Audio chat-lines mode needs an AudioSource. Showing text only (no credits spent).", this);
+                await DropLines(lines, token);
+                if (this == null || token != playbackToken) return;
+                FinishReply(token);
+                return;
+            }
+
+            // Credit-aware degrade, invisible to the developer: empty → text only, low → one clip.
             usageGate ??= new NeocortexUsageGate();
             ApiUsageResponse usage = await usageGate.GetUsageCached(characterId: characterID);
             if (this == null || token != playbackToken) return;
 
             if (usage != null && usage.status == UsageStatus.Empty)
             {
-                BeatLog("Credits empty — degrading to text only.");
-                Debug.LogWarning("[Neocortex] Credits are empty. Playing beats as text only.");
-                RevealBeats(beats, token);
+                await DropLines(lines, token);
+                if (this == null || token != playbackToken) return;
+                FinishReply(token);
                 return;
             }
 
             if (usage != null && usage.status == UsageStatus.Low)
             {
-                BeatLog("Credits low — degrading to a single audio clip.");
-                Debug.LogWarning("[Neocortex] Credits are low. Voicing this reply with one clip instead of per-beat.");
-                AudioClip single = await GenerateBeatAudio(new Beat { text = response.message, emotion = beats[0].emotion });
+                await PlayOneClipAndDrop(JoinText(lines), lines, token);
                 if (this == null || token != playbackToken) return;
-                if (single != null)
-                {
-                    audioSource.clip = single;
-                    audioSource.Play();
-                }
-                RevealBeats(beats, token);
+                FinishReply(token);
                 return;
             }
 
-            BeatLog($"Expressive audio: generating {beats.Length} clip(s), up to {MAX_CONCURRENT_AUDIO} at once.");
-
-            // Fetch clips with a small concurrency cap; play strictly in beat order, starting
-            // beat 1 as soon as its clip returns while later beats keep synthesizing.
-            Task<AudioClip>[] clipTasks = new Task<AudioClip>[beats.Length];
+            // Fetch clips with a small concurrency cap; play strictly in line order, starting
+            // line 1 as soon as its clip returns while later lines keep synthesizing.
+            Task<AudioClip>[] clipTasks = new Task<AudioClip>[lines.Length];
             int nextToStart = 0;
 
             void StartNext()
             {
-                if (nextToStart < beats.Length)
+                if (nextToStart < lines.Length)
                 {
                     int index = nextToStart++;
                     clipTasks[index] = FetchClip(index);
@@ -299,13 +306,9 @@ namespace Neocortex
 
             async Task<AudioClip> FetchClip(int index)
             {
-                BeatLog($"Requesting audio for beat {index + 1} [{beats[index].emotion}].");
-                AudioClip clip = await GenerateBeatAudio(beats[index]);
-                BeatLog(clip != null
-                    ? $"Audio for beat {index + 1} ready."
-                    : $"Audio for beat {index + 1} FAILED — showing its text only.");
+                AudioClip c = await GenerateChatLineAudio(lines[index]);
                 StartNext();
-                return clip;
+                return c;
             }
 
             for (int i = 0; i < MAX_CONCURRENT_AUDIO; i++)
@@ -313,35 +316,64 @@ namespace Neocortex
                 StartNext();
             }
 
-            for (int i = 0; i < beats.Length; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 AudioClip clip = await clipTasks[i];
                 if (this == null || token != playbackToken) return;
 
-                // Emotion transitions exactly when this beat's audio starts.
-                BeginBeat(i, beats[i]);
+                // Emotion transitions exactly when this line's audio starts.
+                BeginLine(i, lines[i]);
 
                 if (clip != null)
                 {
                     audioSource.clip = clip;
                     audioSource.Play();
-                    while (token == playbackToken && audioSource != null && audioSource.isPlaying)
-                    {
-                        await Task.Yield();
-                    }
+                    await WaitForAudio(token);
                     if (this == null || token != playbackToken) return;
                 }
-                // clip == null (generation failed): text was shown, just advance to the next beat.
+                // clip == null (generation failed): text was shown, just advance to the next line.
             }
 
             FinishReply(token);
         }
 
-        private void BeginBeat(int index, Beat beat)
+        // Plays one clip for the whole reply while the lines drop in on top of it, then holds the
+        // "speaking" state until the clip finishes so queued input doesn't cut in mid-sentence.
+        private async Task PlayOneClipAndDrop(string fullText, ChatLine[] lines, int token)
         {
-            BeatLog($"Beat {index + 1} [{beat.emotion}] \"{Preview(beat.text)}\"");
-            OnBeatStarted.Invoke(beat);
-            OnEmotionChanged.Invoke(beat.emotion);
+            AudioClip clip = await GenerateChatLineAudio(new ChatLine { text = fullText, emotion = lines[0].emotion });
+            if (this == null || token != playbackToken) return;
+
+            if (clip != null)
+            {
+                audioSource.clip = clip;
+                audioSource.Play();
+            }
+
+            await DropLines(lines, token);
+            if (this == null || token != playbackToken) return;
+
+            await WaitForAudio(token);
+        }
+
+        // Drops each chat line in as a message with a fixed delay between them.
+        private async Task DropLines(ChatLine[] lines, int token)
+        {
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (this == null || token != playbackToken) return;
+                BeginLine(i, lines[i]);
+                if (i < lines.Length - 1)
+                {
+                    await WaitForSeconds(LINE_DROP_DELAY, token);
+                }
+            }
+        }
+
+        private void BeginLine(int index, ChatLine line)
+        {
+            OnChatLineStarted.Invoke(line);
+            OnEmotionChanged.Invoke(line.emotion);
         }
 
         private void FinishReply(int token)
@@ -349,7 +381,6 @@ namespace Neocortex
             if (token != playbackToken) return;
 
             state = ReplyState.Idle;
-            BeatLog("Reply finished.");
             OnReplyFinished.Invoke();
             DispatchNext();
         }
@@ -358,10 +389,27 @@ namespace Neocortex
         {
             if (pendingInputs.Count == 0) return;
 
-            BeatLog($"Dispatching queued input ({pendingInputs.Count - 1} still waiting).");
             Action next = pendingInputs.Dequeue();
             state = ReplyState.WaitingForReply;
             next();
+        }
+
+        // Returns true only when the usage API positively reports an empty balance; unknown/failed
+        // lookups return false so a transient usage hiccup never blocks a paid feature.
+        private async Task<bool> IsOutOfCredits(int token)
+        {
+            usageGate ??= new NeocortexUsageGate();
+            ApiUsageResponse usage = await usageGate.GetUsageCached(characterId: characterID);
+            if (this == null || token != playbackToken) return false;
+            return usage != null && usage.status == UsageStatus.Empty;
+        }
+
+        private async Task WaitForAudio(int token)
+        {
+            while (this != null && token == playbackToken && audioSource != null && audioSource.isPlaying)
+            {
+                await Task.Yield();
+            }
         }
 
         private async Task WaitForSeconds(float seconds, int token)
@@ -373,19 +421,7 @@ namespace Neocortex
             }
         }
 
-        // ── Temporary beats diagnostics. To remove: delete BeatLog + Preview and their call sites
-        //    (grep "[Neocortex][Beats]"). ─────────────────────────────────────────────────────────
-        private static void BeatLog(string message)
-        {
-            Debug.Log($"[Neocortex][Beats] {message}");
-        }
-
-        private static string Preview(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return "";
-            return text.Length <= 40 ? text : text.Substring(0, 40) + "…";
-        }
-        // ── End temporary beats diagnostics. ───────────────────────────────────────────────────
+        private static string JoinText(ChatLine[] lines) => string.Concat(lines.Select(l => l.text));
 
         [Obsolete("This method is replaced by NeocortexSessionManager.GetSessionID")]
         public string GetSessionID()

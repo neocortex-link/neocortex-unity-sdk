@@ -12,6 +12,7 @@ namespace Neocortex.API
         public string flowState;
         public Emotions emotion;
         public Interactable[] metadata;
-        public Beat[] beats;
+        // Ordered per-emotion chat lines; the server always returns them. Exposed as ChatResponse.lines.
+        public ChatLine[] lines;
     }
 }

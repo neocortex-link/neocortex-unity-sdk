@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- Chat lines: `NeocortexSmartAgent.ChatLinesMode` (Off / Text / SingleAudio / PerLineAudio) delivers replies as ordered per-emotion messages that drop in one after another, with `OnChatLineStarted` / `OnEmotionChanged` / `OnReplyFinished` events. Audio modes are credit-aware and queue input during playback.
 - Account & Usage endpoint implementation
 - NeocortexUsageGate helper with credit/limit events and `CanUseSmartNPC` for gating smart NPC features
 - Account Status editor window under Tools > Neocortex
+- Samples reorganized into one "Neocortex Samples" set with all scenes at the top level, sample/helper scripts split, and shared visuals, plus new Chat Lines and Usage Gating sample scenes
+- Samples now deliver replies as chat lines instead of one joint message (text samples use Text mode; audio samples use Single Audio at the same 1-credit cost)
+- `NeocortexSmartAgent.AudioSource` property so a script can hand the agent its playback source at runtime
+- `NeocortexChatPanel.messageItemPrefab` is now inspector-assignable (falls back to the built-in bubble), and `NeocortexMessage` exposes user/agent bubble and text colors
 
 ## [0.4.9] 29 March 2026
 - Json library reference bug fix

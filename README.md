@@ -277,5 +277,29 @@ The SDK exposes two read-only endpoints for gating smart NPC features. Calling t
     ```
   - See `UsageGatingSample` in the samples for a full chat example.
 
+### Chat Lines
+A reply can arrive as ordered **chat lines** — short chunks that drop in one after another as separate messages, each with its own emotion (their text concatenated equals the full reply). It's all on the `NeocortexSmartAgent` you already use: set one **Chat Lines Mode** dropdown. The message drop is the same in every mode; the mode only decides the audio.
+
+| Chat Lines Mode | What the player gets | Cost |
+|---|---|---|
+| `Off` *(default)* | One normal reply, unchanged | — |
+| `Text` | Chat lines drop in as messages, emotion per line | No extra cost |
+| `SingleAudio` | Same, plus one voice clip for the whole reply | 1 audio credit |
+| `PerLineAudio` | Same, but each line is voiced separately, in order | ⚠️ ~1 audio credit **per line** |
+
+```csharp
+agent.ChatLinesMode = ChatLinesMode.Text; // or SingleAudio / PerLineAudio
+
+agent.OnChatLineStarted.AddListener(line => chatPanel.AddMessage(line.text, false));
+agent.OnEmotionChanged.AddListener(emotion => animator.SetTrigger(emotion.ToString()));
+agent.OnReplyFinished.AddListener(() => Debug.Log("Character finished speaking"));
+
+// Send as usual — nothing else changes. Input sent while the character is still speaking is
+// queued and submitted once the reply finishes (no barge-in).
+agent.TextToText("Hello!");
+```
+
+The audio modes need an `AudioSource` assigned on the agent. `PerLineAudio` plays line 1 as soon as its clip is ready while later lines keep synthesizing, and it's credit-aware: when the balance is low it quietly falls back to a single clip, and when empty to text only — so it degrades instead of failing. A reply with no chat lines (older server) plays as one line, exactly like a normal reply. See `ChatLinesSample` in the samples.
+
 ## Sample Projects
 You can find sample projects that demonstrate how to use the Neocortex Unity SDK in the Package Manager window under the `Samples` section of the Neocortex package.
