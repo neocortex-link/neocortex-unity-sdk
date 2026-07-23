@@ -105,9 +105,9 @@ MonoBehaviour:
   leftPadding: {fileID: 5842468030923621911}
   rightPadding: {fileID: 4294151605936339854}
   userMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  agentMessageColor: {r: 0.26415092, g: 0.2593041, b: 0, a: 1}
+  agentMessageColor: {r: 0.95294124, g: 0.54509807, b: 0.003921569, a: 1}
   userTextColor: {r: 1, g: 1, b: 1, a: 1}
-  agentTextColor: {r: 0.98823535, g: 0.87843144, b: 0.27450982, a: 1}
+  agentTextColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1 &4294151605936339854
 GameObject:
   m_ObjectHideFlags: 0
@@ -301,7 +301,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.29411766, g: 0.29411766, b: 0.29411766, a: 1}
+  m_EffectColor: {r: 0.1254902, g: 0.1254902, b: 0.1254902, a: 1}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &5842468030923621911

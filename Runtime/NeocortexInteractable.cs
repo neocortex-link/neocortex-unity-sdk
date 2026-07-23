@@ -13,9 +13,7 @@ namespace Neocortex
         
         [Tooltip("Properties of the interactable object")]
         public InteractableProperty[] Properties;
-        
-        public bool IsSubject { get; private set; }
-        
+
         public Interactable ToInteractable()
         {
             return new Interactable
@@ -23,7 +21,8 @@ namespace Neocortex
                 type = Type.ToString(),
                 name = Name,
                 position = transform.position,
-                isSubject = IsSubject,
+                // Wire contract requires the field; subject-marking was never implemented.
+                isSubject = false,
                 properties = Properties
             };
         }

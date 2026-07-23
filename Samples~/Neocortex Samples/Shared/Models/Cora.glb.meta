@@ -25,9 +25,4 @@ ScriptedImporter:
     lightIntensityFactor: 1
     sceneObjectCreation: 2
   assetDependencies: []
-  reportItems:
-  - type: 0
-    code: 37
-    messages:
-    - Draco for Unity
-    - KHR_draco_mesh_compression
+  reportItems: []

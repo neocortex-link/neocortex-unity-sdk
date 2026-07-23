@@ -27,10 +27,16 @@ namespace Neocortex.Editor
             
             AudioReceiver audioReceiver = (AudioReceiver)target;
             
-            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexAudioReceiver)
+            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexNativeAudioReceiver)
             {
-                selectedMicrophoneIndex = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
-                PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, selectedMicrophoneIndex);
+                // Only write on an actual pick — writing every repaint fights live mic switching.
+                selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
+                int picked = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
+                if (picked != selectedMicrophoneIndex)
+                {
+                    selectedMicrophoneIndex = picked;
+                    PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, picked);
+                }
             }
             else
             {

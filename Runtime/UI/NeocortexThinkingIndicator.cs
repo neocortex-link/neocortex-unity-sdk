@@ -5,7 +5,7 @@ namespace Neocortex
 {
     [SelectionBase]
     [RequireComponent(typeof(Animator))]
-    [AddComponentMenu("Neocortex/Thinking Indicator", 0)]
+    [AddComponentMenu("Neocortex/Neocortex Thinking Indicator", 0)]
     public sealed class NeocortexThinkingIndicator : UIBehaviour
     {
         private readonly static int IS_VISIBLE = Animator.StringToHash("IsVisible");

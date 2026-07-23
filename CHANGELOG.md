@@ -4,7 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] 23 July 2026
+### Added
+- **API v3**: the SDK now targets the unified v3 base URL. Chat requests send `characterIds`; responses carry per-speaker `lines` + stacked `actions` (`ChatResponse` gains `actions`, `characterId`, `name`).
+- **`NeocortexGroupDirector`**: multi-character scenes. Assign several `NeocortexSmartAgent`s (each on its own character's GameObject); the director sends one group turn (`Send` / `SendTo` / `Continue`), routes each reply to the matching agent, and plays speakers in order. Events: `OnSpeaker`, `OnGroupResponseReceived`, `OnTurnStarted/Finished`, `OnHistoryReceived`.
+- **`NeocortexAudioReceiver`**: one microphone component (the facade) for every platform. Spawns the right capture backend internally (standalone/mobile vs WebGL), handles Android/iOS permission (`OnPermissionGranted/Denied`), and owns mic selection (`Microphones`, `SelectMicrophone`). Anything that accepts an `AudioReceiver` accepts it.
+- **`NeocortexChatUI`**: the standard input→agent→panel conversation loop as one component — transcriptions, chat-line bubbles, thinking indicator, mic handoff, history painting and error surfacing, with auto-resolved optional references. Zero glue code for the common case.
+- **One-click scaffolding**: Hierarchy → `Neocortex` > `Complete Text Chat` / `Complete Voice Chat` places AND wires the whole rig.
+- **Character picker**: the Smart Agent inspector lists your characters in a dropdown (fetched via the new `/characters` endpoint); the settings window lists them with copy-id buttons. The plain string field remains as fallback.
+- **Settings window**: opens automatically on first install, validates the API key, and (on WebGL) checks + one-click-fixes the template selection. Settings asset now exists independently of the window (`NeocortexSettingsProvider`).
+- **Chat history enriched**: `ChatHistoryEntry` (renamed from `Message`) carries `speakerCharacterId`, server-resolved `name`, `addressedTo`, `emotion`, `actions`; `RequestChatHistory(limit, before)` pages backward via `nextCursor`; `NeocortexSmartAgent.loadHistoryOnStart` toggle; `NeocortexGroupDirector.GetHistory()` loads the shared group transcript, name-labeled.
+- Audio chat-lines modes now raise `OnAudioResponseReceived` with each generated clip (notification — the agent still owns playback).
+
+### Changed / Removed (breaking, pre-1.0)
+- `Message` → `ChatHistoryEntry` (chat history model).
+- `NeocortexSmartAgent.GetSessionID()` / `CleanSessionID()` obsolete shims removed — use `NeocortexSessionManager`.
+- The platform capture backends (`NeocortexNativeAudioReceiver` / `NeocortexWebAudioReceiver`) are internal now (hidden from Add Component) — `NeocortexAudioReceiver` is the one public microphone component. Their shared config (`usePushToTalk`, `amplitudeThreshold`, `maxWaitTime`) moved to the `AudioReceiver` base (scene values migrate automatically).
+- `MicrophonePermission` is superseded by `NeocortexAudioReceiver`'s built-in permission handling (component still ships for existing scenes).
+- `NeocortexInteractable.IsSubject` removed (was never settable and always false).
+- v3 group message shape: no more joint `message` / single `action` fields — use `lines` + `actions`.
+
+### Earlier unreleased work, now shipping in 0.5.0
 - Chat lines: `NeocortexSmartAgent.ChatLinesMode` (Off / Text / SingleAudio / PerLineAudio) delivers replies as ordered per-emotion messages that drop in one after another, with `OnChatLineStarted` / `OnEmotionChanged` / `OnReplyFinished` events. Audio modes are credit-aware and queue input during playback.
 - Account & Usage endpoint implementation
 - NeocortexUsageGate helper with credit/limit events and `CanUseSmartNPC` for gating smart NPC features

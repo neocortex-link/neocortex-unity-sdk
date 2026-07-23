@@ -39,6 +39,16 @@ namespace Neocortex
 
         public string characterID;
 
+        /// <summary>
+        ///     The character (project) id this agent talks to. A <see cref="NeocortexGroupDirector"/>
+        ///     reads it to build the cast for a group turn.
+        /// </summary>
+        public string CharacterID
+        {
+            get => characterID;
+            set => characterID = value;
+        }
+
         [Tooltip("Off: one normal reply.\n" +
                  "Text: chat lines drop in as messages with emotion — no extra cost.\n" +
                  "Single Audio: same, plus ONE voice clip for the whole reply (1 credit).\n" +
@@ -48,19 +58,22 @@ namespace Neocortex
         [Tooltip("Required for Single Audio and Per-Line Audio modes; line clips play here.")]
         [SerializeField] private AudioSource audioSource;
 
-        [Space] public UnityEvent<ChatResponse> OnChatResponseReceived;
-        [Space] public UnityEvent<AudioClip> OnAudioResponseReceived;
-        [Space] public UnityEvent<string> OnTranscriptionReceived;
-        [Space] public UnityEvent<string> OnRequestFailed;
-        [Space] public UnityEvent<Message[]> OnChatHistoryReceived;
+        [Tooltip("Fetch and replay this character's stored conversation via OnChatHistoryReceived when the scene starts.")]
+        [SerializeField] private bool loadHistoryOnStart;
+
+        [Space] public UnityEvent<ChatResponse> OnChatResponseReceived = new();
+        [Space] public UnityEvent<AudioClip> OnAudioResponseReceived = new();
+        [Space] public UnityEvent<string> OnTranscriptionReceived = new();
+        [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Space] public UnityEvent<ChatHistoryEntry[]> OnChatHistoryReceived = new();
 
         [Header("Chat Lines")]
         [Tooltip("Raised as each chat line drops in — add it to your chat panel here.")]
-        [Space] public UnityEvent<ChatLine> OnChatLineStarted;
+        [Space] public UnityEvent<ChatLine> OnChatLineStarted = new();
         [Tooltip("Raised with each line's emotion as it drops in. Drive animation here.")]
-        [Space] public UnityEvent<Emotions> OnEmotionChanged;
+        [Space] public UnityEvent<Emotions> OnEmotionChanged = new();
         [Tooltip("Raised once the whole reply has finished playing.")]
-        [Space] public UnityEvent OnReplyFinished;
+        [Space] public UnityEvent OnReplyFinished = new();
 
         private enum ReplyState { Idle, WaitingForReply, Playing }
 
@@ -95,12 +108,29 @@ namespace Neocortex
 
         private void Awake()
         {
+            // Serialized-first, with a friendly fallback: an AudioSource on the same GameObject
+            // counts as assigned.
+            if (audioSource == null)
+            {
+                audioSource = GetComponent<AudioSource>();
+            }
+
             apiRequest = new ApiRequest();
             apiRequest.OnChatResponseReceived += HandleChatResponse;
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += OnTranscriptionReceived.Invoke;
             apiRequest.OnChatHistoryReceived += OnChatHistoryReceived.Invoke;
             apiRequest.OnRequestFailed += HandleRequestFailed;
+        }
+
+        private void Start()
+        {
+            // Only when a session actually exists — a fresh install has nothing to load and an
+            // empty session id would be rejected by the server.
+            if (loadHistoryOnStart && NeocortexSessionManager.GetSessionID(characterID) != "")
+            {
+                GetChatHistory();
+            }
         }
 
         private void OnDestroy()
@@ -150,6 +180,16 @@ namespace Neocortex
         }
 
         /// <summary>
+        ///     Fetches this character's history with pagination. Pass the previous result's
+        ///     <see cref="ApiChatHistory.nextCursor"/> as <paramref name="before"/> to load older
+        ///     messages (scroll-up). Returns the page + its cursor; does not raise the event.
+        /// </summary>
+        public Task<ApiChatHistory> RequestChatHistory(int limit = 10, string before = null)
+        {
+            return apiRequest.RequestChatHistory(NeocortexSessionManager.GetSessionID(characterID), limit, before);
+        }
+
+        /// <summary>
         ///     Generates one audio clip for a chat line, voiced in its emotion.
         ///     IMPORTANT: each call costs 1 audio credit.
         /// </summary>
@@ -194,19 +234,53 @@ namespace Neocortex
 
             state = ReplyState.Playing;
             int token = ++playbackToken;
+            _ = PlayReply(lines, token);
+        }
 
+        // Plays a reply's lines according to the current ChatLinesMode. Returns a Task so the group
+        // director can await one character's whole turn before the next speaks; the single-character
+        // path fires it and forgets it (behaviour unchanged from the old async-void switch).
+        private async Task PlayReply(ChatLine[] lines, int token)
+        {
             switch (chatLinesMode)
             {
                 case ChatLinesMode.PerLineAudio:
-                    PlayPerLineAudio(lines, token);
+                    await PlayPerLineAudio(lines, token);
                     break;
                 case ChatLinesMode.SingleAudio:
-                    PlaySingleAudio(lines, token);
+                    await PlaySingleAudio(lines, token);
                     break;
                 default: // Text
-                    PlayTextOnly(lines, token);
+                    await PlayTextOnly(lines, token);
                     break;
             }
+        }
+
+        /// <summary>
+        ///     Plays a reply produced elsewhere — a <see cref="NeocortexGroupDirector"/> turn — through
+        ///     this agent, so the character speaks with its own chat-line playback, emotion events and
+        ///     audio source (the personality stays "attached" to this GameObject). Awaitable, so the
+        ///     director can let one character finish speaking before the next begins. Sends no request
+        ///     of its own. Honors <see cref="ChatLinesMode"/> exactly like a self-driven reply.
+        /// </summary>
+        public async Task Speak(GroupMessage message)
+        {
+            ChatResponse response = ApiRequest.ToChatResponse(message, null);
+            OnChatResponseReceived.Invoke(response);
+
+            if (chatLinesMode == ChatLinesMode.Off)
+            {
+                // Off mode has no line-by-line playback; the whole reply is delivered via the event.
+                return;
+            }
+
+            ChatLine[] lines = response.lines != null && response.lines.Length > 0
+                ? response.lines
+                : new[] { new ChatLine { text = response.message, emotion = response.emotion } };
+
+            state = ReplyState.Playing;
+            int token = ++playbackToken;
+            await PlayReply(lines, token);
         }
 
         private void HandleRequestFailed(string error)
@@ -225,14 +299,14 @@ namespace Neocortex
 
         // ── Playback ────────────────────────────────────────────────────────────────────────────
 
-        private async void PlayTextOnly(ChatLine[] lines, int token)
+        private async Task PlayTextOnly(ChatLine[] lines, int token)
         {
             await DropLines(lines, token);
             if (this == null || token != playbackToken) return;
             FinishReply(token);
         }
 
-        private async void PlaySingleAudio(ChatLine[] lines, int token)
+        private async Task PlaySingleAudio(ChatLine[] lines, int token)
         {
             if (audioSource == null)
             {
@@ -258,7 +332,7 @@ namespace Neocortex
             FinishReply(token);
         }
 
-        private async void PlayPerLineAudio(ChatLine[] lines, int token)
+        private async Task PlayPerLineAudio(ChatLine[] lines, int token)
         {
             if (audioSource == null)
             {
@@ -326,6 +400,10 @@ namespace Neocortex
 
                 if (clip != null)
                 {
+                    // Surface the clip like Off-mode audio does, so a unified audio handler / lip-sync
+                    // can observe it. The agent still owns playback here (it drives the line cadence),
+                    // so listeners should treat this as a notification, not a cue to play it again.
+                    OnAudioResponseReceived.Invoke(clip);
                     audioSource.clip = clip;
                     audioSource.Play();
                     await WaitForAudio(token);
@@ -346,6 +424,8 @@ namespace Neocortex
 
             if (clip != null)
             {
+                // Surface the clip like Off-mode audio does (notification only — the agent plays it).
+                OnAudioResponseReceived.Invoke(clip);
                 audioSource.clip = clip;
                 audioSource.Play();
             }
@@ -422,17 +502,5 @@ namespace Neocortex
         }
 
         private static string JoinText(ChatLine[] lines) => string.Concat(lines.Select(l => l.text));
-
-        [Obsolete("This method is replaced by NeocortexSessionManager.GetSessionID")]
-        public string GetSessionID()
-        {
-            return NeocortexSessionManager.GetSessionID(characterID);
-        }
-
-        [Obsolete("This method is replaced by NeocortexSessionManager.CleanSessionID")]
-        public void CleanSessionID()
-        {
-            NeocortexSessionManager.CleanSessionID(characterID);
-        }
     }
 }

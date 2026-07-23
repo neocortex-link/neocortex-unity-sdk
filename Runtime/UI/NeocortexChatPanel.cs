@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Neocortex
 {
     [SelectionBase]
-    [AddComponentMenu("Neocortex/Chat Panel", 0)]
+    [AddComponentMenu("Neocortex/Neocortex Chat Panel", 0)]
     public class NeocortexChatPanel : ScrollRect
     {
         [SerializeField] private NeocortexMessage writingIndicator;

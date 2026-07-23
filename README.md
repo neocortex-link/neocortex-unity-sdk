@@ -6,7 +6,7 @@ You can find more about the Unity SDK integration here in our documentatons: htt
 
 ## Requirements
 - Neocortex account [Sign Up Here](https://neocortex.link/register)
-- Unity 2021.3 or above [Download Here](https://unity3d.com/get-unity/download)
+- Unity 6 (6000.0) or above [Download Here](https://unity3d.com/get-unity/download)
 - Git version control system [Download Here](https://git-scm.com/download)
 
 ## Installation
@@ -16,25 +16,21 @@ You can find more about the Unity SDK integration here in our documentatons: htt
 - Paste the following URL: `https://github.com/neocortex-link/neocortex-unity-sdk.git`
 - Click on the `Add` button
 
-## Setup
-### Save API Key
-To start using the Neocortex SDK, you need to initialize it with your Neocortex API key. You can create a new API key from the Neocortex web platform by going to the [API Keys](https://neocortex.link/dashboard/api-keys) page.
-- Create a new API key and copy it
-- Open your Unity project
-- Go to `Tools` > `Neocortex Settings`
-- Paste the API key in the `API Key` field and click on the `Save` button
+## Quick Start (two clicks to a talking character)
+1. **Paste your API key.** The Neocortex Settings window opens by itself on first install (or via `Tools` > `Neocortex` > `Settings`). Create a key on the [API Keys](https://neocortex.link/dashboard/api-keys) page, paste it, hit `Save` — the window shows your account status and lists your characters.
+2. **Scaffold the scene.** Right-click in the Hierarchy → `Neocortex` > `Complete Voice Chat` (or `Complete Text Chat`). This places the chat UI, creates a fully wired `Neocortex Character` object (Smart Agent + audio + microphone + UI glue) — nothing to drag.
+3. **Pick your character.** On the `Neocortex Character` object, choose your character from the dropdown (fetched from your account — no id copying needed).
+4. **Press Play** and talk.
 
-<p align="center">
-  <img width="382" alt="neocortex_unity_settings" src="https://github.com/user-attachments/assets/517f906a-889a-48ee-a39b-a19daaff5648">
-</p>
+Characters are built in the [Neocortex web platform](https://neocortex.link/dashboard/characters) with the node editor.
 
-
-### Create a new Neocortex project
-- Go to the [Neocortex web platform](https://neocortex.link/dashboard/projects) and create a new project
-- Copy the project ID from the project details page
-- Open your Unity project and go to your scene
-- Create an empty GameObject and add the `Neocortex Smart Agent` component to it
-- Paste the project ID in the `Project ID` field
+## The high-level components
+| Component | What it does |
+|---|---|
+| `NeocortexSmartAgent` | The character: send text/audio, receive chat lines, emotions, actions. One per character, lives on its GameObject. |
+| `NeocortexAudioReceiver` | THE microphone: works on desktop, mobile and WebGL, handles permission and mic selection internally. |
+| `NeocortexChatUI` | The glue: binds an agent to the chat panel, inputs and thinking indicator — the standard conversation loop with zero code. |
+| `NeocortexGroupDirector` | Multi-character scenes: assign several Smart Agents, the director orchestrates who speaks; each character speaks through its own agent. |
 
 ## API Reference
 After setting up the Neocortex SDK in your Unity project, you can start using the APIs to interact with the Neocortex project.
