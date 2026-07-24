@@ -397,7 +397,7 @@ MonoBehaviour:
   m_ScaleFactor: 1
   m_ReferenceResolution: {x: 1920, y: 1080}
   m_ScreenMatchMode: 0
-  m_MatchWidthOrHeight: 0.5
+  m_MatchWidthOrHeight: 0.25
   m_PhysicalUnit: 3
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
@@ -5108,7 +5108,7 @@ PrefabInstance:
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Avatar
       value: 
-      objectReference: {fileID: 9000000, guid: b68a7e6e1b5eda741b4b0dfd1d137da1, type: 3}
+      objectReference: {fileID: 9000000, guid: bee80de4f38077049911ce84802b2541, type: 2}
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Controller
       value: 

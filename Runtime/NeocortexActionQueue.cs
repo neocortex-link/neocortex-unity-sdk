@@ -25,10 +25,10 @@ namespace Neocortex
         {
             /// <summary>Run as soon as the reply arrives — the character may act before it starts speaking.</summary>
             WhenResponseReceived,
-            /// <summary>Run once the character has finished speaking the reply (text + audio).</summary>
-            AfterReplySpoken,
             /// <summary>Run the moment the character starts speaking — action and voice line begin together.</summary>
             WhenSpeechStarts,
+            /// <summary>Run once the character has finished speaking the reply (text + audio).</summary>
+            AfterReplySpoken,
         }
 
         [Tooltip("The agent whose replies feed this queue. Falls back to a NeocortexSmartAgent on this GameObject when empty.")]

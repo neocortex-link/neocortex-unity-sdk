@@ -68,6 +68,7 @@ namespace Neocortex
             agent.OnTranscriptionReceived.AddListener(HandleTranscription);
             agent.OnChatLineStarted.AddListener(HandleChatLine);
             agent.OnChatResponseReceived.AddListener(HandleChatResponse);
+            agent.OnComposingNextLine.AddListener(HandleComposingNextLine);
             agent.OnReplyFinished.AddListener(HandleReplyFinished);
             agent.OnChatHistoryReceived.AddListener(HandleHistory);
             agent.OnRequestFailed.AddListener(HandleRequestFailed);
@@ -104,6 +105,13 @@ namespace Neocortex
         {
             ShowThinking(false);
             AddMessage(line.text, false);
+        }
+
+        // Text mode: the character is "typing" the next line during the pacing gap — show the
+        // indicator so the pause reads as composing, not dead air. The next line hides it again.
+        private void HandleComposingNextLine()
+        {
+            ShowThinking(true);
         }
 
         private void HandleChatResponse(ChatResponse response)

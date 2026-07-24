@@ -32,8 +32,6 @@ namespace Neocortex
     {
         // How many line clips are generated at once in Per-Line Audio mode.
         private const int MAX_CONCURRENT_AUDIO = 2;
-        // Delay between chat-line message drops (the "one after another" cadence).
-        private const float LINE_DROP_DELAY = 0.5f;
 
         private ApiRequest apiRequest;
 
@@ -61,13 +59,6 @@ namespace Neocortex
         [Tooltip("Fetch and replay this character's stored conversation via OnChatHistoryReceived when the scene starts.")]
         [SerializeField] private bool loadHistoryOnStart;
 
-        [Header("Perception")]
-        [Tooltip("Only perceive interactables within this many metres. 0 = the whole scene.")]
-        [SerializeField] private float perceptionRadius;
-
-        [Tooltip("Most entities a single message may carry; the nearest win. Keeps busy scenes cheap.")]
-        [SerializeField] private int maxPerceivedEntities = 24;
-
         [Space] public UnityEvent<ChatResponse> OnChatResponseReceived = new();
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived = new();
         [Space] public UnityEvent<string> OnTranscriptionReceived = new();
@@ -79,6 +70,8 @@ namespace Neocortex
         [Space] public UnityEvent<ChatLine> OnChatLineStarted = new();
         [Tooltip("Raised with each line's emotion as it drops in. Drive animation here.")]
         [Space] public UnityEvent<Emotions> OnEmotionChanged = new();
+        [Tooltip("Text mode: raised during the pause BEFORE the next line, so a 'typing…' indicator can fill the gap. Not raised while a voice clip is playing.")]
+        [Space] public UnityEvent OnComposingNextLine = new();
         [Tooltip("Raised once the whole reply has finished playing.")]
         [Space] public UnityEvent OnReplyFinished = new();
 
@@ -125,8 +118,8 @@ namespace Neocortex
             apiRequest = new ApiRequest();
             // The character perceives the world from where it stands.
             apiRequest.PerceptionOrigin = transform;
-            apiRequest.PerceptionRadius = perceptionRadius;
-            apiRequest.MaxPerceivedEntities = maxPerceivedEntities;
+            apiRequest.PerceptionRadius = 0;
+            apiRequest.MaxPerceivedEntities = 10;
             apiRequest.OnChatResponseReceived += HandleChatResponse;
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += OnTranscriptionReceived.Invoke;
@@ -292,6 +285,10 @@ namespace Neocortex
             state = ReplyState.Playing;
             int token = ++playbackToken;
             await PlayReply(lines, token);
+
+            await WaitForSeconds(1f, playbackToken);
+            
+            
         }
 
         private void HandleRequestFailed(string error)
@@ -441,14 +438,17 @@ namespace Neocortex
                 audioSource.Play();
             }
 
-            await DropLines(lines, token);
+            // The clip covers the gap here — no "typing…" cue while the character is speaking aloud.
+            await DropLines(lines, token, signalComposing: false);
             if (this == null || token != playbackToken) return;
 
             await WaitForAudio(token);
         }
 
-        // Drops each chat line in as a message with a fixed delay between them.
-        private async Task DropLines(ChatLine[] lines, int token)
+        // Drops each chat line in as a message, waiting a reading-time estimate between them so the
+        // reply arrives at a natural pace instead of dumping in all at once. When there is no audio
+        // covering the gap (text mode), signal OnComposingNextLine so the UI can show a "typing…" cue.
+        private async Task DropLines(ChatLine[] lines, int token, bool signalComposing = true)
         {
             for (int i = 0; i < lines.Length; i++)
             {
@@ -456,9 +456,18 @@ namespace Neocortex
                 BeginLine(i, lines[i]);
                 if (i < lines.Length - 1)
                 {
-                    await WaitForSeconds(LINE_DROP_DELAY, token);
+                    if (signalComposing) OnComposingNextLine.Invoke();
+                    await WaitForSeconds(LineDelay(lines[i].text), token);
                 }
             }
+        }
+
+        // Estimated pause after a chat line, from its length: a longer message earns a longer pause,
+        // clamped so it never stalls or flickers. Audio modes pace by clip length; this shapes text.
+        private float LineDelay(string text)
+        {
+            float estimate = (string.IsNullOrEmpty(text) ? 0 : text.Length) / Mathf.Max(1f, 15);
+            return Mathf.Clamp(estimate, 0.5f, 3f);
         }
 
         private void BeginLine(int index, ChatLine line)

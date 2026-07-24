@@ -46,6 +46,8 @@ namespace Neocortex
         [Space] public UnityEvent<string> OnRequestFailed = new();
         [Tooltip("Raised with the shared session's transcript when GetHistory() returns — each entry is name-labeled.")]
         [Space] public UnityEvent<ChatHistoryEntry[]> OnHistoryReceived = new();
+        [Tooltip("Raised with the transcript of the player's SPOKEN input (SendAudio) so the UI can show it.")]
+        [Space] public UnityEvent<string> OnPlayerSpeech = new();
 
         private ApiRequest apiRequest;
         private bool isBusy;
@@ -95,6 +97,36 @@ namespace Neocortex
 
         /// <summary>No player input — let the cast talk among themselves (ambient turn).</summary>
         public void Continue() => _ = RunTurn(null, null);
+
+        /// <summary>
+        ///     Voice turn: transcribes the player's speech, then sends it to the group just like
+        ///     <see cref="Send"/>. Raises <see cref="OnPlayerSpeech"/> with the transcript so a UI can
+        ///     show what the player said. Uses any cast member's id for the transcription request.
+        /// </summary>
+        public async void SendAudio(AudioClip clip)
+        {
+            if (clip == null) return;
+
+            if (isBusy)
+            {
+                Debug.LogWarning("[Neocortex] A group turn is already in progress; ignoring input until it finishes.", this);
+                return;
+            }
+
+            string anyId = agents.FirstOrDefault(a => a != null && !string.IsNullOrEmpty(a.CharacterID))?.CharacterID;
+            if (string.IsNullOrEmpty(anyId))
+            {
+                Debug.LogWarning("[Neocortex] Group director has no agents with a Character ID assigned.", this);
+                return;
+            }
+
+            string text = await apiRequest.RequestTranscription(anyId, clip);
+            if (this == null) return;
+            if (string.IsNullOrEmpty(text)) return; // failed / empty; OnRequestFailed already raised on error
+
+            OnPlayerSpeech.Invoke(text);
+            _ = RunTurn(text, null);
+        }
 
         /// <summary>
         ///     Loads the shared scene session's transcript (every speaker, oldest first) and raises

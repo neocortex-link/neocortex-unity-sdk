@@ -3522,6 +3522,10 @@ PrefabInstance:
       value: cmrngerup001d7k1kjxvtn6lu
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: chatLinesMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart
       value: 1
       objectReference: {fileID: 0}
@@ -3532,7 +3536,7 @@ PrefabInstance:
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Avatar
       value: 
-      objectReference: {fileID: 9000000, guid: b68a7e6e1b5eda741b4b0dfd1d137da1, type: 3}
+      objectReference: {fileID: 9000000, guid: bee80de4f38077049911ce84802b2541, type: 2}
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Controller
       value: 

@@ -653,17 +653,19 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: '<b>This scene demonstrates basic audio chat function of Neocortex.</b>
+  m_Text: '<b>This scene demonstrates basic and multiple actions calling function
+    of Neocortex.</b>
 
 
-    <b><color=#F59E0B>01</color></b>
-    Pick the microphone you want to use from the dropdown.
+    <b><color=#F59E0B>01</color></b> There are 2 actions
+    available with this character, Dance and Jump.
 
     <b><color=#F59E0B>02</color></b>
-    Start the scene and speak to Cora.
+    Tell Cora to <b>dance</b> and observe the action call the animation in the sample.
 
-    <b><color=#F59E0B>03</color></b> Switch
-    Push-to-Talk toggle on right bottom to use it, instead of auto voice detection.'
+    <b><color=#F59E0B>03</color></b>
+    Then tell Cora to <b>jump</b> and then <b>dance</b> and you will observe how
+    stacked actions work.'
 --- !u!222 &529300813
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2479,6 +2481,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
   agent: {fileID: 1488510517}
+  trigger: 0
 --- !u!1 &1497303688
 GameObject:
   m_ObjectHideFlags: 0
@@ -3689,7 +3692,7 @@ PrefabInstance:
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Avatar
       value: 
-      objectReference: {fileID: 9000000, guid: b68a7e6e1b5eda741b4b0dfd1d137da1, type: 3}
+      objectReference: {fileID: 9000000, guid: bee80de4f38077049911ce84802b2541, type: 2}
     - target: {fileID: 8180502719808724172, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Controller
       value: 

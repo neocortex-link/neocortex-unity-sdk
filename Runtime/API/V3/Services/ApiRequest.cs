@@ -59,23 +59,7 @@ namespace Neocortex.API
                 // here transcription request
                 if (typeof(TInput) == typeof(AudioClip))
                 {
-                    List<IMultipartFormSection> form = new List<IMultipartFormSection>
-                    {
-                        new MultipartFormFileSection("audio", (input as AudioClip).EncodeToWav(), "audio.wav", "audio/wav"),
-                        new MultipartFormDataSection("characterId", characterId)
-                    };
-
-                    ApiPayload payload = new ApiPayload()
-                    {
-                        url = $"{BaseURL}/audio/transcribe",
-                        data = form,
-                        responseType = ApiResponseType.Text
-                    };
-
-                    UnityWebRequest request = await Send(payload);
-                    ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
-
-                    message = response.response;
+                    message = await RequestTranscription(characterId, input as AudioClip);
                     OnTranscriptionReceived?.Invoke(message);
                 }
                 else
@@ -112,10 +96,6 @@ namespace Neocortex.API
                     // lines, since v3 sends only lines + stacked actions).
                     GroupMessage speaker = response.messages != null && response.messages.Length > 0 ? response.messages[0] : null;
                     ChatResponse chatResponse = ToChatResponse(speaker, response.metadata);
-
-                    // What the character decided to act on this turn — the actions and the id each
-                    // one targets. This is how the game knows what to interact with.
-                    Debug.Log($"[Neocortex] Actions: {JsonConvert.SerializeObject(chatResponse.actions)}");
 
                     message = chatResponse.message;
                     emotion = chatResponse.emotion.ToString().ToUpper();
@@ -203,7 +183,6 @@ namespace Neocortex.API
             }
 
             string metadata = entities.Count > 0 ? JsonConvert.SerializeObject(entities) : "";
-            Debug.Log($"[Neocortex] Sending {entities.Count} entit{(entities.Count == 1 ? "y" : "ies")}: {(metadata.Length > 0 ? metadata : "(none)")}");
             return metadata;
         }
 
@@ -346,6 +325,48 @@ namespace Neocortex.API
                 OnRequestFailed?.Invoke(e.Message);
                 Debug.LogError(e.Message);
                 return null;
+            }
+        }
+
+        /// <summary>
+        ///     Transcribes speech to text via the audio endpoint, WITHOUT chatting (unlike
+        ///     <see cref="Send{TInput,TOutput}"/>). The character id is required for auth/metering —
+        ///     any character the key owns works. Returns "" and raises
+        ///     <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        public async Task<string> RequestTranscription(string characterId, AudioClip clip)
+        {
+            try
+            {
+                SetHeaders();
+
+                List<IMultipartFormSection> form = new List<IMultipartFormSection>
+                {
+                    new MultipartFormFileSection("audio", clip.EncodeToWav(), "audio.wav", "audio/wav"),
+                    new MultipartFormDataSection("characterId", characterId)
+                };
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BaseURL}/audio/transcribe",
+                    data = form,
+                    responseType = ApiResponseType.Text
+                };
+
+                UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
+                return response.response;
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return "";
             }
         }
 
