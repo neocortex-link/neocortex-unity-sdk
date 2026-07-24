@@ -91,7 +91,7 @@ namespace Neocortex.API
                         playerId = SystemInfo.deviceUniqueIdentifier,
                         characterIds = new[] { characterId },
                         message,
-                        metadata = CreateMetadata(),
+                        metadata = CreateMetadata(characterId),
                         events = NeocortexEventLogger.GetLogs()
                     };
 
@@ -112,6 +112,10 @@ namespace Neocortex.API
                     // lines, since v3 sends only lines + stacked actions).
                     GroupMessage speaker = response.messages != null && response.messages.Length > 0 ? response.messages[0] : null;
                     ChatResponse chatResponse = ToChatResponse(speaker, response.metadata);
+
+                    // What the character decided to act on this turn — the actions and the id each
+                    // one targets. This is how the game knows what to interact with.
+                    Debug.Log($"[Neocortex] Actions: {JsonConvert.SerializeObject(chatResponse.actions)}");
 
                     message = chatResponse.message;
                     emotion = chatResponse.emotion.ToString().ToUpper();
@@ -136,16 +140,70 @@ namespace Neocortex.API
             }
         }
 
-        private string CreateMetadata()
+        /// <summary>
+        ///     Where perception is measured from — the speaking character's transform. Nearest
+        ///     entities win when the scene has more than the character can take in. Null = no
+        ///     distance filtering (the whole scene, still capped).
+        /// </summary>
+        public Transform PerceptionOrigin { get; set; }
+
+        /// <summary>Only perceive entities within this many metres of the origin. 0 = unlimited.</summary>
+        public float PerceptionRadius { get; set; }
+
+        /// <summary>Hard ceiling on how many entities a single turn may carry.</summary>
+        public int MaxPerceivedEntities { get; set; } = 24;
+
+        /// <summary>
+        ///     Builds what the character can perceive: the character's OWN location always goes in
+        ///     (so it knows where it stands), plus every tagged entity in the scene, nearest first
+        ///     and bounded so a busy scene can't blow up the prompt. Positions go out as raw facts —
+        ///     the character works out distance, direction and relevance for itself.
+        /// </summary>
+        private string CreateMetadata(string selfCharacterId = null)
         {
+            var entities = new List<Interactable>();
+
             NeocortexInteractable[] interactables = Object.FindObjectsByType<NeocortexInteractable>(FindObjectsSortMode.None);
-            string metadata = "";
-            if (interactables.Length > 0)
+            IEnumerable<NeocortexInteractable> perceived = interactables;
+
+            if (PerceptionOrigin != null)
             {
-                var interactableList = interactables.Select(i => i.ToInteractable()).ToList();
-                metadata = JsonConvert.SerializeObject(interactableList);
+                Vector3 origin = PerceptionOrigin.position;
+
+                if (PerceptionRadius > 0)
+                {
+                    perceived = perceived.Where(i => Vector3.Distance(origin, i.transform.position) <= PerceptionRadius);
+                }
+
+                // Nearest first, so the cap keeps what matters most.
+                perceived = perceived.OrderBy(i => Vector3.SqrMagnitude(i.transform.position - origin));
             }
-            
+
+            entities.AddRange(perceived.Take(Mathf.Max(1, MaxPerceivedEntities)).Select(i => i.ToInteractable()));
+
+            // Always include the speaking character's own location so it knows where it is — unless
+            // a NeocortexInteractable already represents it (auto-linked on its GameObject).
+            if (!string.IsNullOrEmpty(selfCharacterId) && PerceptionOrigin != null &&
+                !entities.Exists(e => e.characterId == selfCharacterId))
+            {
+                entities.Insert(0, new Interactable
+                {
+                    id = selfCharacterId,
+                    characterId = selfCharacterId,
+                    name = PerceptionOrigin.name,
+                    position = PerceptionOrigin.position,
+                    properties = new[]
+                    {
+                        new InteractableProperty { name = "name", value = PerceptionOrigin.name },
+                        new InteractableProperty { name = "kind", value = "character" },
+                    },
+                    type = "CHARACTER",
+                    isSubject = false,
+                });
+            }
+
+            string metadata = entities.Count > 0 ? JsonConvert.SerializeObject(entities) : "";
+            Debug.Log($"[Neocortex] Sending {entities.Count} entit{(entities.Count == 1 ? "y" : "ies")}: {(metadata.Length > 0 ? metadata : "(none)")}");
             return metadata;
         }
 
@@ -158,7 +216,7 @@ namespace Neocortex.API
         public static ChatResponse ToChatResponse(GroupMessage message, Interactable[] sceneMetadata)
         {
             ChatLine[] lines = message?.lines ?? Array.Empty<ChatLine>();
-            string[] actions = message?.actions ?? Array.Empty<string>();
+            ChatAction[] actions = message?.actions ?? Array.Empty<ChatAction>();
 
             return new ChatResponse
             {
@@ -168,7 +226,7 @@ namespace Neocortex.API
                 actions = actions,
                 message = string.Concat(lines.Select(l => l.text)),
                 emotion = lines.Length > 0 ? lines[0].emotion : Emotions.Neutral,
-                action = actions.Length > 0 ? actions[0] : string.Empty,
+                action = actions.Length > 0 ? actions[0].name : string.Empty,
                 flowState = message?.flowState,
                 metadata = sceneMetadata
             };

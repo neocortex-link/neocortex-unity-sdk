@@ -61,6 +61,13 @@ namespace Neocortex
         [Tooltip("Fetch and replay this character's stored conversation via OnChatHistoryReceived when the scene starts.")]
         [SerializeField] private bool loadHistoryOnStart;
 
+        [Header("Perception")]
+        [Tooltip("Only perceive interactables within this many metres. 0 = the whole scene.")]
+        [SerializeField] private float perceptionRadius;
+
+        [Tooltip("Most entities a single message may carry; the nearest win. Keeps busy scenes cheap.")]
+        [SerializeField] private int maxPerceivedEntities = 24;
+
         [Space] public UnityEvent<ChatResponse> OnChatResponseReceived = new();
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived = new();
         [Space] public UnityEvent<string> OnTranscriptionReceived = new();
@@ -116,6 +123,10 @@ namespace Neocortex
             }
 
             apiRequest = new ApiRequest();
+            // The character perceives the world from where it stands.
+            apiRequest.PerceptionOrigin = transform;
+            apiRequest.PerceptionRadius = perceptionRadius;
+            apiRequest.MaxPerceivedEntities = maxPerceivedEntities;
             apiRequest.OnChatResponseReceived += HandleChatResponse;
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += OnTranscriptionReceived.Invoke;

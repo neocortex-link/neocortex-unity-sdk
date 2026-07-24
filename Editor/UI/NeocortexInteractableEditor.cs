@@ -1,44 +1,29 @@
-using System;
 using Neocortex;
 using UnityEditor;
-using Neocortex.Data;
 
 [CustomEditor(typeof(NeocortexInteractable))]
 public class NeocortexInteractableEditor : Editor
 {
-    private const int MAX_PROPERTIES = 5;
-
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
 
         var script = (NeocortexInteractable)target;
 
-        var typeProperty = serializedObject.FindProperty("Type");
-        EditorGUILayout.PropertyField(typeProperty);
+        EditorGUILayout.HelpBox(
+            "Characters nearby perceive this automatically — its properties and position go out with every message. " +
+            "Properties are name/value pairs: 'name' is seeded from the GameObject (edit, add more, or remove any), " +
+            "plus what it is and its state (type=door, color=red, locked=true). " +
+            "Put this on a character's own GameObject and it links to that character.",
+            MessageType.Info);
 
-        if ((InteractableType)typeProperty.enumValueIndex != InteractableType.CHARACTER)
-        {
-            var nameProperty = serializedObject.FindProperty("Name");
-            EditorGUILayout.PropertyField(nameProperty);
-        }
-        else
-        {
-            script.Name = nameof(InteractableType.CHARACTER);
-        }
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("properties"), true);
 
-        var propertiesProperty = serializedObject.FindProperty("Properties");
-        EditorGUILayout.PropertyField(propertiesProperty, true);
-
-        if (script.Properties is { Length: > MAX_PROPERTIES })
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("id"));
+        // Show the short hash a blank id resolves to — the reference characters actually use.
+        using (new EditorGUI.DisabledScope(true))
         {
-            Array.Resize(ref script.Properties, MAX_PROPERTIES);
-            EditorUtility.SetDirty(script);
-        }
-
-        if (script.Properties is { Length: MAX_PROPERTIES })
-        {
-            EditorGUILayout.HelpBox($"Maximum of {MAX_PROPERTIES} properties reached.", MessageType.Warning);
+            EditorGUILayout.TextField("Resolved Id", script.Id);
         }
 
         serializedObject.ApplyModifiedProperties();

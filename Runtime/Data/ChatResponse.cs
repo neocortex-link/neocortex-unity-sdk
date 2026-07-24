@@ -3,10 +3,10 @@ namespace Neocortex.Data
     public class ChatResponse
     {
         public string message;
-        // First of <see cref="actions"/>, kept for existing integrations that read a single action.
+        // Name of the first of <see cref="actions"/>, kept for existing integrations that read a single action.
         public string action;
-        // All stacked actions the character triggered this turn (v3). Empty when none.
-        public string[] actions;
+        // All stacked actions the character triggered this turn, each with the entity it targets. Empty when none.
+        public ChatAction[] actions;
         public string flowState;
         public Emotions emotion;
         public Interactable[] metadata;

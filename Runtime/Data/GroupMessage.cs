@@ -14,7 +14,7 @@ namespace Neocortex.Data
         public string characterId;
         public string name;
         public ChatLine[] lines;
-        public string[] actions;
+        public ChatAction[] actions;
         public string flowState;
     }
 }
