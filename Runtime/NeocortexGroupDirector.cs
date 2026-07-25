@@ -117,12 +117,20 @@ namespace Neocortex
             if (string.IsNullOrEmpty(anyId))
             {
                 Debug.LogWarning("[Neocortex] Group director has no agents with a Character ID assigned.", this);
+                OnTurnFinished.Invoke();
                 return;
             }
 
             string text = await apiRequest.RequestTranscription(anyId, clip);
             if (this == null) return;
-            if (string.IsNullOrEmpty(text)) return; // failed / empty; OnRequestFailed already raised on error
+
+            // Nothing heard (too short or silent) or the request failed. End the turn anyway, or a
+            // UI that locked its mic on send waits forever for a turn that never runs.
+            if (string.IsNullOrEmpty(text))
+            {
+                OnTurnFinished.Invoke();
+                return;
+            }
 
             OnPlayerSpeech.Invoke(text);
             _ = RunTurn(text, null);
@@ -162,6 +170,7 @@ namespace Neocortex
             if (characterIds.Length == 0)
             {
                 Debug.LogWarning("[Neocortex] Group director has no agents with a Character ID assigned.", this);
+                OnTurnFinished.Invoke();
                 return;
             }
 
