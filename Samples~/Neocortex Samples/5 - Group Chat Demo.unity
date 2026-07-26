@@ -843,17 +843,23 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: '<b>This scene demonstrates basic audio chat function of Neocortex.</b>
+  m_Text: '<b>Neocortex''s group chat feature, where characters or the player can
+    join or leave dynamically.</b>
 
 
-    <b><color=#F59E0B>01</color></b>
-    Pick the microphone you want to use from the dropdown.
+    <b><color=#F59E0B>01</color></b> Set up
+    the characters on the NeocortexSmartAgent components.
 
     <b><color=#F59E0B>02</color></b>
-    Start the scene and speak to Cora.
+    Use the toggles at the top of the screen to make characters join or leave.
 
-    <b><color=#F59E0B>03</color></b> Switch
-    Push-to-Talk toggle on right bottom to use it, instead of auto voice detection.'
+    <b><color=#F59E0B>03</color></b>
+    In this demo, joining or leaving triggers the next conversation round.
+
+    <b><color=#F59E0B>04</color></b>
+    Speak to the group to trigger another conversation round.
+
+'
 --- !u!222 &529300813
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1098,7 +1104,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2627451, g: 0.25882354, b: 0, a: 1}
+  m_Color: {r: 0.1137255, g: 0.1137255, b: 0.1137255, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1127,7 +1133,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+  m_EffectColor: {r: 0.9450981, g: 0.60784316, b: 0.043137256, a: 1}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &581163909
@@ -1166,7 +1172,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: -32, y: 0}
-  m_SizeDelta: {x: 512, y: 512}
+  m_SizeDelta: {x: 512, y: 640}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &581163911
 MonoBehaviour:
@@ -1181,7 +1187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.78431374}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.9607843}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2516,7 +2522,7 @@ PrefabInstance:
       objectReference: {fileID: 1213402656}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrkiwj2k00037k7sxnpvs9p3
+      value: cmrngeiyw001b7k1k1whtneup
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode
@@ -2636,6 +2642,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1213402655}
+  director: {fileID: 0}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
   audioInput: {fileID: 1369384347}
@@ -3507,6 +3515,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
+  director: {fileID: 0}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
   audioInput: {fileID: 1369384347}
@@ -3747,7 +3757,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 32, y: 0}
-  m_SizeDelta: {x: 512, y: 512}
+  m_SizeDelta: {x: 512, y: 640}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!1 &1561958729
 GameObject:
@@ -3878,8 +3888,13 @@ MonoBehaviour:
       m_Calls: []
   writingIndicator: {fileID: 2105741575}
   fontOverwrite: {fileID: 0}
-  messageItemPrefab: {fileID: 16834216811708812, guid: 575b86f5e69fd8b4a9997a213feb02e1, type: 3}
+  messageItemPrefab: {fileID: 2318628846835637774, guid: 2a52934ab1798c9438b782ad6b7808fd, type: 3}
+  displayAvatars: 1
   writingDirection: 0
+  playerBackground: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
+  playerText: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterBackground: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterText: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
 --- !u!224 &1583253000
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4559,6 +4574,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1818373520}
+  director: {fileID: 0}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
   audioInput: {fileID: 1369384347}
@@ -4825,6 +4842,7 @@ MonoBehaviour:
     startsPresent: 0
     toggle: {fileID: 1436139156}
   chatPanel: {fileID: 1583252999}
+  playerName: You
   voiceInput: {fileID: 1953285530}
   audioInput: {fileID: 1369384347}
   faceTarget: {fileID: 1438537460}
@@ -4896,10 +4914,8 @@ MonoBehaviour:
   layoutGroup: {fileID: 2105741577}
   leftPadding: {fileID: 172040364}
   rightPadding: {fileID: 1633808601}
-  userMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  agentMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  userTextColor: {r: 0, g: 0, b: 0, a: 1}
-  agentTextColor: {r: 0, g: 0, b: 0, a: 1}
+  avatar: {fileID: 0}
+  avatarText: {fileID: 0}
 --- !u!224 &2105741576
 RectTransform:
   m_ObjectHideFlags: 0

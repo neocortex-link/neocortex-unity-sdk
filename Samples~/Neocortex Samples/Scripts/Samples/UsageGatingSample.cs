@@ -33,11 +33,11 @@ namespace Neocortex.Samples
             chatInput.OnSendButtonClicked.AddListener(Submit);
         }
 
-        // Each chat line drops in as its own bubble.
+        // Each chat line drops in as its own bubble, under the character's name.
         private void OnChatLineStarted(ChatLine line)
         {
             thinkingIndicator.Display(false);
-            chatPanel.AddMessage(line.text, false);
+            chatPanel.AddMessage(smartAgent.gameObject.name, line.text, false);
         }
 
         private async void Submit(string message)
@@ -51,7 +51,7 @@ namespace Neocortex.Samples
                 return;
             }
 
-            chatPanel.AddMessage(message, true);
+            chatPanel.AddMessage("You", message, true);
             smartAgent.TextToText(message);
             thinkingIndicator.Display(true);
         }

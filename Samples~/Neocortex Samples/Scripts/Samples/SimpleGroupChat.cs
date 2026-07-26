@@ -50,13 +50,16 @@ namespace Neocortex.Samples
         [SerializeField] private List<CastMember> cast = new();
 
         [Header("Chat")]
-        [Tooltip("The shared transcript, the Chat Panel already in your scene.")]
+        [Tooltip("The shared transcript. Character replies are printed by each character's own Chat UI; this prints the player's line.")]
         [SerializeField] private NeocortexChatPanel chatPanel;
 
-        [Tooltip("The mic. Its recorded clip is transcribed and sent to the group.")]
+        [Tooltip("Name shown on the player's own messages (the avatar's initial).")]
+        [SerializeField] private string playerName = "You";
+
+        [Tooltip("The mic. Its clip is transcribed and sent to the group.")]
         [SerializeField] private NeocortexAudioReceiver voiceInput;
 
-        [Tooltip("Optional: the record-button widget. Locked while the cast is answering.")]
+        [Tooltip("Optional: the record button. Locked while the cast answers.")]
         [SerializeField] private NeocortexAudioChatInput audioInput;
 
         [Header("Movement")]
@@ -101,8 +104,8 @@ namespace Neocortex.Samples
 
             if (audioInput != null && audioInput.AudioReceiver == null) audioInput.AudioReceiver = voiceInput;
             voiceInput.OnAudioRecorded.AddListener(director.SendAudio);
+            director.OnPlayerSpeech.AddListener(message => chatPanel.AddMessage(playerName, message, true));
 
-            director.OnPlayerSpeech.AddListener(message => chatPanel.AddMessage(message, true));
             director.OnTurnStarted.AddListener(OnTurnStarted);
             director.OnTurnFinished.AddListener(OnTurnFinished);
             director.OnSpeaker.AddListener(OnSpeaker);
@@ -134,16 +137,15 @@ namespace Neocortex.Samples
                 agent.GetComponent<Animator>().SetBool(Talking, false);
                 agent.GetComponent<Animator>().SetBool(Thinking, true);
             }
-            
+
             audioInput?.SetChatState(false);       // don't record the characters while they answer
             SetRosterInteractable(false);          // no roster changes mid-turn
         }
-        
 
         private void OnTurnFinished()
         {
             turnActive = false;
-            
+
             RearmMic();
             SetRosterInteractable(true);
             

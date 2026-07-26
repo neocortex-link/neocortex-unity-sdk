@@ -1487,7 +1487,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2627451, g: 0.25882354, b: 0, a: 1}
+  m_Color: {r: 0.10980393, g: 0.10980393, b: 0.10980393, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1516,7 +1516,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+  m_EffectColor: {r: 0.9450981, g: 0.60784316, b: 0.043137256, a: 1}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &581163909
@@ -3471,6 +3471,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
+  director: {fileID: 0}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
   audioInput: {fileID: 1369384347}
@@ -3943,8 +3945,13 @@ MonoBehaviour:
       m_Calls: []
   writingIndicator: {fileID: 2105741575}
   fontOverwrite: {fileID: 0}
-  messageItemPrefab: {fileID: 16834216811708812, guid: 575b86f5e69fd8b4a9997a213feb02e1, type: 3}
+  messageItemPrefab: {fileID: 2318628846835637774, guid: 2a52934ab1798c9438b782ad6b7808fd, type: 3}
+  displayAvatars: 0
   writingDirection: 0
+  playerBackground: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
+  playerText: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterBackground: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterText: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
 --- !u!224 &1583253000
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4741,10 +4748,8 @@ MonoBehaviour:
   layoutGroup: {fileID: 2105741577}
   leftPadding: {fileID: 172040364}
   rightPadding: {fileID: 1633808601}
-  userMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  agentMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  userTextColor: {r: 0, g: 0, b: 0, a: 1}
-  agentTextColor: {r: 0, g: 0, b: 0, a: 1}
+  avatar: {fileID: 0}
+  avatarText: {fileID: 0}
 --- !u!224 &2105741576
 RectTransform:
   m_ObjectHideFlags: 0
@@ -5095,7 +5100,7 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrngerup001d7k1kjxvtn6lu
+      value: 6a1390f41d9227a1cf21aa76
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart

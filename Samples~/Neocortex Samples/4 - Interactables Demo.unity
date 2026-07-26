@@ -517,7 +517,7 @@ GameObject:
   - component: {fileID: 185442670}
   - component: {fileID: 185442673}
   m_Layer: 0
-  m_Name: Blue Cube
+  m_Name: Object 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -590,7 +590,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -0.5, y: 0, z: -2}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalScale: {x: 0.3, y: 0.1, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 312268092}
@@ -611,6 +611,8 @@ MonoBehaviour:
   properties:
   - name: color
     value: blue
+  - name: shape
+    value: square
 --- !u!1 &312268091
 GameObject:
   m_ObjectHideFlags: 0
@@ -794,17 +796,11 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1.5
-  m_Text: '<b>This scene demonstrates basic audio chat function of Neocortex.</b>
-
-
-    <b><color=#F59E0B>01</color></b>
-    Pick the microphone you want to use from the dropdown.
-
-    <b><color=#F59E0B>02</color></b>
-    Start the scene and speak to Cora.
-
-    <b><color=#F59E0B>03</color></b> Switch
-    Push-to-Talk toggle on right bottom to use it, instead of auto voice detection.'
+  m_Text: "<b>This scene demonstrates Smart NPCs' spatial understanding via Interactables
+    with Neocortex.</b>\n\n<b><color=#F59E0B>01</color></b> Check the <b>Interactable</b>
+    component on the Interactable GameObject. \n<b><color=#F59E0B>02</color></b>
+    Start the scene and tell Cora to go to the <b>Red Square</b>. \n<b><color=#F59E0B>03</color></b>
+    Tell her to go to the <b>Yellow Cylinder</b>, then the <b>Blue Rectangle</b>.\n"
 --- !u!222 &529300813
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -939,7 +935,7 @@ GameObject:
   - component: {fileID: 574200625}
   - component: {fileID: 574200628}
   m_Layer: 0
-  m_Name: Yellow Cube
+  m_Name: Object 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1001,7 +997,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 574200623}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!4 &574200627
 Transform:
   m_ObjectHideFlags: 0
@@ -1012,8 +1008,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -2, y: 0, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.05, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 312268092}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1033,6 +1029,8 @@ MonoBehaviour:
   properties:
   - name: color
     value: yellow
+  - name: shape
+    value: cylinder
 --- !u!1 &578083548
 GameObject:
   m_ObjectHideFlags: 0
@@ -1156,7 +1154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2627451, g: 0.25882354, b: 0, a: 1}
+  m_Color: {r: 0.11764707, g: 0.11764707, b: 0.11764707, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1185,7 +1183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2924528, g: 0.2924528, b: 0.2924528, a: 1}
+  m_EffectColor: {r: 0.9450981, g: 0.60784316, b: 0.043137256, a: 1}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!1 &581163909
@@ -1239,7 +1237,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.78431374}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.9098039}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2192,7 +2190,7 @@ GameObject:
   - component: {fileID: 1226000862}
   - component: {fileID: 1226000865}
   m_Layer: 0
-  m_Name: Red Cube
+  m_Name: Object 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2265,7 +2263,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3, y: 0, z: 2}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_LocalScale: {x: 0.3, y: 0.1, z: 0.3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 312268092}
@@ -2286,6 +2284,8 @@ MonoBehaviour:
   properties:
   - name: color
     value: red
+  - name: shape
+    value: square
 --- !u!1 &1283267762
 GameObject:
   m_ObjectHideFlags: 0
@@ -2837,6 +2837,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
+  director: {fileID: 0}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
   audioInput: {fileID: 1369384347}
@@ -3224,8 +3226,13 @@ MonoBehaviour:
       m_Calls: []
   writingIndicator: {fileID: 2105741575}
   fontOverwrite: {fileID: 0}
-  messageItemPrefab: {fileID: 16834216811708812, guid: 575b86f5e69fd8b4a9997a213feb02e1, type: 3}
+  messageItemPrefab: {fileID: 2318628846835637774, guid: 2a52934ab1798c9438b782ad6b7808fd, type: 3}
+  displayAvatars: 0
   writingDirection: 0
+  playerBackground: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
+  playerText: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterBackground: {r: 0.12156863, g: 0.12156863, b: 0.12156863, a: 1}
+  characterText: {r: 0.9607843, g: 0.61960787, b: 0.043137256, a: 1}
 --- !u!224 &1583253000
 RectTransform:
   m_ObjectHideFlags: 0
@@ -3773,7 +3780,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "Unity SDK \xB7 Audio Chat Demo"
+  m_Text: "Unity SDK \xB7 Interactables Demo"
 --- !u!222 &1867751554
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -3869,10 +3876,8 @@ MonoBehaviour:
   layoutGroup: {fileID: 2105741577}
   leftPadding: {fileID: 172040364}
   rightPadding: {fileID: 1633808601}
-  userMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  agentMessageColor: {r: 0, g: 0, b: 0, a: 1}
-  userTextColor: {r: 0, g: 0, b: 0, a: 1}
-  agentTextColor: {r: 0, g: 0, b: 0, a: 1}
+  avatar: {fileID: 0}
+  avatarText: {fileID: 0}
 --- !u!224 &2105741576
 RectTransform:
   m_ObjectHideFlags: 0

@@ -49,7 +49,7 @@ namespace Neocortex.Samples
 
         private void Start()
         {
-            actionQueue.RegisterAction("GO_TO_CUBE", GoToCube);
+            actionQueue.RegisterAction("GO_TO_LOCATION", GoToLocation);
 
             // Talking spans the first spoken line to the end of playback.
             agent.OnChatLineStarted.AddListener(_ => isTalking = true);
@@ -68,17 +68,14 @@ namespace Neocortex.Samples
         }
 
         /// <summary>Walks to the entity the character targeted with this action.</summary>
-        private IEnumerator GoToCube(ChatAction action)
+        private IEnumerator GoToLocation(ChatAction action)
         {
             NeocortexInteractable target = Find(action.targetId);
 
             if (target == null)
             {
-                Debug.LogWarning($"[Neocortex] GO_TO_CUBE targeted '{action.targetId}', which isn't in the scene.", this);
                 yield break;
             }
-
-            Debug.Log($"[Neocortex] Going to '{target.Name}'.");
 
             // Walk to the LIVE object (so it works even if it has moved) on the ground plane — its
             // height must not count toward "arrived", or a cube resting on the floor is never reached.
