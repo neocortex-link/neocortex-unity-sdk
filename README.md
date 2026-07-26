@@ -2,7 +2,7 @@
 The Neocortex Unity SDK is a Unity package that allows you to easily integrate Neocortex into your Unity project.
 The SDK provides a set of APIs that allow you to interact with the projects created on the Neocortex web platform.
 
-You can find more about the Unity SDK integration here in our documentatons: https://neocortex.link/docs/integrations/unity/quick-start
+You can find more about the Unity SDK integration in our documentation: https://docs.neocortex.link
 
 ## Requirements
 - Neocortex account [Sign Up Here](https://neocortex.link/register)
@@ -29,8 +29,14 @@ Characters are built in the [Neocortex web platform](https://neocortex.link/dash
 |---|---|
 | `NeocortexSmartAgent` | The character: send text/audio, receive chat lines, emotions, actions. One per character, lives on its GameObject. |
 | `NeocortexAudioReceiver` | THE microphone: works on desktop, mobile and WebGL, handles permission and mic selection internally. |
-| `NeocortexChatUI` | The glue: binds an agent to the chat panel, inputs and thinking indicator — the standard conversation loop with zero code. |
+| `NeocortexChatUI` | The glue for ONE character: binds an agent to the chat panel, inputs and thinking indicator — the standard conversation loop with zero code. |
 | `NeocortexGroupDirector` | Multi-character scenes: assign several Smart Agents, the director orchestrates who speaks; each character speaks through its own agent. |
+| `NeocortexGroupChatUI` | The same glue for a whole cast: one UI bound to the director instead of one per character. |
+| `NeocortexChatPanel` | The transcript: bubbles with per-sender avatars and colors. |
+| `NeocortexInteractable` | Makes a GameObject part of what characters perceive — name, properties and position go out with every message. |
+| `NeocortexActionQueue` | Runs the actions a reply triggers, in order, through coroutine handlers you register per keyword. |
+
+> In a group scene use **one** `NeocortexGroupChatUI` on the director — not a `NeocortexChatUI` per character, or every reply is printed once per UI.
 
 ## API Reference
 After setting up the Neocortex SDK in your Unity project, you can start using the APIs to interact with the Neocortex project.
@@ -38,8 +44,9 @@ After setting up the Neocortex SDK in your Unity project, you can start using th
 ### Neocortex Smart Agent component
 The `Neocortex Smart Agent` component is the main component that allows you to interact with the Neocortex project. 
 
+<!-- REPLACE: screenshot of the Smart Agent inspector (character dropdown, Chat Lines Mode, Audio Source, Load History On Start) -->
 <p align="center">
-  <img width="393" alt="neocortex_unity_smart_agent_component" src="https://github.com/user-attachments/assets/9613bb88-87a9-4ba5-b412-d404c0bf63e3">
+  <img width="393" alt="Neocortex Smart Agent component" src="https://placehold.co/393x420/1f1f1f/f59e0b/png?text=REPLACE%0ASmart+Agent+inspector">
 </p>
 
 **public async void TextToText(string message)**
@@ -201,8 +208,9 @@ The `NeocortexAudioReceiver` component is used to record audio data from the mic
 - set the amplitude threshold for when to start and stop recording
 - set the max wait time for the recording to automatically stop if no sound is detected
 
+<!-- REPLACE: screenshot of the Audio Receiver inspector (microphone picker, push-to-talk, amplitude threshold, max wait time) -->
 <p align="center">
-  <img width="394" alt="neocortex_unity_audio_receiver_component" src="https://github.com/user-attachments/assets/58b17620-fec7-4c85-af38-699f292ce08e">
+  <img width="394" alt="Neocortex Audio Receiver component" src="https://placehold.co/394x360/1f1f1f/f59e0b/png?text=REPLACE%0AAudio+Receiver+inspector">
 </p>
 
 **public void StartMicrophone()**
@@ -295,7 +303,120 @@ agent.OnReplyFinished.AddListener(() => Debug.Log("Character finished speaking")
 agent.TextToText("Hello!");
 ```
 
-The audio modes need an `AudioSource` assigned on the agent. `PerLineAudio` plays line 1 as soon as its clip is ready while later lines keep synthesizing, and it's credit-aware: when the balance is low it quietly falls back to a single clip, and when empty to text only — so it degrades instead of failing. A reply with no chat lines (older server) plays as one line, exactly like a normal reply. See `ChatLinesSample` in the samples.
+The audio modes need an `AudioSource` assigned on the agent. `PerLineAudio` plays line 1 as soon as its clip is ready while later lines keep synthesizing, and it's credit-aware: when the balance is low it quietly falls back to a single clip, and when empty to text only — so it degrades instead of failing. A reply with no chat lines (older server) plays as one line, exactly like a normal reply.
+
+In `Text` mode the gap before each line is estimated from its length, so a reply arrives at a natural pace instead of all at once. `OnComposingNextLine` fires during each gap — `NeocortexChatUI` uses it to show the thinking indicator, so the pause reads as "typing…".
+
+### Perception: what the character can sense
+Add a `NeocortexInteractable` to any GameObject and it becomes part of what nearby characters perceive — its properties and position go out with every message automatically, no code.
+
+<!-- REPLACE: screenshot of the Neocortex Interactable inspector (properties list, Id, Resolved Id) -->
+<p align="center">
+  <img width="394" alt="Neocortex Interactable component" src="https://placehold.co/394x300/1f1f1f/f59e0b/png?text=REPLACE%0AInteractable+inspector">
+</p>
+
+- **Properties** are free-form name/value pairs describing what the thing is and its current state: `name = Blue Cube`, `type = cube`, `color = blue`, `locked = true`. A `name` property is seeded from the GameObject when you add the component; edit it, add more, or remove any.
+- **Id** is how characters reference the thing. Leave it empty and a short stable id is derived from the scene path (shown as `Resolved Id`), so two objects called "Red Cube" stay distinguishable.
+- Put one on a character's own GameObject and it links to that character automatically, so characters perceive each other.
+- The character does the interpreting: it receives raw positions and works out what is near, far or worth acting on. The SDK never pre-computes distances or directions.
+- The agent contributes its own position too, and perception is bounded (nearest first) so a busy scene stays cheap.
+
+### Actions
+Actions are the keywords you author on the character in the web platform. Each triggered action carries the **id of the entity it applies to**, so a reply can stack several actions each pointing at a different thing — "go to the blue cube, then the red one" arrives as two `GO_TO` actions with two different targets.
+
+```csharp
+public class ChatAction { public string name; public string targetId; }
+```
+
+`NeocortexActionQueue` runs them one at a time, in order, through a coroutine handler you register per keyword:
+
+```csharp
+var queue = GetComponent<NeocortexActionQueue>();
+queue.RegisterAction("GO_TO_CUBE", GoToCube);
+queue.OnUnhandledAction += keyword => Debug.Log($"No handler for {keyword}");
+queue.OnQueueCompleted += () => Debug.Log("All actions done");
+
+private IEnumerator GoToCube(ChatAction action)
+{
+    // Resolve the LIVE object by id, so it works even if the thing has moved.
+    NeocortexInteractable target = Find(action.targetId);
+    ...
+}
+```
+
+**Trigger** decides *when* a reply's actions run:
+
+| Trigger | Fires on | Feel |
+|---|---|---|
+| `WhenResponseReceived` *(default)* | the reply arriving | acts immediately, possibly before speaking |
+| `WhenSpeechStarts` | the first spoken line | movement and voice begin together |
+| `AfterReplySpoken` | the reply finishing | speaks the line, then acts |
+
+The last two need an audio Chat Lines Mode; in `Off` mode there is no speech to wait for, so the queue fires on arrival and warns once.
+
+### Group chat
+Several characters in one shared conversation. Assign the cast to a `NeocortexGroupDirector`; it sends one group turn and routes each reply back to the matching agent, so every character speaks with its own voice, animation and events.
+
+<!-- REPLACE: screenshot of the Group Director + Group Chat UI inspectors side by side -->
+<p align="center">
+  <img width="700" alt="Neocortex Group Director and Group Chat UI" src="https://placehold.co/700x360/1f1f1f/f59e0b/png?text=REPLACE%0AGroup+Director+%2B+Group+Chat+UI">
+</p>
+
+```csharp
+director.Send("Hi everyone, introduce yourselves");  // the AI director picks who answers
+director.SendTo(alice, "Alice, what do you think?"); // one character answers this turn
+director.Continue();                                 // no player input: the cast talks among themselves
+director.SendAudio(clip);                            // voice in: transcribed, then sent to the group
+```
+
+| Member | What it does |
+|---|---|
+| `AddAgent` / `RemoveAgent` | Change the cast mid-scene. The server notices who arrived or left and the cast reacts. |
+| `Agents`, `IsBusy`, `SessionId`, `ClearSession()` | Current cast, whether a turn is running, and the shared scene session. |
+| `GetHistory(limit, before)` | The shared transcript, name-labeled per speaker. |
+| `OnSpeaker` | Raised per speaker with its `GroupMessage` (`name`, `lines`, `actions`). |
+| `OnPlayerSpeech` | The player's spoken line, once transcribed. |
+| `OnTurnStarted` / `OnTurnFinished` | Lock and release input for the duration of a turn. |
+| `OnGroupResponseReceived`, `OnHistoryReceived`, `OnRequestFailed` | Whole-turn payload, history, and failures. |
+
+A character that joins later is **new to the conversation** — it sees the transcript only from the moment it joined, so secrets shared before it arrived stay secret. A multi-character cast needs a Pro/Team API key; a cast of one behaves like normal single-character chat on any tier.
+
+Add a `NeocortexGroupChatUI` on the director's GameObject for the whole UI loop (input, transcript, thinking indicator, mic) — the group counterpart of `NeocortexChatUI`.
+
+### Chat panel appearance
+`NeocortexChatPanel` draws the transcript. Messages carry a sender name, which becomes the avatar's initial and picks the bubble color — so in a group scene it's clear who said what.
+
+<!-- REPLACE: screenshot of a group conversation showing avatars and per-sender bubble colors -->
+<p align="center">
+  <img width="700" alt="Chat panel with avatars" src="https://placehold.co/700x420/1f1f1f/f59e0b/png?text=REPLACE%0AChat+panel+with+avatars">
+</p>
+
+```csharp
+chatPanel.AddMessage("Alice", "Well met, traveller.", false); // sender, text, isUser
+chatPanel.AddMessage("Something happened.", false);           // no sender: no avatar
+chatPanel.DisplayAvatars = false;                             // turn avatars off
+```
+
+Player and character bubble/text colors are set on the component. Assign your own `NeocortexMessage` prefab to restyle every bubble; a prefab without an Avatar object simply shows no avatar.
+
+### Chat history
+Conversations persist server-side per session. Toggle **Load History On Start** on the agent to replay it via `OnChatHistoryReceived`, or page back manually:
+
+```csharp
+ApiChatHistory page = await agent.RequestChatHistory(limit: 20);
+// page.messages: content, sender, name, addressedTo, emotion, actions, createdAt
+// Pass page.nextCursor as `before` to load older messages; null once you reach the start.
+```
 
 ## Sample Projects
-You can find sample projects that demonstrate how to use the Neocortex Unity SDK in the Package Manager window under the `Samples` section of the Neocortex package.
+Import them from the Package Manager window under the `Samples` section of the Neocortex package.
+
+| Scene | Shows |
+|---|---|
+| `1 - Text Chat Demo` | Typed conversation with one character, chat lines, idle/thinking/talking animation. |
+| `2 - Audio Chat Demo` | The same with voice in and out, plus blendshape face animation. |
+| `3 - Actions Demo` | Stacked actions (`DANCE`, `JUMP`) played in order through the action queue. |
+| `4 - Interactables Demo` | Perception and targeting: the character walks to the cube it means, by `targetId`. |
+| `5 - Group Chat Demo` | Voice group chat with a living roster — characters walk in to join and walk off to leave. |
+
+`UsageGatingSample.cs` shows credit-aware gating with `NeocortexUsageGate`.

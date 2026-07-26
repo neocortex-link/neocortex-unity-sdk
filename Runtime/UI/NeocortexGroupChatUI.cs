@@ -4,18 +4,19 @@ using Neocortex.Data;
 namespace Neocortex
 {
     /// <summary>
-    ///     Connects the Neocortex UI widgets to ONE character and runs the standard loop: input in,
-    ///     bubbles out, thinking indicator, mic handoff, history and errors. Widget references are
-    ///     optional and auto-resolved from this GameObject's children.
+    ///     The group counterpart of <see cref="NeocortexChatUI"/>: ONE UI for a whole cast. Connects
+    ///     the Neocortex widgets to a <see cref="NeocortexGroupDirector"/> and runs the loop — typed
+    ///     and spoken input to the director, every speaker's reply into the shared panel under its
+    ///     own name, thinking indicator and mic handoff per turn, history and errors.
     ///
-    ///     For a multi-character scene use <see cref="NeocortexGroupChatUI"/> with a
-    ///     <see cref="NeocortexGroupDirector"/> instead — one UI for the whole cast.
+    ///     Put this on the director's GameObject. Do NOT also put a <see cref="NeocortexChatUI"/> on
+    ///     the characters: each one would print the same replies again.
     /// </summary>
-    [AddComponentMenu("Neocortex/Neocortex Chat UI", 0)]
-    public class NeocortexChatUI : MonoBehaviour
+    [AddComponentMenu("Neocortex/Neocortex Group Chat UI", 0)]
+    public class NeocortexGroupChatUI : MonoBehaviour
     {
-        [Tooltip("The character this UI talks to. Auto-resolved from children when empty.")]
-        [SerializeField] private NeocortexSmartAgent agent;
+        [Tooltip("The cast this UI talks to. Auto-resolved from this GameObject when empty.")]
+        [SerializeField] private NeocortexGroupDirector director;
 
         [Tooltip("Name on the player's own messages (the avatar's initial).")]
         [SerializeField] private string playerName = "You";
@@ -27,26 +28,23 @@ namespace Neocortex
         [SerializeField] private NeocortexThinkingIndicator thinkingIndicator;
         [SerializeField] private NeocortexAudioReceiver voiceInput;
 
-        public NeocortexSmartAgent Agent { get => agent; set => agent = value; }
+        public NeocortexGroupDirector Director { get => director; set => director = value; }
         public NeocortexChatPanel ChatPanel => chatPanel;
         public NeocortexAudioReceiver VoiceInput => voiceInput;
         public string PlayerName { get => playerName; set => playerName = value; }
 
-        // Resolved from each reply so chat lines, which carry only text, can still be attributed.
-        private string characterName;
-
         private void Awake()
         {
-            agent ??= GetComponentInChildren<NeocortexSmartAgent>(true);
+            director ??= GetComponentInChildren<NeocortexGroupDirector>(true);
             chatPanel ??= GetComponentInChildren<NeocortexChatPanel>(true);
             textInput ??= GetComponentInChildren<NeocortexTextChatInput>(true);
             audioInput ??= GetComponentInChildren<NeocortexAudioChatInput>(true);
             thinkingIndicator ??= GetComponentInChildren<NeocortexThinkingIndicator>(true);
             voiceInput ??= GetComponentInChildren<NeocortexAudioReceiver>(true);
 
-            if (agent == null)
+            if (director == null)
             {
-                Debug.LogError("[Neocortex] Chat UI needs a NeocortexSmartAgent — assign one or place it under this GameObject.", this);
+                Debug.LogError("[Neocortex] Group Chat UI needs a NeocortexGroupDirector — assign one or place it on the director's GameObject.", this);
                 enabled = false;
                 return;
             }
@@ -60,62 +58,48 @@ namespace Neocortex
             if (textInput != null) textInput.OnSendButtonClicked.AddListener(SubmitText);
             if (voiceInput != null) voiceInput.OnAudioRecorded.AddListener(SubmitAudio);
 
-            agent.OnTranscriptionReceived.AddListener(HandleTranscription);
-            agent.OnChatLineStarted.AddListener(HandleChatLine);
-            agent.OnChatResponseReceived.AddListener(HandleChatResponse);
-            agent.OnComposingNextLine.AddListener(HandleComposingNextLine);
-            agent.OnReplyFinished.AddListener(HandleReplyFinished);
-            agent.OnChatHistoryReceived.AddListener(HandleHistory);
-            agent.OnRequestFailed.AddListener(HandleRequestFailed);
+            director.OnPlayerSpeech.AddListener(HandlePlayerSpeech);
+            director.OnSpeaker.AddListener(HandleSpeaker);
+            director.OnTurnStarted.AddListener(HandleTurnStarted);
+            director.OnTurnFinished.AddListener(HandleTurnFinished);
+            director.OnHistoryReceived.AddListener(HandleHistory);
+            director.OnRequestFailed.AddListener(HandleRequestFailed);
         }
 
         private void SubmitText(string message)
         {
             AddMessage(playerName, message, true);
-            agent.TextToText(message);
-            ShowThinking(true);
+            director.Send(message);
         }
 
         private void SubmitAudio(AudioClip clip)
         {
-            agent.AudioToAudio(clip);
+            director.SendAudio(clip);
             ShowThinking(true);
             if (audioInput != null) audioInput.SetChatState(false);
         }
 
-        private void HandleTranscription(string transcription)
+        // The player's spoken line, once transcribed.
+        private void HandlePlayerSpeech(string transcription)
         {
             AddMessage(playerName, transcription, true);
         }
 
-        private void HandleChatLine(ChatLine line)
+        private void HandleSpeaker(GroupMessage message)
         {
             ShowThinking(false);
-            AddMessage(CharacterName, line.text, false);
+            AddMessage(message.name, JoinLines(message.lines), false);
         }
 
-        // Text mode: the character is "typing" the next line during the pacing gap.
-        private void HandleComposingNextLine()
+        private void HandleTurnStarted()
         {
             ShowThinking(true);
+            if (audioInput != null) audioInput.SetChatState(false);
         }
 
-        private void HandleChatResponse(ChatResponse response)
+        private void HandleTurnFinished()
         {
-            // Raised before the reply's lines drop, so the name learned here labels them too.
-            if (!string.IsNullOrEmpty(response.name)) characterName = response.name;
-
-            // Off mode delivers the whole reply here instead of line by line.
-            if (agent.ChatLinesMode == ChatLinesMode.Off)
-            {
-                ShowThinking(false);
-                AddMessage(CharacterName, response.message, false);
-                RearmMicrophone();
-            }
-        }
-
-        private void HandleReplyFinished()
-        {
+            ShowThinking(false);
             RearmMicrophone();
         }
 
@@ -124,8 +108,7 @@ namespace Neocortex
             foreach (ChatHistoryEntry message in messages)
             {
                 bool isUser = message.sender == "USER";
-                string sender = isUser ? playerName : (string.IsNullOrEmpty(message.name) ? CharacterName : message.name);
-                AddMessage(sender, message.content, isUser);
+                AddMessage(isUser ? playerName : message.name, message.content, isUser);
             }
         }
 
@@ -146,9 +129,6 @@ namespace Neocortex
             if (voiceInput != null && !voiceInput.UsePushToTalk) voiceInput.StartMicrophone();
         }
 
-        private string CharacterName =>
-            string.IsNullOrEmpty(characterName) ? agent.gameObject.name : characterName;
-
         private void AddMessage(string sender, string text, bool isUser)
         {
             if (chatPanel != null && !string.IsNullOrEmpty(text))
@@ -160,6 +140,15 @@ namespace Neocortex
         private void ShowThinking(bool visible)
         {
             if (thinkingIndicator != null) thinkingIndicator.Display(visible);
+        }
+
+        private static string JoinLines(ChatLine[] lines)
+        {
+            if (lines == null) return "";
+
+            string text = "";
+            foreach (ChatLine line in lines) text += line.text + " ";
+            return text.Trim();
         }
     }
 }

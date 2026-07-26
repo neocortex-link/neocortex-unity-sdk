@@ -1,43 +1,65 @@
 using UnityEngine;
+using Neocortex.API;
 using Neocortex.Data;
 
 namespace Neocortex.Samples
 {
     /// <summary>
     ///     Text chat gated by the read-only usage endpoint: messages are only sent while the team
-    ///     has credits and neither the player nor the character is over a configured cap.
+    ///     has credits and neither the player nor the character is over a configured cap. Prints the
+    ///     account, player and character limits on start, then logs everything to the console.
     /// </summary>
     public class UsageGatingSample : MonoBehaviour
     {
         [SerializeField] private NeocortexTextChatInput chatInput;
         [SerializeField] private NeocortexSmartAgent smartAgent;
-        [SerializeField] private NeocortexThinkingIndicator thinkingIndicator;
-        [SerializeField] private NeocortexChatPanel chatPanel;
 
         private NeocortexUsageGate usageGate;
 
-        private void Start()
+        private async void Start()
         {
             usageGate = new NeocortexUsageGate();
 
+            usageGate.OnUsageUpdated += usage => Debug.Log($"[USAGE] Updated: {Describe(usage)}");
             usageGate.OnLowCredits += usage => Debug.LogWarning($"[USAGE] Credits are running low ({usage.creditsRemaining} left).");
-            usageGate.OnCreditsEmpty += _ => chatPanel.AddMessage("The smart NPC is unavailable right now.", false);
-            usageGate.OnPlayerOverLimit += _ => chatPanel.AddMessage("You have reached your interaction limit for today.", false);
+            usageGate.OnCreditsEmpty += _ => Debug.LogWarning("[USAGE] Out of credits: the smart NPC is unavailable.");
+            usageGate.OnPlayerOverLimit += _ => Debug.LogWarning("[USAGE] This player has reached their interaction limit for today.");
             usageGate.OnCharacterOverLimit += _ => Debug.LogWarning("[USAGE] This character has reached its usage cap.");
             usageGate.OnRequestFailed += error => Debug.LogWarning($"[USAGE] Usage check failed: {error}");
 
-            // Deliver replies as chat lines (ordered bubbles) instead of one joint message.
             smartAgent.ChatLinesMode = ChatLinesMode.Text;
+            smartAgent.OnChatLineStarted.AddListener(line => Debug.Log($"[CHAT] {smartAgent.gameObject.name}: {line.text} ({line.emotion})"));
+            smartAgent.OnRequestFailed.AddListener(error => Debug.LogError($"[CHAT] Request failed: {error}"));
 
-            smartAgent.OnChatLineStarted.AddListener(OnChatLineStarted);
             chatInput.OnSendButtonClicked.AddListener(Submit);
+
+            await PrintLimits();
         }
 
-        // Each chat line drops in as its own bubble, under the character's name.
-        private void OnChatLineStarted(ChatLine line)
+        // Account tier and credits, then this player's and this character's usage against their caps.
+        private async Awaitable PrintLimits()
         {
-            thinkingIndicator.Display(false);
-            chatPanel.AddMessage(smartAgent.gameObject.name, line.text, false);
+            ApiAccountResponse account = await usageGate.RefreshAccount();
+            if (account != null)
+            {
+                Debug.Log($"[ACCOUNT] {account.tier} | {account.email} | {account.creditsRemaining} credits | next refresh: {(account.nextRefresh.HasValue ? account.nextRefresh.Value.ToString("u") : "n/a")}");
+            }
+
+            ApiUsageResponse usage = await usageGate.RefreshUsage(characterId: smartAgent.characterID);
+            Debug.Log(usage != null ? $"[LIMITS] {Describe(usage)}" : "[LIMITS] Usage unavailable.");
+        }
+
+        private static string Describe(ApiUsageResponse usage)
+        {
+            string player = usage.player != null
+                ? $"player: {usage.player.interactionsToday} today, {usage.player.creditsUsedAllTime} credits all-time, overLimit={usage.player.overLimit}"
+                : "player: not requested";
+
+            string character = usage.character != null
+                ? $"character: {usage.character.creditsUsedAllTime} credits all-time, overLimit={usage.character.overLimit}"
+                : "character: not requested";
+
+            return $"status={usage.status}, credits={usage.creditsRemaining} | {player} | {character}";
         }
 
         private async void Submit(string message)
@@ -47,13 +69,17 @@ namespace Neocortex.Samples
             bool canChat = await usageGate.CanUseSmartNPC(characterId: smartAgent.characterID);
             if (!canChat)
             {
-                chatPanel.AddMessage("Smart NPC features are currently disabled.", false);
+                Debug.LogWarning("[USAGE] Player limit has been reached, block chat functions if you want.");
                 return;
             }
 
-            chatPanel.AddMessage("You", message, true);
+            Debug.Log($"[CHAT] You: {message}");
             smartAgent.TextToText(message);
-            thinkingIndicator.Display(true);
+        }
+
+        public void NewChatSession()
+        {
+            NeocortexSessionManager.CleanSessionID(smartAgent.characterID);
         }
     }
 }

@@ -121,8 +121,12 @@ namespace Neocortex
                 return;
             }
 
+            // Claim the turn BEFORE awaiting: a second trigger (two listeners on the same mic, a
+            // double click) would otherwise start a second transcription and bill for it twice.
+            isBusy = true;
             string text = await apiRequest.RequestTranscription(anyId, clip);
             if (this == null) return;
+            isBusy = false; // released so RunTurn below can claim it
 
             // Nothing heard (too short or silent) or the request failed. End the turn anyway, or a
             // UI that locked its mic on send waits forever for a turn that never runs.

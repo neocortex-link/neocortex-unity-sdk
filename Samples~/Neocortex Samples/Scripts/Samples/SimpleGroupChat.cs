@@ -49,19 +49,6 @@ namespace Neocortex.Samples
         [SerializeField] private NeocortexGroupDirector director;
         [SerializeField] private List<CastMember> cast = new();
 
-        [Header("Chat")]
-        [Tooltip("The shared transcript. Character replies are printed by each character's own Chat UI; this prints the player's line.")]
-        [SerializeField] private NeocortexChatPanel chatPanel;
-
-        [Tooltip("Name shown on the player's own messages (the avatar's initial).")]
-        [SerializeField] private string playerName = "You";
-
-        [Tooltip("The mic. Its clip is transcribed and sent to the group.")]
-        [SerializeField] private NeocortexAudioReceiver voiceInput;
-
-        [Tooltip("Optional: the record button. Locked while the cast answers.")]
-        [SerializeField] private NeocortexAudioChatInput audioInput;
-
         [Header("Movement")]
         [Tooltip("What seated characters turn to face, usually the Main Camera.")]
         [SerializeField] private Transform faceTarget;
@@ -102,10 +89,8 @@ namespace Neocortex.Samples
                 }
             }
 
-            if (audioInput != null && audioInput.AudioReceiver == null) audioInput.AudioReceiver = voiceInput;
-            voiceInput.OnAudioRecorded.AddListener(director.SendAudio);
-            director.OnPlayerSpeech.AddListener(message => chatPanel.AddMessage(playerName, message, true));
-
+            // Input, transcript, thinking indicator and mic all belong to NeocortexGroupChatUI.
+            // This script only stages the scene: movement, roster and animation.
             director.OnTurnStarted.AddListener(OnTurnStarted);
             director.OnTurnFinished.AddListener(OnTurnFinished);
             director.OnSpeaker.AddListener(OnSpeaker);
@@ -138,7 +123,6 @@ namespace Neocortex.Samples
                 agent.GetComponent<Animator>().SetBool(Thinking, true);
             }
 
-            audioInput?.SetChatState(false);       // don't record the characters while they answer
             SetRosterInteractable(false);          // no roster changes mid-turn
         }
 
@@ -146,7 +130,6 @@ namespace Neocortex.Samples
         {
             turnActive = false;
 
-            RearmMic();
             SetRosterInteractable(true);
             
             foreach (var agent in director.Agents)
@@ -273,12 +256,6 @@ namespace Neocortex.Samples
         }
 
         // Helpers
-
-        private void RearmMic()
-        {
-            if (audioInput != null) audioInput.SetChatState(true);
-            if (voiceInput != null && !voiceInput.UsePushToTalk) voiceInput.StartMicrophone();
-        }
 
         private void SetRosterInteractable(bool on)
         {

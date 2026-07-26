@@ -2558,9 +2558,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1213402659}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1213402658}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
@@ -2629,26 +2626,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &1213402659
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1213402654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdfcf8024001b5245989c3632d49a335, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
-  agent: {fileID: 1213402655}
-  director: {fileID: 0}
-  playerName: You
-  chatPanel: {fileID: 1583252999}
-  textInput: {fileID: 0}
-  audioInput: {fileID: 1369384347}
-  thinkingIndicator: {fileID: 0}
-  voiceInput: {fileID: 0}
 --- !u!114 &1213402660
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3502,26 +3479,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
---- !u!114 &1488510520
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 684884959}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdfcf8024001b5245989c3632d49a335, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
-  agent: {fileID: 1488510517}
-  director: {fileID: 0}
-  playerName: You
-  chatPanel: {fileID: 1583252999}
-  textInput: {fileID: 0}
-  audioInput: {fileID: 1369384347}
-  thinkingIndicator: {fileID: 0}
-  voiceInput: {fileID: 0}
 --- !u!143 &1488510528
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4490,9 +4447,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1818373524}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1818373523}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
@@ -4561,26 +4515,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &1818373524
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1818373519}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdfcf8024001b5245989c3632d49a335, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
-  agent: {fileID: 1818373520}
-  director: {fileID: 0}
-  playerName: You
-  chatPanel: {fileID: 1583252999}
-  textInput: {fileID: 0}
-  audioInput: {fileID: 1369384347}
-  thinkingIndicator: {fileID: 0}
-  voiceInput: {fileID: 0}
 --- !u!114 &1818373525
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4755,6 +4689,7 @@ GameObject:
   - component: {fileID: 1953285529}
   - component: {fileID: 1953285528}
   - component: {fileID: 1953285530}
+  - component: {fileID: 1953285531}
   m_Layer: 0
   m_Name: Group Chat Demo
   m_TagString: Untagged
@@ -4877,6 +4812,25 @@ MonoBehaviour:
   OnPermissionDenied:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1953285531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1953285526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4e1eee2235b8f4f9513d82ce4fb402, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexGroupChatUI
+  director: {fileID: 1953285528}
+  playerName: You
+  chatPanel: {fileID: 1583252999}
+  textInput: {fileID: 0}
+  audioInput: {fileID: 1369384347}
+  thinkingIndicator: {fileID: 0}
+  voiceInput: {fileID: 1953285530}
 --- !u!1 &2105741574
 GameObject:
   m_ObjectHideFlags: 0
@@ -5306,9 +5260,6 @@ PrefabInstance:
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1488510520}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1488510528}
