@@ -10,17 +10,17 @@ namespace Neocortex
 {
     /// <summary>
     ///     Orchestrates a group conversation across several <see cref="NeocortexSmartAgent"/>s. Each
-    ///     agent stays on its own character's GameObject — its personality, audio and animation live
-    ///     there — and the director assembles them into a cast, sends one group turn, and routes every
+    ///     agent stays on its own character's GameObject, its personality, audio and animation live
+    ///     there, and the director assembles them into a cast, sends one group turn, and routes every
     ///     speaker's reply back to the matching agent so it speaks through its own events.
     ///
     ///     Turn kinds:
     ///     <list type="bullet">
-    ///     <item><see cref="Send"/> — the player says something; an AI director decides who answers and
+    ///     <item><see cref="Send"/>, the player says something; an AI director decides who answers and
     ///     in what order (up to <see cref="maxTurns"/> characters).</item>
-    ///     <item><see cref="SendTo(NeocortexSmartAgent,string)"/> — the player addresses one character;
+    ///     <item><see cref="SendTo(NeocortexSmartAgent,string)"/>, the player addresses one character;
     ///     that character answers this turn.</item>
-    ///     <item><see cref="Continue"/> — no player input; the cast talks among themselves (ambient).</item>
+    ///     <item><see cref="Continue"/>, no player input; the cast talks among themselves (ambient).</item>
     ///     </list>
     ///     A multi-character cast requires a Pro/Team API key; a cast of one behaves like a normal
     ///     single-character chat and works on any tier.
@@ -35,16 +35,16 @@ namespace Neocortex
         [SerializeField] private int maxTurns = 5;
 
         [Header("Group Events")]
-        [Tooltip("Raised before a character speaks its turn — use it for a shared transcript / name label.")]
+        [Tooltip("Raised before a character speaks its turn, use it for a shared transcript / name label.")]
         [Space] public UnityEvent<GroupMessage> OnSpeaker = new();
         [Tooltip("Raised with the whole group turn once, before the speakers are played out.")]
         [Space] public UnityEvent<GroupChatResponse> OnGroupResponseReceived = new();
-        [Tooltip("Raised when a turn starts — e.g. to lock the input field while the cast talks.")]
+        [Tooltip("Raised when a turn starts, e.g. to lock the input field while the cast talks.")]
         [Space] public UnityEvent OnTurnStarted = new();
         [Tooltip("Raised when every speaker in the turn has finished.")]
         [Space] public UnityEvent OnTurnFinished = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
-        [Tooltip("Raised with the shared session's transcript when GetHistory() returns — each entry is name-labeled.")]
+        [Tooltip("Raised with the shared session's transcript when GetHistory() returns, each entry is name-labeled.")]
         [Space] public UnityEvent<ChatHistoryEntry[]> OnHistoryReceived = new();
         [Tooltip("Raised with the transcript of the player's SPOKEN input (SendAudio) so the UI can show it.")]
         [Space] public UnityEvent<string> OnPlayerSpeech = new();
@@ -95,7 +95,7 @@ namespace Neocortex
         /// <summary>Player addresses one character (by id); that character answers this turn.</summary>
         public void SendTo(string characterId, string message) => _ = RunTurn(message, characterId);
 
-        /// <summary>No player input — let the cast talk among themselves (ambient turn).</summary>
+        /// <summary>No player input, let the cast talk among themselves (ambient turn).</summary>
         public void Continue() => _ = RunTurn(null, null);
 
         /// <summary>

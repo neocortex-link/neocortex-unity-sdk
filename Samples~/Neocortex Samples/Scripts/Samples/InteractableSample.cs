@@ -6,7 +6,7 @@ namespace Neocortex.Samples
 {
     /// <summary>
     ///     The Interactables demo: the character perceives the objects around it. Tag each object
-    ///     with a <see cref="NeocortexInteractable"/> (name + properties like colour) — the SDK
+    ///     with a <see cref="NeocortexInteractable"/> (name + properties like colour), the SDK
     ///     sends them with every message automatically, no code needed.
     ///
     ///     Ask "go to the red cube" and the reply's GO_TO_CUBE action carries the id of the entity
@@ -77,7 +77,7 @@ namespace Neocortex.Samples
                 yield break;
             }
 
-            // Walk to the LIVE object (so it works even if it has moved) on the ground plane — its
+            // Walk to the LIVE object (so it works even if it has moved) on the ground plane, its
             // height must not count toward "arrived", or a cube resting on the floor is never reached.
             // NOTE: the character's Animator must have Apply Root Motion OFF, or the idle clip pins
             // the root every frame and fights CharacterController.Move.

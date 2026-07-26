@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace Neocortex.Samples
 {
     /// <summary>
-    ///     Everything the SDK does NOT do for you — which is not much anymore. NeocortexChatUI runs
+    ///     Everything the SDK does NOT do for you, which is not much anymore. NeocortexChatUI runs
     ///     the whole conversation loop (input, bubbles, history painting, thinking indicator, mic
     ///     handoff, errors), and history loads via the agent's "Load History On Start" toggle. What
     ///     is left for a sample script is the game-side reaction: driving the character's

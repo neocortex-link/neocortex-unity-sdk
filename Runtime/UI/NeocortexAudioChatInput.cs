@@ -11,7 +11,7 @@ namespace Neocortex
     {
         [SerializeField] private AudioReceiver voiceInput;
 
-        /// <summary>The receiver this widget drives — a <see cref="NeocortexAudioReceiver"/> fits here. Set before Start.</summary>
+        /// <summary>The receiver this widget drives, a <see cref="NeocortexAudioReceiver"/> fits here. Set before Start.</summary>
         public AudioReceiver AudioReceiver { get => voiceInput; set => voiceInput = value; }
 
         [Header("Amplitude Bar")]
@@ -34,7 +34,7 @@ namespace Neocortex
 
             if (voiceInput == null)
             {
-                Debug.LogWarning("[Neocortex] Audio Chat Input has no receiver assigned — add a NeocortexAudioReceiver and drag it in (or let NeocortexChatUI wire it).", this);
+                Debug.LogWarning("[Neocortex] Audio Chat Input has no receiver assigned, add a NeocortexAudioReceiver and drag it in (or let NeocortexChatUI wire it).", this);
                 enabled = false;
                 return;
             }
@@ -62,7 +62,7 @@ namespace Neocortex
 
         private void Update()
         {
-            // The mode can be flipped at runtime (settings toggle, code) — follow it live.
+            // The mode can be flipped at runtime (settings toggle, code), follow it live.
             if (voiceInput.UsePushToTalk != pushToTalkMode)
             {
                 ApplyMode();

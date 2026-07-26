@@ -19,7 +19,7 @@ namespace Neocortex.Data
         /// <summary>Chat lines drop in as messages with an emotion each. No audio, no extra cost.</summary>
         Text,
 
-        /// <summary>One reply, delivered whole. Default — behaves exactly as before chat lines existed.</summary>
+        /// <summary>One reply, delivered whole. Default, behaves exactly as before chat lines existed.</summary>
         Off
     }
 }

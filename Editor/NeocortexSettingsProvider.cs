@@ -7,7 +7,7 @@ namespace Neocortex.Editor
     /// <summary>
     ///     Single owner of the settings asset: any editor code can get (or lazily create) it here,
     ///     so it exists even if the settings window was never opened. Also opens the settings window
-    ///     once on first import when no API key is set — the "paste your key" onboarding moment.
+    ///     once on first import when no API key is set, the "paste your key" onboarding moment.
     /// </summary>
     public static class NeocortexSettingsProvider
     {

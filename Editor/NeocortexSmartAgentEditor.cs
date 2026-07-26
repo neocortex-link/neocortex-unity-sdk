@@ -49,7 +49,7 @@ namespace Neocortex.Editor
         {
             if (!HasApiKey())
             {
-                EditorGUILayout.HelpBox("No API key set — the agent cannot reach Neocortex.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No API key set, the agent cannot reach Neocortex.", MessageType.Warning);
                 if (GUILayout.Button("Open Neocortex Settings"))
                 {
                     NeocortexSettingsWindow.ShowWindow();

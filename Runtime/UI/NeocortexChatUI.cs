@@ -9,7 +9,7 @@ namespace Neocortex
     ///     optional and auto-resolved from this GameObject's children.
     ///
     ///     For a multi-character scene use <see cref="NeocortexGroupChatUI"/> with a
-    ///     <see cref="NeocortexGroupDirector"/> instead — one UI for the whole cast.
+    ///     <see cref="NeocortexGroupDirector"/> instead, one UI for the whole cast.
     /// </summary>
     [AddComponentMenu("Neocortex/Neocortex Chat UI", 0)]
     public class NeocortexChatUI : MonoBehaviour
@@ -46,7 +46,7 @@ namespace Neocortex
 
             if (agent == null)
             {
-                Debug.LogError("[Neocortex] Chat UI needs a NeocortexSmartAgent — assign one or place it under this GameObject.", this);
+                Debug.LogError("[Neocortex] Chat UI needs a NeocortexSmartAgent, assign one or place it under this GameObject.", this);
                 enabled = false;
                 return;
             }

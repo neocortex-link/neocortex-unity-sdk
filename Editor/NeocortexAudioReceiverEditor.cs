@@ -45,7 +45,7 @@ namespace Neocortex.Editor
             serializedObject.Update();
 
             EditorGUILayout.HelpBox(
-                "One microphone for every platform — the right capture backend is picked at runtime, and the mic permission is handled on Android/iOS.\n\n" +
+                "One microphone for every platform, the right capture backend is picked at runtime, and the mic permission is handled on Android/iOS.\n\n" +
                 "Voice activity (default): recording starts when speech rises above the threshold and ends after the silence timeout. " +
                 "Push To Talk: records only while the button is held.",
                 MessageType.Info);
@@ -63,7 +63,7 @@ namespace Neocortex.Editor
             if (microphoneOptions is { Length: > 0 })
             {
                 // Track outside changes (runtime dropdown / facade API) and only write on an actual
-                // pick — writing every repaint would fight live mic switching.
+                // pick, writing every repaint would fight live mic switching.
                 selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
                 int picked = EditorGUILayout.Popup("Microphone", selectedMicrophoneIndex, microphoneOptions);
                 if (picked != selectedMicrophoneIndex)
@@ -86,7 +86,7 @@ namespace Neocortex.Editor
                 PlayerSettings.WebGL.template != WEBGL_TEMPLATE)
             {
                 GUILayout.Space(8);
-                EditorGUILayout.HelpBox("Build target is WebGL but the Neocortex WebGL template is not selected — the microphone will not work in the browser.", MessageType.Warning);
+                EditorGUILayout.HelpBox("Build target is WebGL but the Neocortex WebGL template is not selected, the microphone will not work in the browser.", MessageType.Warning);
                 if (GUILayout.Button("Select Neocortex WebGL Template"))
                 {
                     PlayerSettings.WebGL.template = WEBGL_TEMPLATE;

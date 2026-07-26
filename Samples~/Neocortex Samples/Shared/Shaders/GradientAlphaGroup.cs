@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Put this on the ScrollRect root (or Viewport) — NOT on Content.
+/// Put this on the ScrollRect root (or Viewport), NOT on Content.
 /// Fades everything under it from topAlpha (top edge of THIS rect)
 /// to bottomAlpha (bottom edge) by baking alpha into vertex colors.
 /// Works with ScrollRects: items rebake as they scroll, and items
@@ -105,8 +105,8 @@ public class GradientAlphaGroup : MonoBehaviour
 }
 
 /// <summary>
-/// Managed entirely by GradientAlphaGroup — never add manually.
-/// Rebakes its Graphic whenever it MOVES RELATIVE TO THE PANEL —
+/// Managed entirely by GradientAlphaGroup, never add manually.
+/// Rebakes its Graphic whenever it MOVES RELATIVE TO THE PANEL,
 /// including when a ScrollRect moves its parent Content (which does
 /// not touch this transform's own local position or hasChanged flag).
 /// </summary>
@@ -133,7 +133,7 @@ public class GradientAlphaElement : BaseMeshEffect
     {
         if (group == null || !group.isActiveAndEnabled) return;
 
-        // Position of this element in the PANEL's local space — this changes
+        // Position of this element in the PANEL's local space, this changes
         // when scrolling, even though our own transform is untouched.
         Vector2 p = group.Rect.InverseTransformPoint(transform.position);
 

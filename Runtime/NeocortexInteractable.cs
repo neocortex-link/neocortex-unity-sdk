@@ -6,12 +6,12 @@ namespace Neocortex
 {
     /// <summary>
     ///     Makes this GameObject part of what characters can perceive. Give it properties and every
-    ///     message a nearby character sends carries it automatically — no code.
+    ///     message a nearby character sends carries it automatically, no code.
     ///
     ///     Properties are name/value pairs describing the thing: its "name" (seeded from the
     ///     GameObject when you add the component, and editable or removable), what it IS (type: door)
     ///     and its current state (color: red, locked: true). Characters reference entities by
-    ///     <see cref="Id"/> — a short stable hash — never by name, so two "Red Cube"s stay
+    ///     <see cref="Id"/>, a short stable hash, never by name, so two "Red Cube"s stay
     ///     distinguishable.
     /// </summary>
     [AddComponentMenu("Neocortex/Neocortex Interactable", 0)]
@@ -20,7 +20,7 @@ namespace Neocortex
         [Tooltip("Unique id characters use to reference this. Leave empty to derive a stable one from the scene path.")]
         [SerializeField] private string id;
 
-        [Tooltip("Everything about this thing as name/value pairs: name, type=door, color=red, locked=true. 'name' is seeded from the GameObject — edit it, add more, or remove any.")]
+        [Tooltip("Everything about this thing as name/value pairs: name, type=door, color=red, locked=true. 'name' is seeded from the GameObject, edit it, add more, or remove any.")]
         [SerializeField] private InteractableProperty[] properties = Array.Empty<InteractableProperty>();
 
         /// <summary>Stable identity: the authored id, or one derived from this object's scene path.</summary>

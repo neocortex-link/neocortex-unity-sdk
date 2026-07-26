@@ -5,7 +5,7 @@ namespace Neocortex
 {
     /// <summary>
     ///     The group counterpart of <see cref="NeocortexChatUI"/>: ONE UI for a whole cast. Connects
-    ///     the Neocortex widgets to a <see cref="NeocortexGroupDirector"/> and runs the loop — typed
+    ///     the Neocortex widgets to a <see cref="NeocortexGroupDirector"/> and runs the loop, typed
     ///     and spoken input to the director, every speaker's reply into the shared panel under its
     ///     own name, thinking indicator and mic handoff per turn, history and errors.
     ///
@@ -44,7 +44,7 @@ namespace Neocortex
 
             if (director == null)
             {
-                Debug.LogError("[Neocortex] Group Chat UI needs a NeocortexGroupDirector — assign one or place it on the director's GameObject.", this);
+                Debug.LogError("[Neocortex] Group Chat UI needs a NeocortexGroupDirector, assign one or place it on the director's GameObject.", this);
                 enabled = false;
                 return;
             }

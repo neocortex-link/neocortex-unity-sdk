@@ -23,9 +23,9 @@ namespace Neocortex
         /// <summary>When the queued actions of a reply are run.</summary>
         public enum ActionTrigger
         {
-            /// <summary>Run as soon as the reply arrives — the character may act before it starts speaking.</summary>
+            /// <summary>Run as soon as the reply arrives, the character may act before it starts speaking.</summary>
             WhenResponseReceived,
-            /// <summary>Run the moment the character starts speaking — action and voice line begin together.</summary>
+            /// <summary>Run the moment the character starts speaking, action and voice line begin together.</summary>
             WhenSpeechStarts,
             /// <summary>Run once the character has finished speaking the reply (text + audio).</summary>
             AfterReplySpoken,
@@ -35,7 +35,7 @@ namespace Neocortex
         [SerializeField] private NeocortexSmartAgent agent;
 
         [Tooltip("When Response Received: actions run the instant the reply arrives (may act before speaking).\n" +
-                 "When Speech Starts: actions run as the character begins the voice line — movement and speech together.\n" +
+                 "When Speech Starts: actions run as the character begins the voice line, movement and speech together.\n" +
                  "After Reply Spoken: actions wait until the character finishes speaking.\n" +
                  "The last two need an audio Chat Lines Mode on the agent (Single/Per-Line Audio); Off mode raises no speech events and falls back to firing on arrival.")]
         [SerializeField] private ActionTrigger trigger = ActionTrigger.WhenResponseReceived;
@@ -70,7 +70,7 @@ namespace Neocortex
 
             if (agent == null)
             {
-                Debug.LogError("[Neocortex] Action Queue needs a NeocortexSmartAgent — assign one in the Inspector or put the queue on the agent's GameObject.", this);
+                Debug.LogError("[Neocortex] Action Queue needs a NeocortexSmartAgent, assign one in the Inspector or put the queue on the agent's GameObject.", this);
                 enabled = false;
                 return;
             }
@@ -127,7 +127,7 @@ namespace Neocortex
             }
 
             // The deferred triggers wait for a playback event (speech start / reply finished). Off
-            // mode does no playback and raises neither, so waiting would hang the queue forever —
+            // mode does no playback and raises neither, so waiting would hang the queue forever,
             // fire on arrival instead, once, with a heads-up.
             bool deferred = trigger != ActionTrigger.WhenResponseReceived;
 
@@ -136,7 +136,7 @@ namespace Neocortex
                 if (!warnedOffMode)
                 {
                     warnedOffMode = true;
-                    Debug.LogWarning("[Neocortex] Action Queue is set to fire on speech (When Speech Starts / After Reply Spoken), but the agent's Chat Lines Mode is Off, which raises no speech events. Firing on response instead — set Single or Per-Line Audio.", this);
+                    Debug.LogWarning("[Neocortex] Action Queue is set to fire on speech (When Speech Starts / After Reply Spoken), but the agent's Chat Lines Mode is Off, which raises no speech events. Firing on response instead, set Single or Per-Line Audio.", this);
                 }
                 deferred = false;
             }
@@ -151,7 +151,7 @@ namespace Neocortex
         private void StartPendingOnLine(ChatLine _) => StartPending();
 
         // Kicks off processing if idle and there is anything queued. Safe to call more than once
-        // (e.g. captured-now AND a later playback event) — the running/empty guards no-op.
+        // (e.g. captured-now AND a later playback event), the running/empty guards no-op.
         private void StartPending()
         {
             if (!running && queue.Count > 0)

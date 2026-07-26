@@ -9,7 +9,7 @@ namespace Neocortex
 {
     // Internal: spawned by NeocortexAudioReceiver on WebGL. Add the facade, not this. The jslib
     // calls back into this component BY GAMEOBJECT NAME, so its GameObject name must be unique
-    // — the facade guarantees that by spawning it on a uniquely-named child.
+    //, the facade guarantees that by spawning it on a uniquely-named child.
     [AddComponentMenu("")]
     public class NeocortexWebAudioReceiver : AudioReceiver
     {

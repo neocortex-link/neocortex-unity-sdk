@@ -5,13 +5,13 @@ namespace Neocortex.Samples
 {
     /// <summary>
     ///     The Actions demo: pick your character's action keywords (here DANCE and JUMP, as authored
-    ///     on its Actions node) and assign each one whatever you want to happen — a handler is a
+    ///     on its Actions node) and assign each one whatever you want to happen, a handler is a
     ///     coroutine, so anything with an end time works. The <see cref="NeocortexActionQueue"/>
     ///     captures the reply's stacked actions and runs the handlers one after another, in the
     ///     order the character intends ("jump and dance" plays differently than "dance and jump").
     ///
     ///     Also drives the character's Idle / Thinking / Talking states, so this scene is
-    ///     self-sufficient: bools "Thinking" and "Talking" plus triggers "Dance" and "Jump" —
+    ///     self-sufficient: bools "Thinking" and "Talking" plus triggers "Dance" and "Jump",
     ///     transitions, blending and the return to idle are authored in the Animator Controller.
     /// </summary>
     public class ActionsSample : MonoBehaviour
@@ -54,7 +54,7 @@ namespace Neocortex.Samples
         }
 
         /// <summary>
-        ///     Fires an Animator trigger and holds for the action's duration — the queue starts the
+        ///     Fires an Animator trigger and holds for the action's duration, the queue starts the
         ///     next action only after this finishes. Transitions are authored in the controller.
         /// </summary>
         private IEnumerator PlayAnimation(int trigger, float duration)

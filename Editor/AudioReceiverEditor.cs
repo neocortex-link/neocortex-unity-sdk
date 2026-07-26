@@ -29,7 +29,7 @@ namespace Neocortex.Editor
             
             if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexNativeAudioReceiver)
             {
-                // Only write on an actual pick — writing every repaint fights live mic switching.
+                // Only write on an actual pick, writing every repaint fights live mic switching.
                 selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
                 int picked = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
                 if (picked != selectedMicrophoneIndex)

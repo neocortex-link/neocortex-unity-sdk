@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 namespace Neocortex
 {
     /// <summary>
-    ///     Facial animation for chat replies, driven entirely by ARKit-standard blendshapes — the
+    ///     Facial animation for chat replies, driven entirely by ARKit-standard blendshapes, the
     ///     same system that animates Cora on neocortex.link. Put it on (or above) a face mesh and
     ///     it lip-syncs automatically: each chat line is broken into rough syllables, mapped to
     ///     viseme shapes (A/E/I/O/U + consonant groups) and played across the reply's duration,
@@ -28,7 +28,7 @@ namespace Neocortex
         [Tooltip("Drives lip-sync from this agent's chat lines. Auto-resolved from this object and its parents when empty.")]
         [SerializeField] private NeocortexSmartAgent agent;
 
-        [Tooltip("The source the voice plays through — the mouth stops the moment it stops. Auto-resolved from the agent when empty.")]
+        [Tooltip("The source the voice plays through, the mouth stops the moment it stops. Auto-resolved from the agent when empty.")]
         [SerializeField] private AudioSource audioSource;
         
         [Tooltip("Face meshes with blendshapes. Auto-resolved from children when empty.")]
@@ -73,7 +73,7 @@ namespace Neocortex
         private int sequenceIndex;
 
         // Audio gate: when the animation was started by a clip, the mouth is hard-stopped the
-        // moment the source stops playing — clip.length can over-report (padded MP3s), and the
+        // moment the source stops playing, clip.length can over-report (padded MP3s), and the
         // sequence must never outlive the audible voice.
         private bool audioDriven;
         private bool waitingForAudioStart;
@@ -161,7 +161,7 @@ namespace Neocortex
         }
 
         /// <summary>
-        ///     Lip-syncs a piece of text across <paramref name="duration"/> seconds — rough
+        ///     Lip-syncs a piece of text across <paramref name="duration"/> seconds, rough
         ///     syllables mapped to visemes, vowels held longer than consonants, a rest between
         ///     words. The agent calls this automatically for every chat line.
         /// </summary>
@@ -210,7 +210,7 @@ namespace Neocortex
             ApplyViseme(sequence[0].viseme);
         }
 
-        /// <summary>Random mouth movement with no text — an "is talking" fallback.</summary>
+        /// <summary>Random mouth movement with no text, an "is talking" fallback.</summary>
         public void StartSpeaking()
         {
             babbling = true;

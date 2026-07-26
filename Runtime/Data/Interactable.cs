@@ -6,7 +6,7 @@ namespace Neocortex
 {
     /// <summary>
     ///     One thing the character can perceive: an object, another character, or the player.
-    ///     Sent as world facts — position and state — with no interpretation attached; working out
+    ///     Sent as world facts, position and state, with no interpretation attached; working out
     ///     what is near or worth acting on is the character's job.
     /// </summary>
     [Serializable]
@@ -16,7 +16,7 @@ namespace Neocortex
         public string id;
 
         /// <summary>
-        ///     Everything descriptive about this thing as name/value pairs — both what it IS
+        ///     Everything descriptive about this thing as name/value pairs, both what it IS
         ///     (type: door, kind: character) and its current state (color: red, locked: true). The
         ///     character reads meaning from these.
         /// </summary>

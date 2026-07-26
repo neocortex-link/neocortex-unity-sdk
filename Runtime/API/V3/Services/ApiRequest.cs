@@ -121,7 +121,7 @@ namespace Neocortex.API
         }
 
         /// <summary>
-        ///     Where perception is measured from — the speaking character's transform. Nearest
+        ///     Where perception is measured from, the speaking character's transform. Nearest
         ///     entities win when the scene has more than the character can take in. Null = no
         ///     distance filtering (the whole scene, still capped).
         /// </summary>
@@ -136,7 +136,7 @@ namespace Neocortex.API
         /// <summary>
         ///     Builds what the character can perceive: the character's OWN location always goes in
         ///     (so it knows where it stands), plus every tagged entity in the scene, nearest first
-        ///     and bounded so a busy scene can't blow up the prompt. Positions go out as raw facts —
+        ///     and bounded so a busy scene can't blow up the prompt. Positions go out as raw facts,
         ///     the character works out distance, direction and relevance for itself.
         /// </summary>
         private string CreateMetadata(string selfCharacterId = null)
@@ -161,7 +161,7 @@ namespace Neocortex.API
 
             entities.AddRange(perceived.Take(Mathf.Max(1, MaxPerceivedEntities)).Select(i => i.ToInteractable()));
 
-            // Always include the speaking character's own location so it knows where it is — unless
+            // Always include the speaking character's own location so it knows where it is, unless
             // a NeocortexInteractable already represents it (auto-linked on its GameObject).
             if (!string.IsNullOrEmpty(selfCharacterId) && PerceptionOrigin != null &&
                 !entities.Exists(e => e.characterId == selfCharacterId))
@@ -330,7 +330,7 @@ namespace Neocortex.API
 
         /// <summary>
         ///     Transcribes speech to text via the audio endpoint, WITHOUT chatting (unlike
-        ///     <see cref="Send{TInput,TOutput}"/>). The character id is required for auth/metering —
+        ///     <see cref="Send{TInput,TOutput}"/>). The character id is required for auth/metering,
         ///     any character the key owns works. Returns "" and raises
         ///     <see cref="OnRequestFailed"/> on failure.
         /// </summary>
@@ -372,7 +372,7 @@ namespace Neocortex.API
 
         /// <summary>
         ///     Generates speech for a piece of text, voiced in the given emotion.
-        ///     IMPORTANT: every call costs 1 audio credit — generating audio per line multiplies
+        ///     IMPORTANT: every call costs 1 audio credit, generating audio per line multiplies
         ///     the audio cost of a reply by the number of lines.
         ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
         /// </summary>
@@ -446,7 +446,7 @@ namespace Neocortex.API
         }
 
         /// <summary>
-        ///     Gets the API key's team's characters (id + name). Read-only and unmetered — powers
+        ///     Gets the API key's team's characters (id + name). Read-only and unmetered, powers
         ///     the editor's character picker. Returns null and raises <see cref="OnRequestFailed"/>
         ///     on failure.
         /// </summary>

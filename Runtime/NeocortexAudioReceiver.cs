@@ -12,7 +12,7 @@ namespace Neocortex
     ///     THE microphone component: add it anywhere and voice input works on every platform.
     ///     Internally it spawns the right capture implementation for the target (standalone/mobile
     ///     vs WebGL) on a uniquely-named child, handles the Android/iOS microphone permission, and
-    ///     owns microphone selection — so games never touch the platform backends directly.
+    ///     owns microphone selection, so games never touch the platform backends directly.
     ///
     ///     Anything that takes an <see cref="AudioReceiver"/> (e.g.
     ///     <see cref="NeocortexAudioChatInput"/>) accepts it as-is. Push-to-talk, the
@@ -34,7 +34,7 @@ namespace Neocortex
         /// <summary>The platform capture implementation in use. Internal detail; exposed for advanced scenarios.</summary>
         public AudioReceiver Receiver => receiver;
 
-        /// <summary>Available microphone devices (a single placeholder entry on WebGL — the browser owns the mic).</summary>
+        /// <summary>Available microphone devices (a single placeholder entry on WebGL, the browser owns the mic).</summary>
         public string[] Microphones => NeocortexMicrophone.devices;
 
         /// <summary>The saved microphone index used by the capture layer on its next start.</summary>

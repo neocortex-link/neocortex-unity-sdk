@@ -13,14 +13,14 @@ namespace Neocortex
     /// The main component for talking to a Neocortex character. Add it to a GameObject, set the
     /// Character ID, and call <see cref="TextToText"/> / <see cref="AudioToAudio"/> etc.
     ///
-    /// Set <see cref="ChatLinesMode"/> to deliver replies as ordered <b>chat lines</b> — chunks that
+    /// Set <see cref="ChatLinesMode"/> to deliver replies as ordered <b>chat lines</b>, chunks that
     /// drop in one after another as separate messages (with emotion per line) instead of one block
     /// of text. The message drop is the same in every mode; the mode only decides the audio:
     /// <list type="bullet">
-    /// <item><see cref="Data.ChatLinesMode.Off"/> — one whole reply (default, unchanged).</item>
-    /// <item><see cref="Data.ChatLinesMode.Text"/> — chat lines drop in, no audio. No extra cost.</item>
-    /// <item><see cref="Data.ChatLinesMode.SingleAudio"/> — lines drop in over ONE voice clip (1 credit).</item>
-    /// <item><see cref="Data.ChatLinesMode.PerLineAudio"/> — each line is voiced separately, in order.
+    /// <item><see cref="Data.ChatLinesMode.Off"/>, one whole reply (default, unchanged).</item>
+    /// <item><see cref="Data.ChatLinesMode.Text"/>, chat lines drop in, no audio. No extra cost.</item>
+    /// <item><see cref="Data.ChatLinesMode.SingleAudio"/>, lines drop in over ONE voice clip (1 credit).</item>
+    /// <item><see cref="Data.ChatLinesMode.PerLineAudio"/>, each line is voiced separately, in order.
     /// WARNING: ~1 audio credit PER line (up to 4x). Needs an <c>AudioSource</c>; degrades on its own
     /// when credits run low.</item>
     /// </list>
@@ -48,9 +48,9 @@ namespace Neocortex
         }
 
         [Tooltip("Off: one normal reply.\n" +
-                 "Text: chat lines drop in as messages with emotion — no extra cost.\n" +
+                 "Text: chat lines drop in as messages with emotion, no extra cost.\n" +
                  "Single Audio: same, plus ONE voice clip for the whole reply (1 credit).\n" +
-                 "Per-Line Audio: same, but each line is voiced separately — WARNING: ~1 credit PER line (up to 4x).")]
+                 "Per-Line Audio: same, but each line is voiced separately, WARNING: ~1 credit PER line (up to 4x).")]
         [SerializeField] private ChatLinesMode chatLinesMode = ChatLinesMode.Off;
 
         [Tooltip("Required for Single Audio and Per-Line Audio modes; line clips play here.")]
@@ -66,7 +66,7 @@ namespace Neocortex
         [Space] public UnityEvent<ChatHistoryEntry[]> OnChatHistoryReceived = new();
 
         [Header("Chat Lines")]
-        [Tooltip("Raised as each chat line drops in — add it to your chat panel here.")]
+        [Tooltip("Raised as each chat line drops in, add it to your chat panel here.")]
         [Space] public UnityEvent<ChatLine> OnChatLineStarted = new();
         [Tooltip("Raised with each line's emotion as it drops in. Drive animation here.")]
         [Space] public UnityEvent<Emotions> OnEmotionChanged = new();
@@ -129,7 +129,7 @@ namespace Neocortex
 
         private void Start()
         {
-            // Only when a session actually exists — a fresh install has nothing to load and an
+            // Only when a session actually exists, a fresh install has nothing to load and an
             // empty session id would be rejected by the server.
             if (loadHistoryOnStart && NeocortexSessionManager.GetSessionID(characterID) != "")
             {
@@ -150,7 +150,7 @@ namespace Neocortex
         public void TextToAudio(string message)
         {
             // In a chat-lines mode the agent produces audio itself (single or per line), so request
-            // text only — otherwise we'd also pay for a separate full-reply clip.
+            // text only, otherwise we'd also pay for a separate full-reply clip.
             if (chatLinesMode == ChatLinesMode.Off)
             {
                 Dispatch(() => apiRequest.Send<string, AudioClip>(characterID, message));
@@ -261,7 +261,7 @@ namespace Neocortex
         }
 
         /// <summary>
-        ///     Plays a reply produced elsewhere — a <see cref="NeocortexGroupDirector"/> turn — through
+        ///     Plays a reply produced elsewhere, a <see cref="NeocortexGroupDirector"/> turn, through
         ///     this agent, so the character speaks with its own chat-line playback, emotion events and
         ///     audio source (the personality stays "attached" to this GameObject). Awaitable, so the
         ///     director can let one character finish speaking before the next begins. Sends no request
@@ -432,13 +432,13 @@ namespace Neocortex
 
             if (clip != null)
             {
-                // Surface the clip like Off-mode audio does (notification only — the agent plays it).
+                // Surface the clip like Off-mode audio does (notification only, the agent plays it).
                 OnAudioResponseReceived.Invoke(clip);
                 audioSource.clip = clip;
                 audioSource.Play();
             }
 
-            // The clip covers the gap here — no "typing…" cue while the character is speaking aloud.
+            // The clip covers the gap here, no "typing…" cue while the character is speaking aloud.
             await DropLines(lines, token, signalComposing: false);
             if (this == null || token != playbackToken) return;
 

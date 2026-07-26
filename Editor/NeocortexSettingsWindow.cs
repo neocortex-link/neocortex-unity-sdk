@@ -141,7 +141,7 @@ namespace Neocortex.Editor
                 EditorGUILayout.HelpBox(
                     string.IsNullOrEmpty(settings.apiKey)
                         ? "Save an API key to list your characters."
-                        : "No characters yet — create one in the dashboard, then Refresh.",
+                        : "No characters yet, create one in the dashboard, then Refresh.",
                     MessageType.Info);
                 if (GUILayout.Button("Open Dashboard"))
                 {

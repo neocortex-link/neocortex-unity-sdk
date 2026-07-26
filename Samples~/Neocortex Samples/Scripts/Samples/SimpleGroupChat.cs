@@ -13,11 +13,11 @@ namespace Neocortex.Samples
     ///     shared panel labeled by speaker. Characters play Thinking (while the group works out its
     ///     reply) and Talking (while speaking).
     ///
-    ///     The roster: a character can wait offstage and WALK IN to join, or LEAVE and walk off — from
+    ///     The roster: a character can wait offstage and WALK IN to join, or LEAVE and walk off, from
     ///     a button. Joining/leaving is not just data: when a character reaches its seat we log a world
     ///     event ("… joined the group") so the NEXT reply greets it; when one leaves we log its exit
     ///     and drop it from the cast, so the others carry on knowing it is gone. All of it rides on the
-    ///     director's own AddAgent / RemoveAgent + NeocortexEventLogger — this script is just staging.
+    ///     director's own AddAgent / RemoveAgent + NeocortexEventLogger, this script is just staging.
     /// </summary>
     public class SimpleGroupChat : MonoBehaviour
     {
@@ -170,7 +170,7 @@ namespace Neocortex.Samples
             director.AddAgent(member.agent);
             if (member.toggle != null) member.toggle.interactable = true;
 
-            // Fire an ambient turn so the cast reacts to the arrival right away — greeting the
+            // Fire an ambient turn so the cast reacts to the arrival right away, greeting the
             // newcomer without the player having to say anything first.
             director.Continue();
         }
@@ -181,7 +181,7 @@ namespace Neocortex.Samples
 
             // Drop from the cast BEFORE walking off, so it can't be picked to speak on the way out.
             // The server sees the character missing from the next turn's cast and tells the others it
-            // left, so they carry on knowing it is gone — no manual event needed.
+            // left, so they carry on knowing it is gone, no manual event needed.
             member.present = false;
             director.RemoveAgent(member.agent);
 

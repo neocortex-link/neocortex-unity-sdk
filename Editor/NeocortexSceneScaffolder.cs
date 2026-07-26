@@ -7,7 +7,7 @@ namespace Neocortex.Editor
 {
     /// <summary>
     ///     One-click chat rigs: places the UI widgets, creates the character object (agent + audio
-    ///     + voice input), and wires every reference through <see cref="NeocortexChatUI"/> — so the
+    ///     + voice input), and wires every reference through <see cref="NeocortexChatUI"/>, so the
     ///     only thing left to do is pick the character and press Play.
     /// </summary>
     public static class NeocortexSceneScaffolder

@@ -8,7 +8,7 @@ namespace Neocortex
     ///     One chat bubble: the text, its alignment (who is speaking, plus the writing direction), an
     ///     optional avatar carrying the sender's initial, and the colors of both.
     ///
-    ///     Every widget reference is optional — a message prefab without an avatar simply shows none,
+    ///     Every widget reference is optional, a message prefab without an avatar simply shows none,
     ///     so prefabs authored before avatars existed keep working untouched.
     /// </summary>
     public class NeocortexMessage : UIBehaviour

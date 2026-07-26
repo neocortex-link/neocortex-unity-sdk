@@ -61,7 +61,7 @@ namespace Neocortex
             StartCoroutine(ScrollToBottom());
         }
 
-        /// <summary>Adds a bubble with no sender name (so no avatar) — the single-character shorthand.</summary>
+        /// <summary>Adds a bubble with no sender name (so no avatar), the single-character shorthand.</summary>
         public void AddMessage(string text, bool isUser) => AddMessage(null, text, isUser);
 
         public void ClearMessages()
