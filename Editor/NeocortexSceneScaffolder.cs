@@ -40,16 +40,26 @@ namespace Neocortex.Editor
                 panelRect.anchoredPosition = Vector2.zero;
             }
 
-            NeocortexTextChatInput textInput = EditorUtilities.LoadAndInstantiate<NeocortexTextChatInput>("Text Chat Input", canvas.transform);
-            textInput.name = "Neocortex Text Chat Input";
+            NeocortexTextChatInput textInput = !withVoice
+                ? EditorUtilities.LoadAndInstantiate<NeocortexTextChatInput>("Text Chat Input", canvas.transform)
+                : null;
+            if (textInput != null)
+            {
+                textInput.name = "Neocortex Text Chat Input";
+                ((RectTransform)textInput.transform).anchoredPosition = new Vector2(0, -188);
+            }
+            
             NeocortexThinkingIndicator thinking = EditorUtilities.LoadAndInstantiate<NeocortexThinkingIndicator>("Thinking Indicator", canvas.transform);
             thinking.name = "Neocortex Thinking Indicator";
+            ((RectTransform)thinking.transform).anchoredPosition = new Vector2(0, 180);
+            
             NeocortexAudioChatInput audioInput = withVoice
                 ? EditorUtilities.LoadAndInstantiate<NeocortexAudioChatInput>("Audio Chat Input", canvas.transform)
                 : null;
             if (audioInput != null)
             {
                 audioInput.name = "Neocortex Audio Chat Input";
+                ((RectTransform)audioInput.transform).anchoredPosition = new Vector2(0, -188);
             }
 
             // The character: agent + audio output (+ voice input) + the UI binder, one object.
