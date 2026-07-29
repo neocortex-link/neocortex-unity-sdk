@@ -27,7 +27,7 @@ namespace Neocortex.Samples
             usageGate.OnCharacterOverLimit += _ => Debug.LogWarning("[USAGE] This character has reached its usage cap.");
             usageGate.OnRequestFailed += error => Debug.LogWarning($"[USAGE] Usage check failed: {error}");
 
-            smartAgent.ChatLinesMode = ChatLinesMode.Text;
+            smartAgent.chatLinesMode = ChatLinesMode.Text;
             smartAgent.OnChatLineStarted.AddListener(line => Debug.Log($"[CHAT] {smartAgent.gameObject.name}: {line.text} ({line.emotion})"));
             smartAgent.OnRequestFailed.AddListener(error => Debug.LogError($"[CHAT] Request failed: {error}"));
 
@@ -66,7 +66,7 @@ namespace Neocortex.Samples
         {
             // Served from cache within NeocortexUsageGate.MinRefreshInterval,
             // so this does not hit the API on every message.
-            bool canChat = await usageGate.CanUseSmartNPC(characterId: smartAgent.characterID);
+            bool canChat = await usageGate.CanUseService(characterId: smartAgent.characterID);
             if (!canChat)
             {
                 Debug.LogWarning("[USAGE] Player limit has been reached, block chat functions if you want.");

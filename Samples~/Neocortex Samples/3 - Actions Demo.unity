@@ -2400,6 +2400,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
+  actionTrigger: 0
 --- !u!114 &1488510520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2468,20 +2469,6 @@ MonoBehaviour:
   OnPermissionDenied:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &1488510527
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 684884959}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 404a35bbe38510e478a3cdbe08abb54e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
-  agent: {fileID: 1488510517}
-  trigger: 0
 --- !u!1 &1497303688
 GameObject:
   m_ObjectHideFlags: 0
@@ -3291,7 +3278,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Neocortex.Samples.StackedActionsSample
   agent: {fileID: 1488510517}
-  actionQueue: {fileID: 1488510527}
   animator: {fileID: 1488510521}
 --- !u!1 &2105741574
 GameObject:
@@ -3717,9 +3703,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1488510523}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1488510527}
   m_SourcePrefab: {fileID: 100100000, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

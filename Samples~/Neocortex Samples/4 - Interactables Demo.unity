@@ -800,7 +800,7 @@ MonoBehaviour:
     with Neocortex.</b>\n\n<b><color=#F59E0B>01</color></b> Check the <b>Interactable</b>
     component on the Interactable GameObject. \n<b><color=#F59E0B>02</color></b>
     Start the scene and tell Cora to go to the <b>Red Square</b>. \n<b><color=#F59E0B>03</color></b>
-    Tell her to go to the <b>Yellow Cylinder</b>, then the <b>Blue Rectangle</b>.\n"
+    Tell her to go to the <b>Yellow Circle</b>, then the <b>Blue Square</b>.\n"
 --- !u!222 &529300813
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1030,7 +1030,7 @@ MonoBehaviour:
   - name: color
     value: yellow
   - name: shape
-    value: cylinder
+    value: circle
 --- !u!1 &578083548
 GameObject:
   m_ObjectHideFlags: 0
@@ -2837,7 +2837,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
-  director: {fileID: 0}
   playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
@@ -2902,20 +2901,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &1488510529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 684884959}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 404a35bbe38510e478a3cdbe08abb54e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
-  agent: {fileID: 1488510517}
-  trigger: 1
 --- !u!1 &1497303688
 GameObject:
   m_ObjectHideFlags: 0
@@ -3833,7 +3818,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2af2192ec9d6fc64aa71734b67f9161a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Neocortex.Samples.InteractableSample
-  actionQueue: {fileID: 1488510529}
   agent: {fileID: 1488510517}
   character: {fileID: 1488510528}
   moveSpeed: 2
@@ -4263,9 +4247,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1488510528}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1488510529}
   m_SourcePrefab: {fileID: 100100000, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

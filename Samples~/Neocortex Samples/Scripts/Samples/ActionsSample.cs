@@ -4,15 +4,8 @@ using System.Collections;
 namespace Neocortex.Samples
 {
     /// <summary>
-    ///     The Actions demo: pick your character's action keywords (here DANCE and JUMP, as authored
-    ///     on its Actions node) and assign each one whatever you want to happen, a handler is a
-    ///     coroutine, so anything with an end time works. The <see cref="NeocortexActionQueue"/>
-    ///     captures the reply's stacked actions and runs the handlers one after another, in the
-    ///     order the character intends ("jump and dance" plays differently than "dance and jump").
-    ///
-    ///     Also drives the character's Idle / Thinking / Talking states, so this scene is
-    ///     self-sufficient: bools "Thinking" and "Talking" plus triggers "Dance" and "Jump",
-    ///     transitions, blending and the return to idle are authored in the Animator Controller.
+    ///     The Actions demo: assign each of the character's action keywords (here DANCE and JUMP) a
+    ///     coroutine, and the agent runs them one after another in the order the character intends.
     /// </summary>
     public class ActionsSample : MonoBehaviour
     {
@@ -23,7 +16,6 @@ namespace Neocortex.Samples
 
         [Header("Neocortex Components")]
         [SerializeField] private NeocortexSmartAgent agent;
-        [SerializeField] private NeocortexActionQueue actionQueue;
 
         [Header("Character")]
         [SerializeField] private Animator animator;
@@ -37,10 +29,8 @@ namespace Neocortex.Samples
             agent.OnReplyFinished.AddListener(() => isTalking = false);
 
             // The character's action keywords → whatever should happen in the scene.
-            actionQueue.RegisterAction("DANCE", _ => PlayAnimation(Dance, GetClipLength("Dance")));
-            actionQueue.RegisterAction("JUMP",  _ => PlayAnimation(Jump, GetClipLength("Jump")));
-
-            actionQueue.OnUnhandledAction += keyword => Debug.LogWarning($"[Neocortex] Agent asked for unknown action '{keyword}'.");
+            agent.RegisterAction("DANCE", _ => PlayAnimation(Dance, GetClipLength("Dance")));
+            agent.RegisterAction("JUMP",  _ => PlayAnimation(Jump, GetClipLength("Jump")));
         }
 
         private void Update()

@@ -31,7 +31,7 @@ namespace Neocortex.Samples
 
         private void Start()
         {
-            agent = chatUI.Agent;
+            agent = chatUI.agent;
 
             // Talking = between the first chat line of a reply and the end of its playback.
             agent.OnChatLineStarted.AddListener(_ => isTalking = true);
@@ -43,8 +43,8 @@ namespace Neocortex.Samples
             }
 
             // Value overwrites work the same way at runtime, e.g.:
-            // agent.ChatLinesMode = ChatLinesMode.SingleAudio; // speak replies (1 credit each)
-            // chatUI.VoiceInput.UsePushToTalk = true;          // hold-to-record instead of voice activity
+            // agent.chatLinesMode = ChatLinesMode.SingleAudio; // speak replies (1 credit each)
+            // chatUI.voiceInput.usePushToTalk = true;          // hold-to-record instead of voice activity
         }
 
         private void Update()
@@ -58,11 +58,11 @@ namespace Neocortex.Samples
 
         private void StartNewSession()
         {
-            NeocortexSessionManager.CleanSessionID(agent.CharacterID);
+            NeocortexSessionManager.CleanSessionID(agent.characterID);
 
-            if (chatUI.ChatPanel != null)
+            if (chatUI.chatPanel != null)
             {
-                chatUI.ChatPanel.ClearMessages();
+                chatUI.chatPanel.ClearMessages();
             }
         }
     }

@@ -2561,9 +2561,6 @@ PrefabInstance:
       addedObject: {fileID: 1213402658}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1213402657}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1213402660}
   m_SourcePrefab: {fileID: 100100000, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
 --- !u!1 &1213402654 stripped
@@ -2582,25 +2579,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
+  actionTrigger: 1
 --- !u!82 &1213402656 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 7381639974643083343, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
   m_PrefabInstance: {fileID: 1213402653}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1213402657
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1213402654}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 404a35bbe38510e478a3cdbe08abb54e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
-  agent: {fileID: 1213402655}
-  trigger: 1
 --- !u!143 &1213402658
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3479,6 +3463,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
+  actionTrigger: 1
 --- !u!143 &1488510528
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3504,20 +3489,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 1, z: 0}
---- !u!114 &1488510529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 684884959}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 404a35bbe38510e478a3cdbe08abb54e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
-  agent: {fileID: 1488510517}
-  trigger: 1
 --- !u!114 &1488510530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4450,9 +4421,6 @@ PrefabInstance:
       addedObject: {fileID: 1818373523}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1818373522}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 1818373525}
   m_SourcePrefab: {fileID: 100100000, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
 --- !u!1 &1818373519 stripped
@@ -4471,25 +4439,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
+  actionTrigger: 1
 --- !u!82 &1818373521 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 7381639974643083343, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
   m_PrefabInstance: {fileID: 1818373518}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1818373522
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1818373519}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 404a35bbe38510e478a3cdbe08abb54e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexActionQueue
-  agent: {fileID: 1818373520}
-  trigger: 1
 --- !u!143 &1818373523
 CharacterController:
   m_ObjectHideFlags: 0
@@ -5263,9 +5218,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1488510528}
-    - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1488510529}
     - targetCorrespondingSourceObject: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1488510530}
