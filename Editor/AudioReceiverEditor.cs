@@ -21,16 +21,24 @@ namespace Neocortex.Editor
             onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
         }
         
+        public override bool RequiresConstantRepaint() => Application.isPlaying;
+
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
             
             AudioReceiver audioReceiver = (AudioReceiver)target;
             
-            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexAudioReceiver)
+            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexNativeAudioReceiver)
             {
-                selectedMicrophoneIndex = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
-                PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, selectedMicrophoneIndex);
+                // Only write on an actual pick, writing every repaint fights live mic switching.
+                selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
+                int picked = EditorGUILayout.Popup("Select Microphone", selectedMicrophoneIndex, microphoneOptions);
+                if (picked != selectedMicrophoneIndex)
+                {
+                    selectedMicrophoneIndex = picked;
+                    PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, picked);
+                }
             }
             else
             {
@@ -44,6 +52,8 @@ namespace Neocortex.Editor
             GUILayout.Space(8);
             EditorGUILayout.PropertyField(onRecordingFailed);
             serializedObject.ApplyModifiedProperties();
+
+            AudioReceiverMonitor.Draw(audioReceiver);
         }
     }
 }

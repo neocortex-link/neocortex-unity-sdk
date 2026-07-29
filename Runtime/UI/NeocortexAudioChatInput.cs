@@ -1,15 +1,17 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 
 namespace Neocortex
 {
     [SelectionBase]
-    [AddComponentMenu("Neocortex/Audio Chat Input", 0)]
+    [AddComponentMenu("Neocortex/Neocortex Audio Chat Input", 0)]
     public class NeocortexAudioChatInput : UIBehaviour
     {
-        [SerializeField] private AudioReceiver audioReceiver;
-        
+        [Tooltip("The receiver this widget drives. Set before Start.")]
+        public AudioReceiver voiceInput;
+
         [Header("Amplitude Bar")]
         [SerializeField] private RectTransform amplitudeBar;
         [SerializeField] private Image waitingBar;
@@ -22,27 +24,54 @@ namespace Neocortex
         [Header("Push To Talk")]
         [SerializeField] private NeocortexPushToTalkButton pushToTalkButton;
         private bool isPushToTalkActive;
+        private bool pushToTalkMode;
 
         protected override void Start()
         {
             base.Start();
-            chatState.SetActive(!audioReceiver.UsePushToTalk);
-            pushToTalkButton.gameObject.SetActive(audioReceiver.UsePushToTalk);
+
+            if (voiceInput == null)
+            {
+                Debug.LogWarning("[Neocortex] Audio Chat Input has no receiver assigned, add a NeocortexAudioReceiver and drag it in (or let NeocortexChatUI wire it).", this);
+                enabled = false;
+                return;
+            }
+
             pushToTalkButton.OnButtonPressed.AddListener(OnButtonPressed);
             pushToTalkButton.OnButtonReleased.AddListener(OnButtonReleased);
-            
-            if(!audioReceiver.UsePushToTalk) 
-                audioReceiver.StartMicrophone();
+
+            ApplyMode();
         }
-        
+
+        // Reflects the receiver's current mode; called again automatically when it changes at runtime.
+        private void ApplyMode()
+        {
+            pushToTalkMode = voiceInput.usePushToTalk;
+            isPushToTalkActive = false;
+
+            chatState.SetActive(!pushToTalkMode);
+            pushToTalkButton.gameObject.SetActive(pushToTalkMode);
+
+            if (!pushToTalkMode)
+            {
+                voiceInput.StartMicrophone(); // voice-activity mode listens continuously
+            }
+        }
+
         private void Update()
         {
-            if (!audioReceiver.UsePushToTalk || isPushToTalkActive)
+            // The mode can be flipped at runtime (settings toggle, code), follow it live.
+            if (voiceInput.usePushToTalk != pushToTalkMode)
             {
-                float amplitude = Mathf.Clamp(audioReceiver.Amplitude * 5, 0.1f, 1);
+                ApplyMode();
+            }
+
+            if (!voiceInput.usePushToTalk || isPushToTalkActive)
+            {
+                float amplitude = Mathf.Clamp(voiceInput.Amplitude * 5, 0.1f, 1);
                 Vector3 scale = new Vector3(amplitude, amplitude, 1);
                 amplitudeBar.localScale = Vector3.Lerp(amplitudeBar.localScale, scale, 0.1f);
-                waitingBar.fillAmount = audioReceiver.ElapsedWaitTime;
+                waitingBar.fillAmount = voiceInput.ElapsedWaitTime;
             }
         }
         
@@ -56,7 +85,7 @@ namespace Neocortex
         {
             if (!isPushToTalkActive)
             {
-                audioReceiver.StartMicrophone();
+                voiceInput.StartMicrophone();
                 isPushToTalkActive = true;
             }
         }
@@ -65,7 +94,7 @@ namespace Neocortex
         {
             if (isPushToTalkActive)
             {
-                audioReceiver.StopMicrophone();
+                voiceInput.StopMicrophone();
                 isPushToTalkActive = false;
             }
         }

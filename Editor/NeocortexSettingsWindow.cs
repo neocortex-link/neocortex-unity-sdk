@@ -14,32 +14,22 @@ namespace Neocortex.Editor
         private static NeocortexSettings settings;
 
         private ApiAccountResponse account;
+        private ApiCharactersResponse characters;
         private string accountError;
+        private Vector2 charactersScroll;
 
         [MenuItem("Tools/Neocortex/Settings", false, 0)]
         public static void ShowWindow()
         {
             NeocortexSettingsWindow window = GetWindow<NeocortexSettingsWindow>("Neocortex Settings");
-            window.minSize = new Vector2(512, 260);
-            window.maxSize = new Vector2(512, 260);
+            window.minSize = new Vector2(512, 420);
+            window.maxSize = new Vector2(512, 1000);
             window.Show();
         }
 
         private void OnEnable()
         {
-            settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
-
-            if (settings == null)
-            {
-                if (!System.IO.Directory.Exists("Assets/Resources/Neocortex"))
-                {
-                    System.IO.Directory.CreateDirectory("Assets/Resources/Neocortex");
-                }
-
-                settings = CreateInstance<NeocortexSettings>();
-                AssetDatabase.CreateAsset(settings, "Assets/Resources/Neocortex/NeocortexSettings.asset");
-                AssetDatabase.SaveAssets();
-            }
+            settings = NeocortexSettingsProvider.GetOrCreate();
 
             // Only fetch when a key exists, so opening the window without one isn't a noisy error.
             if (!string.IsNullOrEmpty(settings.apiKey))
@@ -53,6 +43,8 @@ namespace Neocortex.Editor
             DrawAccountSection();
             EditorGUILayout.Space();
             DrawApiKeySection();
+            EditorGUILayout.Space();
+            DrawCharactersSection();
         }
 
         private void DrawAccountSection()
@@ -116,9 +108,54 @@ namespace Neocortex.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private void DrawCharactersSection()
+        {
+            EditorGUILayout.BeginVertical("Box");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Your Characters", EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Refresh", GUILayout.Width(64)) && !string.IsNullOrEmpty(settings.apiKey))
+            {
+                RefreshAccount();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (characters?.characters is { Length: > 0 })
+            {
+                charactersScroll = EditorGUILayout.BeginScrollView(charactersScroll, GUILayout.MaxHeight(140));
+                foreach (CharacterSummary character in characters.characters)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField(character.name, GUILayout.Width(180));
+                    EditorGUILayout.LabelField(character.id, EditorStyles.miniLabel, GUILayout.ExpandWidth(true));
+                    if (GUILayout.Button("Copy ID", GUILayout.Width(64)))
+                    {
+                        EditorGUIUtility.systemCopyBuffer = character.id;
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+                EditorGUILayout.EndScrollView();
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    string.IsNullOrEmpty(settings.apiKey)
+                        ? "Save an API key to list your characters."
+                        : "No characters yet, create one in the dashboard, then Refresh.",
+                    MessageType.Info);
+                if (GUILayout.Button("Open Dashboard"))
+                {
+                    Application.OpenURL("https://neocortex.link/dashboard/characters");
+                }
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
         private async void RefreshAccount()
         {
             account = null;
+            characters = null;
             accountError = null;
             Repaint();
 
@@ -130,6 +167,7 @@ namespace Neocortex.Editor
             if (response != null)
             {
                 account = response;
+                characters = await apiRequest.GetCharacters();
             }
             // If response is null (request failed), account stays null, so UI shows dashes + error.
 

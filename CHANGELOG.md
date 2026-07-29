@@ -4,15 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.0] 27 July 2026
-- Chat lines: `NeocortexSmartAgent.ChatLinesMode` (Off / Text / SingleAudio / PerLineAudio) delivers replies as ordered per-emotion messages that drop in one after another, with `OnChatLineStarted` / `OnEmotionChanged` / `OnReplyFinished` events. Audio modes are credit-aware and queue input during playback.
-- Account & Usage endpoint implementation
-- NeocortexUsageGate helper with credit/limit events and `CanUseSmartNPC` for gating smart NPC features
-- Account Status editor window under Tools > Neocortex
-- Samples reorganized into one "Neocortex Samples" set with all scenes at the top level, sample/helper scripts split, and shared visuals, plus new Chat Lines and Usage Gating sample scenes
-- Samples now deliver replies as chat lines instead of one joint message (text samples use Text mode; audio samples use Single Audio at the same 1-credit cost)
-- `NeocortexSmartAgent.AudioSource` property so a script can hand the agent its playback source at runtime
-- `NeocortexChatPanel.messageItemPrefab` is now inspector-assignable (falls back to the built-in bubble), and `NeocortexMessage` exposes user/agent bubble and text colors
+## [0.5.0] 29 July 2026
+- API v3: unified base URL, per-speaker `lines` and stacked `actions` in every response
+- Perception: each message carries the `NeocortexInteractable`s the character can sense, with stable ids and free-form name/value properties
+- Targeted actions: every action is `{ name, targetId }`; register coroutine handlers with `agent.RegisterAction` and fire them on response, on speech start, or after the reply
+- Group chat: `NeocortexGroupDirector` runs a cast of agents (`Send`, `SendTo`, `Continue`, `SendAudio`) and routes each reply to its own character
+- `NeocortexChatUI` and `NeocortexGroupChatUI`: the whole conversation loop (input, bubbles, thinking indicator, mic handoff, history, errors) in one component
+- `NeocortexAudioReceiver`: one microphone component for every platform, with permission handling and mic selection
+- Auto voice input: an agent with a microphone listens, answers and re-arms by itself, so a lone Smart Agent is already a working conversation
+- Chat lines: `chatLinesMode` (Off, Text, Single Audio, Per-Line Audio) delivers replies as ordered per-emotion messages paced by reading time, with `OnChatLineStarted`, `OnEmotionChanged`, `OnComposingNextLine` and `OnReplyFinished`
+- Audio modes bring their own `AudioSource` and microphone, and degrade on their own when credits run low
+- Account and usage endpoints, plus `NeocortexUsageGate` with credit/limit events and `CanUseSmartNPC`
+- Chat history: `ChatHistoryEntry` carries speaker name, emotion and actions; `RequestChatHistory(limit, before)` pages backward; `loadHistoryOnStart` toggle
+- Message avatars and per-sender colors in `NeocortexChatPanel`, and a custom message prefab can replace the built-in bubble
+- Live microphone readout in the inspector: state, input level against the speech threshold, and the silence timeout draining to zero
+- Character dropdown in the Smart Agent inspector, and a settings window that validates the API key
+- One-click scaffolding: Hierarchy > Neocortex > Complete Text Chat / Complete Voice Chat
+- Samples reorganized into one "Neocortex Samples" set: text, voice, actions, interactables, group chat and usage gating
 
 ## [0.4.9] 29 March 2026
 - Json library reference bug fix

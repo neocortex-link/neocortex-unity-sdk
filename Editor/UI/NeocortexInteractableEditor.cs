@@ -1,44 +1,22 @@
-using System;
 using Neocortex;
 using UnityEditor;
-using Neocortex.Data;
 
 [CustomEditor(typeof(NeocortexInteractable))]
 public class NeocortexInteractableEditor : Editor
 {
-    private const int MAX_PROPERTIES = 5;
-
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
 
         var script = (NeocortexInteractable)target;
 
-        var typeProperty = serializedObject.FindProperty("Type");
-        EditorGUILayout.PropertyField(typeProperty);
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("properties"), true);
 
-        if ((InteractableType)typeProperty.enumValueIndex != InteractableType.CHARACTER)
+        EditorGUILayout.PropertyField(serializedObject.FindProperty("id"));
+        // Show the short hash a blank id resolves to, the reference characters actually use.
+        using (new EditorGUI.DisabledScope(true))
         {
-            var nameProperty = serializedObject.FindProperty("Name");
-            EditorGUILayout.PropertyField(nameProperty);
-        }
-        else
-        {
-            script.Name = nameof(InteractableType.CHARACTER);
-        }
-
-        var propertiesProperty = serializedObject.FindProperty("Properties");
-        EditorGUILayout.PropertyField(propertiesProperty, true);
-
-        if (script.Properties is { Length: > MAX_PROPERTIES })
-        {
-            Array.Resize(ref script.Properties, MAX_PROPERTIES);
-            EditorUtility.SetDirty(script);
-        }
-
-        if (script.Properties is { Length: MAX_PROPERTIES })
-        {
-            EditorGUILayout.HelpBox($"Maximum of {MAX_PROPERTIES} properties reached.", MessageType.Warning);
+            EditorGUILayout.TextField("Resolved Id", script.Id);
         }
 
         serializedObject.ApplyModifiedProperties();

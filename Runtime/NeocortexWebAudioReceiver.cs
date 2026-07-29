@@ -7,6 +7,10 @@ using System.Runtime.InteropServices;
 
 namespace Neocortex
 {
+    // Internal: spawned by NeocortexAudioReceiver on WebGL. Add the facade, not this. The jslib
+    // calls back into this component BY GAMEOBJECT NAME, so its GameObject name must be unique
+    //, the facade guarantees that by spawning it on a uniquely-named child.
+    [AddComponentMenu("")]
     public class NeocortexWebAudioReceiver : AudioReceiver
     {
         #if UNITY_WEBGL && !UNITY_EDITOR
@@ -23,19 +27,53 @@ namespace Neocortex
         private FloatArray currentBuffer;
         private MicrophoneState microphoneState = MicrophoneState.NotActive;
         private readonly List<FloatArray> binaryStreams = new List<FloatArray>();
-        
-        [SerializeField, Range(0, 1)] private float amplitudeThreshold = 0.1f;
-        [SerializeField] private float maxWaitTime = 1f;
-        
+
+        private bool sentPushToTalk;
+        private float sentThreshold;
+        private float sentWaitTime;
+        private bool suppressNextEmit;
+
         public void Awake()
         {
             currentBuffer = new FloatArray();
             currentBuffer.Buffer = new float[BUFFER_SIZE];
-            
+
+            PushConfigToBrowser();
+
             #if UNITY_WEBGL && !UNITY_EDITOR
-            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, UsePushToTalk);
             WebGL_RecordingUpdatePointer(currentBuffer.Buffer);
             #endif
+        }
+
+        // WebGL_Initialize only sets JS-side variables, so it is safe to re-call whenever the
+        // config changes at runtime (push-to-talk toggle, threshold, timeout).
+        private void PushConfigToBrowser()
+        {
+            sentPushToTalk = usePushToTalk;
+            sentThreshold = amplitudeThreshold;
+            sentWaitTime = maxWaitTime;
+
+            #if UNITY_WEBGL && !UNITY_EDITOR
+            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, usePushToTalk);
+            #endif
+        }
+
+        private void Update()
+        {
+            if (usePushToTalk == sentPushToTalk && Mathf.Approximately(amplitudeThreshold, sentThreshold) && Mathf.Approximately(maxWaitTime, sentWaitTime))
+            {
+                return;
+            }
+
+            bool switchedToPushToTalk = usePushToTalk && !sentPushToTalk;
+            PushConfigToBrowser();
+
+            // Leaving continuous listening: stop the hot browser mic without emitting the tail.
+            if (switchedToPushToTalk && microphoneState != MicrophoneState.NotActive)
+            {
+                suppressNextEmit = true;
+                StopMicrophone();
+            }
         }
         
         // called from JS
@@ -59,6 +97,8 @@ namespace Neocortex
 
             MicrophoneState oldState = microphoneState;
             microphoneState = (MicrophoneState)newRecordingState;
+            IsUserSpeaking = microphoneState == MicrophoneState.Recording;
+            IsListening = microphoneState != MicrophoneState.NotActive;
 
             if (microphoneState == MicrophoneState.NotActive)
             {
@@ -125,20 +165,20 @@ namespace Neocortex
 
         private void AudioRecorded()
         {
+            if (suppressNextEmit)
+            {
+                // Mode-switch shutdown: discard the tail instead of surfacing it as speech.
+                suppressNextEmit = false;
+                binaryStreams.Clear();
+                return;
+            }
+
             float[] pcm = GetData();
             if (pcm is not { Length: > 0 }) return;
             audioClip = AudioClip.Create("", pcm.Length, 1, FREQUENCY, false);
             audioClip.SetData(pcm, 0);
-            
-            AudioClip trimmed = audioClip.Trim();
-            if (!trimmed)
-            {
-                StartMicrophone();
-            }
-            else
-            {
-                OnAudioRecorded?.Invoke(trimmed);
-            }
+
+            EmitRecordedClip(audioClip);
         }
     }
 }

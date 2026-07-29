@@ -7,9 +7,25 @@ namespace Neocortex.Editor
     [InitializeOnLoad]
     public class WebGLTemplateImporter
     {
-        private const string SourceFolder = "Packages/link.neocortex.sdk/WebGLTemplates/Neocortex";
         private const string DestinationFolder = "Assets/WebGLTemplates/Neocortex";
         private const string ImportCompletedKey = "Neocortex.WebGLTemplateImported";
+        private const string TemplateName = "PROJECT:Neocortex";
+
+        // Resolve the template source from wherever the package actually lives (UPM cache,
+        // embedded package, or this dev repo where the SDK sits under Assets/).
+        private static string SourceFolder
+        {
+            get
+            {
+                var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(WebGLTemplateImporter).Assembly);
+                if (package != null)
+                {
+                    return Path.Combine(package.resolvedPath, "WebGLTemplates/Neocortex");
+                }
+
+                return "Assets/neocortex-unity-sdk/WebGLTemplates/Neocortex";
+            }
+        }
 
         static WebGLTemplateImporter()
         {
@@ -32,6 +48,8 @@ namespace Neocortex.Editor
         
         private static void OnEditorLoaded()
         {
+            WarnIfTemplateNotSelected();
+
             if (EditorPrefs.HasKey(ImportCompletedKey) && Directory.Exists(DestinationFolder))
             {
                 return;
@@ -48,6 +66,19 @@ namespace Neocortex.Editor
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"Failed to copy WebGL Template: {ex.Message}");
+            }
+        }
+
+        // Voice input on WebGL needs the Neocortex template (it ships the microphone JS).
+        // One actionable warning instead of a silent runtime failure.
+        private static void WarnIfTemplateNotSelected()
+        {
+            if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL &&
+                Directory.Exists(DestinationFolder) &&
+                PlayerSettings.WebGL.template != TemplateName)
+            {
+                Debug.LogWarning("[Neocortex] Build target is WebGL but the Neocortex WebGL template is not selected. " +
+                                 "Microphone input will not work. Select it under Project Settings > Player > WebGL > Resolution and Presentation > Neocortex.");
             }
         }
 

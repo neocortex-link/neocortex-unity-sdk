@@ -4,7 +4,7 @@ using UnityEngine.UI;
 namespace Neocortex
 {
     [SelectionBase]
-    [AddComponentMenu("Neocortex/Microphone Dropdown", 0)]
+    [AddComponentMenu("Neocortex/Neocortex Microphone Dropdown", 0)]
     public class NeocortexMicrophoneDropdown : Dropdown
     {
         protected override void Awake()
