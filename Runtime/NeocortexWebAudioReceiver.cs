@@ -49,23 +49,23 @@ namespace Neocortex
         // config changes at runtime (push-to-talk toggle, threshold, timeout).
         private void PushConfigToBrowser()
         {
-            sentPushToTalk = UsePushToTalk;
+            sentPushToTalk = usePushToTalk;
             sentThreshold = amplitudeThreshold;
             sentWaitTime = maxWaitTime;
 
             #if UNITY_WEBGL && !UNITY_EDITOR
-            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, UsePushToTalk);
+            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, usePushToTalk);
             #endif
         }
 
         private void Update()
         {
-            if (UsePushToTalk == sentPushToTalk && Mathf.Approximately(amplitudeThreshold, sentThreshold) && Mathf.Approximately(maxWaitTime, sentWaitTime))
+            if (usePushToTalk == sentPushToTalk && Mathf.Approximately(amplitudeThreshold, sentThreshold) && Mathf.Approximately(maxWaitTime, sentWaitTime))
             {
                 return;
             }
 
-            bool switchedToPushToTalk = UsePushToTalk && !sentPushToTalk;
+            bool switchedToPushToTalk = usePushToTalk && !sentPushToTalk;
             PushConfigToBrowser();
 
             // Leaving continuous listening: stop the hot browser mic without emitting the tail.
@@ -97,6 +97,8 @@ namespace Neocortex
 
             MicrophoneState oldState = microphoneState;
             microphoneState = (MicrophoneState)newRecordingState;
+            IsUserSpeaking = microphoneState == MicrophoneState.Recording;
+            IsListening = microphoneState != MicrophoneState.NotActive;
 
             if (microphoneState == MicrophoneState.NotActive)
             {

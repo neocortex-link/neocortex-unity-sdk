@@ -9,21 +9,11 @@ using System.Collections.Generic;
 namespace Neocortex
 {
     /// <summary>
-    ///     Orchestrates a group conversation across several <see cref="NeocortexSmartAgent"/>s. Each
-    ///     agent stays on its own character's GameObject, its personality, audio and animation live
-    ///     there, and the director assembles them into a cast, sends one group turn, and routes every
-    ///     speaker's reply back to the matching agent so it speaks through its own events.
-    ///
-    ///     Turn kinds:
-    ///     <list type="bullet">
-    ///     <item><see cref="Send"/>, the player says something; an AI director decides who answers and
-    ///     in what order (up to <see cref="maxTurns"/> characters).</item>
-    ///     <item><see cref="SendTo(NeocortexSmartAgent,string)"/>, the player addresses one character;
-    ///     that character answers this turn.</item>
-    ///     <item><see cref="Continue"/>, no player input; the cast talks among themselves (ambient).</item>
-    ///     </list>
-    ///     A multi-character cast requires a Pro/Team API key; a cast of one behaves like a normal
-    ///     single-character chat and works on any tier.
+    ///     Runs a group conversation across several <see cref="NeocortexSmartAgent"/>s: sends one group
+    ///     turn and routes each speaker's reply back to its own agent. Use <see cref="Send"/> to let the
+    ///     cast decide who answers, <see cref="SendTo(NeocortexSmartAgent,string)"/> to address one, or
+    ///     <see cref="Continue"/> to let them talk among themselves. A cast of two or more needs a
+    ///     Pro/Team API key.
     /// </summary>
     public class NeocortexGroupDirector : MonoBehaviour
     {
@@ -65,6 +55,12 @@ namespace Neocortex
         {
             apiRequest = new ApiRequest();
             apiRequest.OnRequestFailed += HandleRequestFailed;
+
+            // The director speaks for the cast, so no member may answer the player on its own.
+            foreach (NeocortexSmartAgent agent in agents)
+            {
+                if (agent != null) agent.autoVoiceInput = false;
+            }
         }
 
         /// <summary>Adds a character to the cast mid-scene (the server acknowledges the join naturally).</summary>
@@ -89,7 +85,7 @@ namespace Neocortex
         public void SendTo(NeocortexSmartAgent agent, string message)
         {
             if (agent == null) return;
-            _ = RunTurn(message, agent.CharacterID);
+            _ = RunTurn(message, agent.characterID);
         }
 
         /// <summary>Player addresses one character (by id); that character answers this turn.</summary>
@@ -99,9 +95,8 @@ namespace Neocortex
         public void Continue() => _ = RunTurn(null, null);
 
         /// <summary>
-        ///     Voice turn: transcribes the player's speech, then sends it to the group just like
-        ///     <see cref="Send"/>. Raises <see cref="OnPlayerSpeech"/> with the transcript so a UI can
-        ///     show what the player said. Uses any cast member's id for the transcription request.
+        ///     Transcribes the player's speech and sends it to the group like <see cref="Send"/>,
+        ///     raising <see cref="OnPlayerSpeech"/> with the transcript.
         /// </summary>
         public async void SendAudio(AudioClip clip)
         {
@@ -113,7 +108,7 @@ namespace Neocortex
                 return;
             }
 
-            string anyId = agents.FirstOrDefault(a => a != null && !string.IsNullOrEmpty(a.CharacterID))?.CharacterID;
+            string anyId = agents.FirstOrDefault(a => a != null && !string.IsNullOrEmpty(a.characterID))?.characterID;
             if (string.IsNullOrEmpty(anyId))
             {
                 Debug.LogWarning("[Neocortex] Group director has no agents with a Character ID assigned.", this);
@@ -141,12 +136,11 @@ namespace Neocortex
         }
 
         /// <summary>
-        ///     Loads the shared scene session's transcript (every speaker, oldest first) and raises
-        ///     <see cref="OnHistoryReceived"/>. Pass the previous result's
-        ///     <see cref="ApiChatHistory.nextCursor"/> as <paramref name="before"/> to page back to
-        ///     older messages. Each entry carries the speaker's display name, so a group transcript
-        ///     can be labeled correctly. Returns null before the first turn (no session yet).
+        ///     Loads the scene's transcript (every speaker, oldest first) and raises
+        ///     <see cref="OnHistoryReceived"/>. Null before the first turn.
         /// </summary>
+        /// <param name="limit">How many messages to fetch.</param>
+        /// <param name="before">The previous result's nextCursor, to page back to older messages.</param>
         public async Task<ApiChatHistory> GetHistory(int limit = 20, string before = null)
         {
             if (string.IsNullOrEmpty(SessionId)) return null;
@@ -166,8 +160,8 @@ namespace Neocortex
             }
 
             string[] characterIds = agents
-                .Where(a => a != null && !string.IsNullOrEmpty(a.CharacterID))
-                .Select(a => a.CharacterID)
+                .Where(a => a != null && !string.IsNullOrEmpty(a.characterID))
+                .Select(a => a.characterID)
                 .Distinct()
                 .ToArray();
 
@@ -227,7 +221,7 @@ namespace Neocortex
 
         private NeocortexSmartAgent FindAgent(string characterId)
         {
-            return agents.FirstOrDefault(a => a != null && a.CharacterID == characterId);
+            return agents.FirstOrDefault(a => a != null && a.characterID == characterId);
         }
 
         private void HandleRequestFailed(string error)

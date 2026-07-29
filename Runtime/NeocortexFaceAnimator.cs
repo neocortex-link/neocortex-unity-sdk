@@ -6,21 +6,10 @@ using System.Text.RegularExpressions;
 namespace Neocortex
 {
     /// <summary>
-    ///     Facial animation for chat replies, driven entirely by ARKit-standard blendshapes, the
-    ///     same system that animates Cora on neocortex.link. Put it on (or above) a face mesh and
-    ///     it lip-syncs automatically: each chat line is broken into rough syllables, mapped to
-    ///     viseme shapes (A/E/I/O/U + consonant groups) and played across the reply's duration,
-    ///     with everything smoothly blended.
-    ///
-    ///     Works with any ARKit-compatible face (including Ready Player Me avatars): blendshape
-    ///     names are matched case-insensitively and ignore importer prefixes, so "JawOpen",
-    ///     "jawOpen" and "Face.JawOpen" all resolve, and each shape's real frame weight is read
-    ///     from the mesh so FBX (0-100) and glTF (0-1) imports both animate correctly.
-    ///
-    ///     When a <see cref="NeocortexSmartAgent"/> is assigned (or found on this object/parents),
-    ///     lip-sync is driven by the ACTUAL spoken audio: the reply's clip arrives, its text is
-    ///     played across the clip's length. Text-only replies (no audio) do not animate the face.
-    ///     Without an agent, call <see cref="PlayText"/> / <see cref="StartSpeaking"/> yourself.
+    ///     Lip-syncs chat replies on any ARKit-compatible face (Ready Player Me included). Put it on
+    ///     or above a face mesh; with a <see cref="NeocortexSmartAgent"/> assigned or found on this
+    ///     object it animates spoken replies automatically, otherwise call <see cref="PlayText"/>
+    ///     yourself. Blendshape names match case-insensitively and ignore importer prefixes.
     /// </summary>
     [AddComponentMenu("Neocortex/Neocortex Face Animator", 0)]
     public class NeocortexFaceAnimator : MonoBehaviour
@@ -111,10 +100,10 @@ namespace Neocortex
             // The agent resolves its AudioSource in its own Awake, so resolve lazily here.
             if (audioSource == null)
             {
-                audioSource = agent.AudioSource;
+                audioSource = agent.audioSource;
             }
 
-            string text = agent.ChatLinesMode == ChatLinesMode.PerLineAudio ? lastLineText : lastReplyText;
+            string text = agent.chatLinesMode == ChatLinesMode.PerLineAudio ? lastLineText : lastReplyText;
             PlayText(text ?? "", clip.length);
 
             audioDriven = true;
@@ -160,11 +149,9 @@ namespace Neocortex
             }
         }
 
-        /// <summary>
-        ///     Lip-syncs a piece of text across <paramref name="duration"/> seconds, rough
-        ///     syllables mapped to visemes, vowels held longer than consonants, a rest between
-        ///     words. The agent calls this automatically for every chat line.
-        /// </summary>
+        /// <summary>Lip-syncs text across a duration. The agent calls this for every chat line.</summary>
+        /// <param name="text">What the character is saying.</param>
+        /// <param name="duration">Seconds to spread the visemes over, usually the clip's length.</param>
         public void PlayText(string text, float duration)
         {
             babbling = false;
@@ -228,10 +215,7 @@ namespace Neocortex
             ApplyViseme("REST");
         }
 
-        /// <summary>
-        ///     Holds a single blendshape as an expression (e.g. a model's custom "Preset_Smile"),
-        ///     replacing any running lip-sync.
-        /// </summary>
+        /// <summary>Holds one blendshape as an expression, replacing any running lip-sync.</summary>
         public void PlayExpression(string blendShapeName, float weight = 1f)
         {
             babbling = false;

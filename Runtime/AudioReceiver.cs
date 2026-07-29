@@ -7,17 +7,21 @@ namespace Neocortex
     {
         public const string MIC_INDEX_KEY = "neocortex-mic-index";
 
-        [SerializeField] private bool usePushToTalk;
+        [Tooltip("Hold-to-record instead of voice activity.")]
+        public bool usePushToTalk;
         [Tooltip("Voice-activity mode: amplitude above this counts as speech.")]
-        [SerializeField, Range(0, 1)] protected float amplitudeThreshold = 0.1f;
+        [Range(0, 1)] public float amplitudeThreshold = 0.1f;
         [Tooltip("Voice-activity mode: seconds of silence before the recording is finished.")]
-        [SerializeField] protected float maxWaitTime = 1f;
+        public float maxWaitTime = 1f;
 
-        public bool UsePushToTalk { get => usePushToTalk; set => usePushToTalk = value; }
-        public float AmplitudeThreshold { get => amplitudeThreshold; set => amplitudeThreshold = value; }
-        public float MaxWaitTime { get => maxWaitTime; set => maxWaitTime = value; }
         public float Amplitude { get; protected set; }
         public float ElapsedWaitTime { get; protected set; }
+
+        /// <summary>True while the player's voice is being recorded.</summary>
+        public bool IsUserSpeaking { get; protected set; }
+
+        /// <summary>True while the microphone is open and able to hear the player.</summary>
+        public bool IsListening { get; protected set; }
 
         public abstract void StartMicrophone();
         public abstract void StopMicrophone();
@@ -32,7 +36,12 @@ namespace Neocortex
             AudioClip trimmed = raw.Trim();
             if (!trimmed)
             {
-                StartMicrophone();
+                // Nothing was said. Voice activity keeps listening; push-to-talk must not reopen the
+                // mic behind a released button.
+                if (!usePushToTalk)
+                {
+                    StartMicrophone();
+                }
             }
             else
             {

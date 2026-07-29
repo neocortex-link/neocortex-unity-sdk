@@ -21,6 +21,8 @@ namespace Neocortex.Editor
             onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
         }
         
+        public override bool RequiresConstantRepaint() => Application.isPlaying;
+
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
@@ -50,6 +52,8 @@ namespace Neocortex.Editor
             GUILayout.Space(8);
             EditorGUILayout.PropertyField(onRecordingFailed);
             serializedObject.ApplyModifiedProperties();
+
+            AudioReceiverMonitor.Draw(audioReceiver);
         }
     }
 }

@@ -47,7 +47,7 @@ namespace Neocortex
         public void SelectMicrophone(int index) => SelectedMicrophoneIndex = index;
 
         /// <summary>Runtime mode switch, bindable from a UI Toggle. The capture layer follows within a frame.</summary>
-        public void SetPushToTalk(bool enabled) => UsePushToTalk = enabled;
+        public void SetPushToTalk(bool enabled) => usePushToTalk = enabled;
 
         private void Awake()
         {
@@ -79,9 +79,9 @@ namespace Neocortex
 #else
             AudioReceiver spawned = child.AddComponent<NeocortexNativeAudioReceiver>();
 #endif
-            spawned.UsePushToTalk = UsePushToTalk;
-            spawned.AmplitudeThreshold = amplitudeThreshold;
-            spawned.MaxWaitTime = maxWaitTime;
+            spawned.usePushToTalk = usePushToTalk;
+            spawned.amplitudeThreshold = amplitudeThreshold;
+            spawned.maxWaitTime = maxWaitTime;
 
             Bind(spawned);
             child.SetActive(true);
@@ -104,9 +104,9 @@ namespace Neocortex
                 }
             }
 
-            custom.UsePushToTalk = UsePushToTalk;
-            custom.AmplitudeThreshold = amplitudeThreshold;
-            custom.MaxWaitTime = maxWaitTime;
+            custom.usePushToTalk = usePushToTalk;
+            custom.amplitudeThreshold = amplitudeThreshold;
+            custom.maxWaitTime = maxWaitTime;
             Bind(custom);
         }
 
@@ -133,19 +133,21 @@ namespace Neocortex
             // Mirror the live capture state so UI (amplitude bars, wait rings) reads the facade.
             Amplitude = receiver.Amplitude;
             ElapsedWaitTime = receiver.ElapsedWaitTime;
+            IsUserSpeaking = receiver.IsUserSpeaking;
+            IsListening = receiver.IsListening;
 
             // All capture config can be changed at runtime; keep the capture layer in sync.
-            if (receiver.UsePushToTalk != UsePushToTalk)
+            if (receiver.usePushToTalk != usePushToTalk)
             {
-                receiver.UsePushToTalk = UsePushToTalk;
+                receiver.usePushToTalk = usePushToTalk;
             }
-            if (!Mathf.Approximately(receiver.AmplitudeThreshold, amplitudeThreshold))
+            if (!Mathf.Approximately(receiver.amplitudeThreshold, amplitudeThreshold))
             {
-                receiver.AmplitudeThreshold = amplitudeThreshold;
+                receiver.amplitudeThreshold = amplitudeThreshold;
             }
-            if (!Mathf.Approximately(receiver.MaxWaitTime, maxWaitTime))
+            if (!Mathf.Approximately(receiver.maxWaitTime, maxWaitTime))
             {
-                receiver.MaxWaitTime = maxWaitTime;
+                receiver.maxWaitTime = maxWaitTime;
             }
         }
 

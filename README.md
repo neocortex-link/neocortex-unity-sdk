@@ -34,7 +34,7 @@ The [Quick Start](https://docs.neocortex.link/integrations/unity/quick-start) wa
 
 ## Samples
 
-Five scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables and group chat. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
+Six scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables, group chat and usage gating. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
 
 ## Documentation
 

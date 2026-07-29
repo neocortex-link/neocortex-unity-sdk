@@ -9,10 +9,8 @@ namespace Neocortex
     [AddComponentMenu("Neocortex/Neocortex Audio Chat Input", 0)]
     public class NeocortexAudioChatInput : UIBehaviour
     {
-        [SerializeField] private AudioReceiver voiceInput;
-
-        /// <summary>The receiver this widget drives, a <see cref="NeocortexAudioReceiver"/> fits here. Set before Start.</summary>
-        public AudioReceiver AudioReceiver { get => voiceInput; set => voiceInput = value; }
+        [Tooltip("The receiver this widget drives. Set before Start.")]
+        public AudioReceiver voiceInput;
 
         [Header("Amplitude Bar")]
         [SerializeField] private RectTransform amplitudeBar;
@@ -48,7 +46,7 @@ namespace Neocortex
         // Reflects the receiver's current mode; called again automatically when it changes at runtime.
         private void ApplyMode()
         {
-            pushToTalkMode = voiceInput.UsePushToTalk;
+            pushToTalkMode = voiceInput.usePushToTalk;
             isPushToTalkActive = false;
 
             chatState.SetActive(!pushToTalkMode);
@@ -63,12 +61,12 @@ namespace Neocortex
         private void Update()
         {
             // The mode can be flipped at runtime (settings toggle, code), follow it live.
-            if (voiceInput.UsePushToTalk != pushToTalkMode)
+            if (voiceInput.usePushToTalk != pushToTalkMode)
             {
                 ApplyMode();
             }
 
-            if (!voiceInput.UsePushToTalk || isPushToTalkActive)
+            if (!voiceInput.usePushToTalk || isPushToTalkActive)
             {
                 float amplitude = Mathf.Clamp(voiceInput.Amplitude * 5, 0.1f, 1);
                 Vector3 scale = new Vector3(amplitude, amplitude, 1);

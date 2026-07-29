@@ -8,11 +8,8 @@ using System.Threading.Tasks;
 namespace Neocortex
 {
     /// <summary>
-    ///     Turns the read-only account/usage endpoints into simple flags and events so a game can
-    ///     gate smart NPC features instead of failing mid-conversation. Results are cached; usage is
-    ///     only re-fetched when the cache is older than <see cref="MinRefreshInterval"/>, on an
-    ///     explicit Refresh call, or via <see cref="StartAutoRefresh"/>. These endpoints never cost
-    ///     a credit.
+    ///     Credit and limit status as simple flags and events, so a game can gate smart NPC features
+    ///     instead of failing mid-conversation. Results are cached and never cost a credit.
     /// </summary>
     public class NeocortexUsageGate
     {
@@ -51,11 +48,9 @@ namespace Neocortex
             apiRequest.OnRequestFailed += error => OnRequestFailed?.Invoke(error);
         }
 
-        /// <summary>
-        ///     Fetches usage and raises the gating events. When playerId is null, the device unique
-        ///     identifier is used, which is the playerId the SDK sends on every chat request.
-        ///     Returns null on failure (the last cached value stays in <see cref="LastUsage"/>).
-        /// </summary>
+        /// <summary>Fetches usage and raises the gating events. Returns null on failure.</summary>
+        /// <param name="playerId">Defaults to the device id, which is what the SDK sends when chatting.</param>
+        /// <param name="characterId">Character to include per-character usage for.</param>
         public async Task<ApiUsageResponse> RefreshUsage(string playerId = null, string characterId = null)
         {
             playerId ??= SystemInfo.deviceUniqueIdentifier;
@@ -74,10 +69,7 @@ namespace Neocortex
             return usage;
         }
 
-        /// <summary>
-        ///     Fetches the developer account info. Returns null on failure
-        ///     (the last cached value stays in <see cref="LastAccount"/>).
-        /// </summary>
+        /// <summary>Fetches the developer account info. Returns null on failure.</summary>
         public async Task<ApiAccountResponse> RefreshAccount()
         {
             ApiAccountResponse account = await apiRequest.GetAccount();
@@ -89,11 +81,7 @@ namespace Neocortex
             return account;
         }
 
-        /// <summary>
-        ///     Returns usage, served from the cache while it is younger than
-        ///     <see cref="MinRefreshInterval"/>. Falls back to the last cached value when the
-        ///     request fails; null when nothing has ever been fetched. Safe to call often.
-        /// </summary>
+        /// <summary>Usage from the cache while it is fresh, otherwise refetched. Safe to call often.</summary>
         public async Task<ApiUsageResponse> GetUsageCached(string playerId = null, string characterId = null)
         {
             playerId ??= SystemInfo.deviceUniqueIdentifier;
@@ -111,12 +99,10 @@ namespace Neocortex
         }
 
         /// <summary>
-        ///     Returns false when team credits are empty or the player/character is over a
-        ///     developer-configured cap. Uses the cached result when it is fresh, so it is safe to
-        ///     call before every chat message. Fails open: when no usage data is available at all
-        ///     (e.g. offline before the first fetch), it returns true rather than blocking the game.
+        ///     False when credits are empty or the player/character is over a cap. Cached, so it is
+        ///     safe to call before every message, and fails open when usage is unknown.
         /// </summary>
-        public async Task<bool> CanUseSmartNPC(string playerId = null, string characterId = null)
+        public async Task<bool> CanUseService(string playerId = null, string characterId = null)
         {
             ApiUsageResponse usage = await GetUsageCached(playerId, characterId);
 
@@ -130,10 +116,7 @@ namespace Neocortex
                    && !(usage.character?.overLimit ?? false);
         }
 
-        /// <summary>
-        ///     Refreshes usage on a low-frequency interval until <see cref="StopAutoRefresh"/> is
-        ///     called or the application quits. Keep the interval high; these values change slowly.
-        /// </summary>
+        /// <summary>Refreshes usage on an interval until <see cref="StopAutoRefresh"/> or quit. Keep it high.</summary>
         public void StartAutoRefresh(float intervalSeconds = 300f, string playerId = null, string characterId = null)
         {
             StopAutoRefresh();

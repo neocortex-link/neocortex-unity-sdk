@@ -40,16 +40,13 @@ namespace Neocortex.Editor
             onPermissionDenied = serializedObject.FindProperty("OnPermissionDenied");
         }
 
+        // The live readout animates, so the Inspector has to redraw every frame while playing.
+        public override bool RequiresConstantRepaint() => Application.isPlaying;
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            EditorGUILayout.HelpBox(
-                "One microphone for every platform, the right capture backend is picked at runtime, and the mic permission is handled on Android/iOS.\n\n" +
-                "Voice activity (default): recording starts when speech rises above the threshold and ends after the silence timeout. " +
-                "Push To Talk: records only while the button is held.",
-                MessageType.Info);
-
+            
             EditorGUILayout.PropertyField(usePushToTalk, new GUIContent("Push To Talk"));
 
             if (!usePushToTalk.boolValue)
@@ -72,6 +69,8 @@ namespace Neocortex.Editor
                     PlayerPrefs.SetInt(AudioReceiver.MIC_INDEX_KEY, picked);
                 }
             }
+
+            AudioReceiverMonitor.Draw((AudioReceiver)target);
 
             GUILayout.Space(8);
             EditorGUILayout.PropertyField(onAudioRecorded);

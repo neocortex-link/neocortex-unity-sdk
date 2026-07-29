@@ -16,22 +16,17 @@ namespace Neocortex
     public class NeocortexGroupChatUI : MonoBehaviour
     {
         [Tooltip("The cast this UI talks to. Auto-resolved from this GameObject when empty.")]
-        [SerializeField] private NeocortexGroupDirector director;
+        public NeocortexGroupDirector director;
 
         [Tooltip("Name on the player's own messages (the avatar's initial).")]
-        [SerializeField] private string playerName = "You";
+        public string playerName = "You";
 
         [Header("Widgets (Optional)")]
-        [SerializeField] private NeocortexChatPanel chatPanel;
-        [SerializeField] private NeocortexTextChatInput textInput;
-        [SerializeField] private NeocortexAudioChatInput audioInput;
-        [SerializeField] private NeocortexThinkingIndicator thinkingIndicator;
-        [SerializeField] private NeocortexAudioReceiver voiceInput;
-
-        public NeocortexGroupDirector Director { get => director; set => director = value; }
-        public NeocortexChatPanel ChatPanel => chatPanel;
-        public NeocortexAudioReceiver VoiceInput => voiceInput;
-        public string PlayerName { get => playerName; set => playerName = value; }
+        public NeocortexChatPanel chatPanel;
+        public NeocortexTextChatInput textInput;
+        public NeocortexAudioChatInput audioInput;
+        public NeocortexThinkingIndicator thinkingIndicator;
+        public NeocortexAudioReceiver voiceInput;
 
         private void Awake()
         {
@@ -50,9 +45,9 @@ namespace Neocortex
             }
 
             // The audio widget needs a receiver before its Start runs; the voice facade IS one.
-            if (audioInput != null && audioInput.AudioReceiver == null && voiceInput != null)
+            if (audioInput != null && audioInput.voiceInput == null && voiceInput != null)
             {
-                audioInput.AudioReceiver = voiceInput;
+                audioInput.voiceInput = voiceInput;
             }
 
             if (textInput != null) textInput.OnSendButtonClicked.AddListener(SubmitText);
@@ -126,7 +121,7 @@ namespace Neocortex
             if (audioInput != null) audioInput.SetChatState(true);
 
             // Voice-activity mode listens continuously; push-to-talk re-arms on button press.
-            if (voiceInput != null && !voiceInput.UsePushToTalk) voiceInput.StartMicrophone();
+            if (voiceInput != null && !voiceInput.usePushToTalk) voiceInput.StartMicrophone();
         }
 
         private void AddMessage(string sender, string text, bool isUser)

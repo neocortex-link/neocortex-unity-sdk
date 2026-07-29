@@ -12,16 +12,14 @@ namespace Neocortex
         private const int AMPLITUDE_MULTIPLIER = 10;
 
         private AudioClip audioClip;
-        private bool initialized;
         private int startedMicIndex = -1;
         private bool wasPushToTalk;
 
         public string SelectedMicrophone { get; private set; }
-        public bool IsUserSpeaking { get; private set; }
 
         private void Awake()
         {
-            wasPushToTalk = UsePushToTalk;
+            wasPushToTalk = usePushToTalk;
         }
 
         public override void StartMicrophone()
@@ -32,7 +30,11 @@ namespace Neocortex
                 startedMicIndex = Mathf.Clamp(PlayerPrefs.GetInt(MIC_INDEX_KEY, 0), 0, devices.Length - 1);
                 SelectedMicrophone = devices[startedMicIndex];
                 audioClip = NeocortexMicrophone.Start(SelectedMicrophone, true, 999, FREQUENCY);
-                initialized = true;
+                IsListening = true;
+
+                // Push-to-talk only opens the mic while the button is held, so it is capturing the
+                // player from the first frame. Voice activity waits for speech to cross the threshold.
+                IsUserSpeaking = usePushToTalk;
             }
             catch (Exception e)
             {
@@ -43,8 +45,9 @@ namespace Neocortex
         public override void StopMicrophone()
         {
             NeocortexMicrophone.End(SelectedMicrophone);
-            initialized = false;
+            IsListening = false;
             IsUserSpeaking = false;
+            Amplitude = 0; // a closed mic hears nothing; don't leave the level bar holding a stale value
             EmitRecordedClip(audioClip);
         }
 
@@ -53,24 +56,24 @@ namespace Neocortex
             // Runtime mode switch: leaving continuous listening shuts the hot mic silently (no
             // emit); entering voice-activity mode is started by whoever drives us (the audio
             // widget, ChatUI's re-arm, or a manual StartMicrophone).
-            if (UsePushToTalk != wasPushToTalk)
+            if (usePushToTalk != wasPushToTalk)
             {
-                wasPushToTalk = UsePushToTalk;
-                if (UsePushToTalk && initialized)
+                wasPushToTalk = usePushToTalk;
+                if (usePushToTalk && IsListening)
                 {
                     NeocortexMicrophone.End(SelectedMicrophone);
-                    initialized = false;
+                    IsListening = false;
                     IsUserSpeaking = false;
                     ElapsedWaitTime = 0;
                 }
             }
 
-            if (!initialized) return;
+            if (!IsListening) return;
 
             // Live mic switching: the selection changed (dropdown, facade API, inspector) while a
             // continuous voice-activity session is listening → hop to the new device now. Waits out
             // an in-progress utterance; push-to-talk picks the change up on the next press anyway.
-            if (!UsePushToTalk && !IsUserSpeaking && PlayerPrefs.GetInt(MIC_INDEX_KEY, 0) != startedMicIndex)
+            if (!usePushToTalk && !IsUserSpeaking && PlayerPrefs.GetInt(MIC_INDEX_KEY, 0) != startedMicIndex)
             {
                 NeocortexMicrophone.End(SelectedMicrophone);
                 ElapsedWaitTime = 0;
@@ -80,7 +83,7 @@ namespace Neocortex
 
             UpdateAmplitude();
 
-            if (UsePushToTalk) return;
+            if (usePushToTalk) return;
 
             if(!IsUserSpeaking && Amplitude > amplitudeThreshold)
             {
@@ -124,7 +127,7 @@ namespace Neocortex
 
         private void OnDestroy()
         {
-            if (initialized)
+            if (IsListening)
             {
                 NeocortexMicrophone.End(SelectedMicrophone);
             }

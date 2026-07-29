@@ -15,22 +15,17 @@ namespace Neocortex
     public class NeocortexChatUI : MonoBehaviour
     {
         [Tooltip("The character this UI talks to. Auto-resolved from children when empty.")]
-        [SerializeField] private NeocortexSmartAgent agent;
+        public NeocortexSmartAgent agent;
 
         [Tooltip("Name on the player's own messages (the avatar's initial).")]
-        [SerializeField] private string playerName = "You";
+        public string playerName = "You";
 
         [Header("Widgets (Optional)")]
-        [SerializeField] private NeocortexChatPanel chatPanel;
-        [SerializeField] private NeocortexTextChatInput textInput;
-        [SerializeField] private NeocortexAudioChatInput audioInput;
-        [SerializeField] private NeocortexThinkingIndicator thinkingIndicator;
-        [SerializeField] private NeocortexAudioReceiver voiceInput;
-
-        public NeocortexSmartAgent Agent { get => agent; set => agent = value; }
-        public NeocortexChatPanel ChatPanel => chatPanel;
-        public NeocortexAudioReceiver VoiceInput => voiceInput;
-        public string PlayerName { get => playerName; set => playerName = value; }
+        public NeocortexChatPanel chatPanel;
+        public NeocortexTextChatInput textInput;
+        public NeocortexAudioChatInput audioInput;
+        public NeocortexThinkingIndicator thinkingIndicator;
+        public NeocortexAudioReceiver voiceInput;
 
         // Resolved from each reply so chat lines, which carry only text, can still be attributed.
         private string characterName;
@@ -51,10 +46,13 @@ namespace Neocortex
                 return;
             }
 
+            // This UI feeds the agent, so the agent must not also drive a microphone itself.
+            agent.autoVoiceInput = false;
+
             // The audio widget needs a receiver before its Start runs; the voice facade IS one.
-            if (audioInput != null && audioInput.AudioReceiver == null && voiceInput != null)
+            if (audioInput != null && audioInput.voiceInput == null && voiceInput != null)
             {
-                audioInput.AudioReceiver = voiceInput;
+                audioInput.voiceInput = voiceInput;
             }
 
             if (textInput != null) textInput.OnSendButtonClicked.AddListener(SubmitText);
@@ -106,7 +104,7 @@ namespace Neocortex
             if (!string.IsNullOrEmpty(response.name)) characterName = response.name;
 
             // Off mode delivers the whole reply here instead of line by line.
-            if (agent.ChatLinesMode == ChatLinesMode.Off)
+            if (agent.chatLinesMode == ChatLinesMode.Off)
             {
                 ShowThinking(false);
                 AddMessage(CharacterName, response.message, false);
@@ -143,7 +141,7 @@ namespace Neocortex
             if (audioInput != null) audioInput.SetChatState(true);
 
             // Voice-activity mode listens continuously; push-to-talk re-arms on button press.
-            if (voiceInput != null && !voiceInput.UsePushToTalk) voiceInput.StartMicrophone();
+            if (voiceInput != null && !voiceInput.usePushToTalk) voiceInput.StartMicrophone();
         }
 
         private string CharacterName =>
