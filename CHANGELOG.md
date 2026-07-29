@@ -21,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Character dropdown in the Smart Agent inspector, and a settings window that validates the API key
 - One-click scaffolding: Hierarchy > Neocortex > Complete Text Chat / Complete Voice Chat
 - Samples reorganized into one "Neocortex Samples" set: text, voice, actions, interactables, group chat and usage gating
-- Breaking: `Message` is now `ChatHistoryEntry`, `NeocortexActionQueue` merged into `NeocortexSmartAgent`, capture backends are internal, pass-through properties replaced by public fields, and the `GetSessionID`/`CleanSessionID` shims are gone
 
 ## [0.4.9] 29 March 2026
 - Json library reference bug fix
