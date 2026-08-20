@@ -8,6 +8,7 @@ namespace Neocortex
     ///     Makes this GameObject part of what characters perceive; nearby characters carry it with
     ///     every message automatically. Characters reference it by <see cref="Id"/>, never by name.
     /// </summary>
+    [RequireComponent(typeof(BoxCollider))]
     [AddComponentMenu("Neocortex/Neocortex Interactable", 0)]
     public class NeocortexInteractable : MonoBehaviour
     {

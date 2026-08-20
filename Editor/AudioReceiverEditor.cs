@@ -27,9 +27,7 @@ namespace Neocortex.Editor
         {
             DrawDefaultInspector();
             
-            AudioReceiver audioReceiver = (AudioReceiver)target;
-            
-            if (microphoneOptions is { Length: > 0 } && audioReceiver is NeocortexNativeAudioReceiver)
+            if (microphoneOptions is { Length: > 0 })
             {
                 // Only write on an actual pick, writing every repaint fights live mic switching.
                 selectedMicrophoneIndex = PlayerPrefs.GetInt(AudioReceiver.MIC_INDEX_KEY, 0);
@@ -53,7 +51,7 @@ namespace Neocortex.Editor
             EditorGUILayout.PropertyField(onRecordingFailed);
             serializedObject.ApplyModifiedProperties();
 
-            AudioReceiverMonitor.Draw(audioReceiver);
+            AudioReceiverMonitor.Draw((AudioReceiver)target);
         }
     }
 }

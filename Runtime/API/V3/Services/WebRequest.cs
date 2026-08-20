@@ -82,15 +82,19 @@ namespace Neocortex.API
 
             if (payload.responseType == ApiResponseType.Audio && webRequest.result == UnityWebRequest.Result.ProtocolError)
             {
-                string error = System.Text.Encoding.ASCII.GetString(webRequest.downloadHandler.data);
-                LastError = error;
-                Debug.LogError($"[{webRequest.error}] {error}");
+                byte[] rawData = webRequest.downloadHandler?.data;
+                string error = rawData != null && rawData.Length > 0
+                    ? System.Text.Encoding.UTF8.GetString(rawData)
+                    : webRequest.downloadHandler?.text;
+
+                LastError = string.IsNullOrEmpty(error) ? webRequest.error : error;
+                Debug.LogError($"[{webRequest.error}] {LastError}");
                 return null;
             }
 
-            string body = webRequest.downloadHandler.text;
+            string body = webRequest.downloadHandler != null ? webRequest.downloadHandler.text : null;
             LastError = string.IsNullOrEmpty(body) ? webRequest.error : body;
-            Debug.LogError($"[{webRequest.error}] {body}");
+            Debug.LogError($"[{webRequest.error}] {LastError}");
             return null;
         }
 

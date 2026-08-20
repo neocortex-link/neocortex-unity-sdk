@@ -20,7 +20,7 @@ namespace Neocortex.API
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
         {
             NullValueHandling = NullValueHandling.Ignore,
-            Converters = { new StringEnumConverter { NamingStrategy = new CamelCaseNamingStrategy() } }
+            Converters = { new SafeStringEnumConverter() }
         };
 
         public event Action<string> OnTranscriptionReceived;
@@ -87,6 +87,11 @@ namespace Neocortex.API
                     };
 
                     UnityWebRequest request = await Send(payload);
+                    if (request == null)
+                    {
+                        throw new Exception(GetRequestError());
+                    }
+
                     ApiChatResponse response = JsonConvert.DeserializeObject<ApiChatResponse>(request.downloadHandler.text, jsonSerializerSettings);
 
                     NeocortexSessionManager.SetSessionID(characterId, response.sessionId);
@@ -531,7 +536,7 @@ namespace Neocortex.API
         {
             try
             {
-                ApiErrorResponse error = JsonConvert.DeserializeObject<ApiErrorResponse>(LastError);
+                ApiErrorResponse error = JsonConvert.DeserializeObject<ApiErrorResponse>(LastError, jsonSerializerSettings);
                 if (!string.IsNullOrEmpty(error?.error))
                 {
                     return error.error;
