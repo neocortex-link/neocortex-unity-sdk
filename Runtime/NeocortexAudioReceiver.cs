@@ -2,37 +2,57 @@ using System;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections;
-#if UNITY_ANDROID
+using System.Collections.Generic;
+using Neocortex.Data;
+#if UNITY_ANDROID && !UNITY_EDITOR
 using UnityEngine.Android;
+#endif
+#if UNITY_WEBGL && !UNITY_EDITOR
+using System.Runtime.InteropServices;
 #endif
 
 namespace Neocortex
 {
     /// <summary>
-    ///     THE microphone component: add it anywhere and voice input works on every platform.
-    ///     Internally it spawns the right capture implementation for the target (standalone/mobile
-    ///     vs WebGL) on a uniquely-named child, handles the Android/iOS microphone permission, and
-    ///     owns microphone selection, so games never touch the platform backends directly.
-    ///
-    ///     Anything that takes an <see cref="AudioReceiver"/> (e.g.
-    ///     <see cref="NeocortexAudioChatInput"/>) accepts it as-is. Push-to-talk, the
-    ///     voice-activity threshold, and the silence timeout are configured here and passed down.
+    ///     Unified microphone component for all platforms (Standalone Windows/Mac, Android, iOS, WebGL).
     /// </summary>
     [AddComponentMenu("Neocortex/Neocortex Audio Receiver", 0)]
     public class NeocortexAudioReceiver : AudioReceiver
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport("__Internal")] public extern static void WebGL_Initialize(string objectName, float amplitudeThreshold, float maxWaitTime, bool usePushToTalk);
+        [DllImport("__Internal")] public extern static void WebGL_StartRecording();
+        [DllImport("__Internal")] public extern static void WebGL_StopRecording();
+        [DllImport("__Internal")] public extern static bool WebGL_RecordingUpdatePointer(float[] idx);
+
+        private const int WEBGL_FREQUENCY = 48000;
+        private const int BUFFER_SIZE = 2048;
+
+        private FloatArray currentBuffer;
+        private MicrophoneState microphoneState = MicrophoneState.NotActive;
+        private readonly List<FloatArray> binaryStreams = new();
+        private bool sentPushToTalk;
+        private float sentThreshold;
+        private float sentWaitTime;
+        private bool suppressNextEmit;
+#else
+        private const int NATIVE_FREQUENCY = 22050;
+        private const int AUDIO_SAMPLE_WINDOW = 64;
+        private const int AMPLITUDE_MULTIPLIER = 10;
+
+        private AudioClip audioClip;
+        private int startedMicIndex = -1;
+        private bool wasPushToTalk;
+#endif
+
         [Tooltip("Ask for microphone permission (Android/iOS) as soon as this component starts. Off = asked on first record.")]
         [SerializeField] private bool requestPermissionOnStart = true;
 
         [Space] public UnityEvent OnPermissionGranted = new();
         [Space] public UnityEvent OnPermissionDenied = new();
 
-        private AudioReceiver receiver;
         private bool permissionGranted;
         private bool permissionResolved;
-
-        /// <summary>The platform capture implementation in use. Internal detail; exposed for advanced scenarios.</summary>
-        public AudioReceiver Receiver => receiver;
 
         /// <summary>Available microphone devices (a single placeholder entry on WebGL, the browser owns the mic).</summary>
         public string[] Microphones => NeocortexMicrophone.devices;
@@ -44,17 +64,22 @@ namespace Neocortex
             set => PlayerPrefs.SetInt(MIC_INDEX_KEY, value);
         }
 
+        public string SelectedMicrophone { get; private set; }
+
         public void SelectMicrophone(int index) => SelectedMicrophoneIndex = index;
 
-        /// <summary>Runtime mode switch, bindable from a UI Toggle. The capture layer follows within a frame.</summary>
         public void SetPushToTalk(bool enabled) => usePushToTalk = enabled;
 
         private void Awake()
         {
-            if (receiver == null)
-            {
-                CreatePlatformReceiver();
-            }
+#if UNITY_WEBGL && !UNITY_EDITOR
+            currentBuffer = new FloatArray();
+            currentBuffer.Buffer = new float[BUFFER_SIZE];
+            PushConfigToBrowser();
+            WebGL_RecordingUpdatePointer(currentBuffer.Buffer);
+#else
+            wasPushToTalk = usePushToTalk;
+#endif
         }
 
         private IEnumerator Start()
@@ -65,103 +90,9 @@ namespace Neocortex
             }
         }
 
-        private void CreatePlatformReceiver()
-        {
-            // Inactive-while-configuring: the WebGL backend initializes its jslib in Awake, so
-            // config must be in place before Awake runs. The unique name is what the browser JS
-            // uses to call back into the right object.
-            GameObject child = new GameObject($"Neocortex Audio Backend [{Guid.NewGuid():N}]");
-            child.SetActive(false);
-            child.transform.SetParent(transform, false);
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-            AudioReceiver spawned = child.AddComponent<NeocortexWebAudioReceiver>();
-#else
-            AudioReceiver spawned = child.AddComponent<NeocortexNativeAudioReceiver>();
-#endif
-            spawned.usePushToTalk = usePushToTalk;
-            spawned.amplitudeThreshold = amplitudeThreshold;
-            spawned.maxWaitTime = maxWaitTime;
-
-            Bind(spawned);
-            child.SetActive(true);
-        }
-
-        /// <summary>
-        ///     Advanced: swap in a custom capture source (e.g. a test feed or third-party mic
-        ///     stack). Replaces and destroys the spawned platform backend.
-        /// </summary>
-        public void SetCustomReceiver(AudioReceiver custom)
-        {
-            if (custom == null || custom == this) return;
-
-            if (receiver != null)
-            {
-                Unbind(receiver);
-                if (receiver.transform.parent == transform)
-                {
-                    Destroy(receiver.gameObject);
-                }
-            }
-
-            custom.usePushToTalk = usePushToTalk;
-            custom.amplitudeThreshold = amplitudeThreshold;
-            custom.maxWaitTime = maxWaitTime;
-            Bind(custom);
-        }
-
-        private void Bind(AudioReceiver target)
-        {
-            receiver = target;
-            receiver.OnAudioRecorded.AddListener(EmitAudioRecorded);
-            receiver.OnRecordingFailed.AddListener(EmitRecordingFailed);
-        }
-
-        private void Unbind(AudioReceiver target)
-        {
-            target.OnAudioRecorded.RemoveListener(EmitAudioRecorded);
-            target.OnRecordingFailed.RemoveListener(EmitRecordingFailed);
-        }
-
-        private void EmitAudioRecorded(AudioClip clip) => OnAudioRecorded?.Invoke(clip);
-        private void EmitRecordingFailed(string error) => OnRecordingFailed?.Invoke(error);
-
-        private void Update()
-        {
-            if (receiver == null) return;
-
-            // Mirror the live capture state so UI (amplitude bars, wait rings) reads the facade.
-            Amplitude = receiver.Amplitude;
-            ElapsedWaitTime = receiver.ElapsedWaitTime;
-            IsUserSpeaking = receiver.IsUserSpeaking;
-            IsListening = receiver.IsListening;
-
-            // All capture config can be changed at runtime; keep the capture layer in sync.
-            if (receiver.usePushToTalk != usePushToTalk)
-            {
-                receiver.usePushToTalk = usePushToTalk;
-            }
-            if (!Mathf.Approximately(receiver.amplitudeThreshold, amplitudeThreshold))
-            {
-                receiver.amplitudeThreshold = amplitudeThreshold;
-            }
-            if (!Mathf.Approximately(receiver.maxWaitTime, maxWaitTime))
-            {
-                receiver.maxWaitTime = maxWaitTime;
-            }
-        }
-
         public override void StartMicrophone()
         {
             StartCoroutine(StartWhenPermitted());
-        }
-
-        public override void StopMicrophone()
-        {
-            if (receiver != null)
-            {
-                receiver.StopMicrophone();
-            }
         }
 
         private IEnumerator StartWhenPermitted()
@@ -174,8 +105,196 @@ namespace Neocortex
                 yield break;
             }
 
-            receiver.StartMicrophone();
+            try
+            {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                if (microphoneState == MicrophoneState.NotActive)
+                {
+                    microphoneState = MicrophoneState.Booting;
+                    WebGL_StartRecording();
+                }
+#else
+                string[] devices = NeocortexMicrophone.devices;
+                startedMicIndex = Mathf.Clamp(PlayerPrefs.GetInt(MIC_INDEX_KEY, 0), 0, devices.Length - 1);
+                SelectedMicrophone = devices.Length > 0 ? devices[startedMicIndex] : null;
+                audioClip = NeocortexMicrophone.Start(SelectedMicrophone, true, 999, NATIVE_FREQUENCY);
+                IsListening = true;
+                IsUserSpeaking = usePushToTalk;
+#endif
+            }
+            catch (Exception e)
+            {
+                OnRecordingFailed?.Invoke(e.Message);
+            }
         }
+
+        public override void StopMicrophone()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebGL_StopRecording();
+#else
+            NeocortexMicrophone.End(SelectedMicrophone);
+            IsListening = false;
+            IsUserSpeaking = false;
+            Amplitude = 0;
+            EmitRecordedClip(audioClip);
+#endif
+        }
+
+        private void Update()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (usePushToTalk != sentPushToTalk || !Mathf.Approximately(amplitudeThreshold, sentThreshold) || !Mathf.Approximately(maxWaitTime, sentWaitTime))
+            {
+                bool switchedToPushToTalk = usePushToTalk && !sentPushToTalk;
+                PushConfigToBrowser();
+
+                if (switchedToPushToTalk && microphoneState != MicrophoneState.NotActive)
+                {
+                    suppressNextEmit = true;
+                    StopMicrophone();
+                }
+            }
+#else
+            if (usePushToTalk != wasPushToTalk)
+            {
+                wasPushToTalk = usePushToTalk;
+                if (usePushToTalk && IsListening)
+                {
+                    NeocortexMicrophone.End(SelectedMicrophone);
+                    IsListening = false;
+                    IsUserSpeaking = false;
+                    ElapsedWaitTime = 0;
+                }
+            }
+
+            if (!IsListening) return;
+
+            if (!usePushToTalk && !IsUserSpeaking && PlayerPrefs.GetInt(MIC_INDEX_KEY, 0) != startedMicIndex)
+            {
+                NeocortexMicrophone.End(SelectedMicrophone);
+                ElapsedWaitTime = 0;
+                StartMicrophone();
+                return;
+            }
+
+            UpdateAmplitude();
+
+            if (usePushToTalk) return;
+
+            if (!IsUserSpeaking && Amplitude > amplitudeThreshold)
+            {
+                IsUserSpeaking = true;
+            }
+
+            if (IsUserSpeaking)
+            {
+                if (Amplitude < amplitudeThreshold)
+                {
+                    ElapsedWaitTime += Time.deltaTime;
+                    if (ElapsedWaitTime >= maxWaitTime)
+                    {
+                        ElapsedWaitTime = 0;
+                        StopMicrophone();
+                    }
+                }
+                else
+                {
+                    ElapsedWaitTime = 0;
+                }
+            }
+#endif
+        }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        private void PushConfigToBrowser()
+        {
+            sentPushToTalk = usePushToTalk;
+            sentThreshold = amplitudeThreshold;
+            sentWaitTime = maxWaitTime;
+            WebGL_Initialize(name, amplitudeThreshold, maxWaitTime, usePushToTalk);
+        }
+
+        // WebGL JS Callbacks
+        public void LogWrittenBuffer(int written)
+        {
+            if (microphoneState != MicrophoneState.Recording) return;
+
+            currentBuffer.Written = written;
+            binaryStreams.Add(currentBuffer);
+            currentBuffer = new FloatArray { Buffer = new float[BUFFER_SIZE] };
+            WebGL_RecordingUpdatePointer(currentBuffer.Buffer);
+        }
+
+        public void NotifyRecordingChange(int newRecordingState)
+        {
+            if ((int)microphoneState == newRecordingState) return;
+
+            microphoneState = (MicrophoneState)newRecordingState;
+            IsUserSpeaking = microphoneState == MicrophoneState.Recording;
+            IsListening = microphoneState != MicrophoneState.NotActive;
+
+            if (microphoneState == MicrophoneState.NotActive)
+            {
+                OnWebGLAudioRecorded();
+            }
+        }
+
+        public void UpdateAmplitude(float amplitude) => Amplitude = amplitude;
+        public void UpdateElapsedWaitTime(float elapsedWaitTime) => ElapsedWaitTime = elapsedWaitTime;
+
+        private void OnWebGLAudioRecorded()
+        {
+            if (suppressNextEmit)
+            {
+                suppressNextEmit = false;
+                binaryStreams.Clear();
+                return;
+            }
+
+            int fCt = 0;
+            foreach (FloatArray fa in binaryStreams) fCt += fa.Written;
+
+            float[] ret = new float[fCt];
+            int write = 0;
+            foreach (FloatArray fa in binaryStreams)
+            {
+                Buffer.BlockCopy(fa.Buffer, 0, ret, write * 4, fa.Written * 4);
+                write += fa.Written;
+            }
+            binaryStreams.Clear();
+
+            if (ret.Length == 0) return;
+            AudioClip clip = AudioClip.Create("", ret.Length, 1, WEBGL_FREQUENCY, false);
+            clip.SetData(ret, 0);
+            EmitRecordedClip(clip);
+        }
+#else
+        private void UpdateAmplitude()
+        {
+            if (audioClip == null) return;
+            int clipPosition = NeocortexMicrophone.GetPosition(SelectedMicrophone);
+            int startPosition = Mathf.Max(0, clipPosition - AUDIO_SAMPLE_WINDOW);
+            float[] audioSamples = new float[AUDIO_SAMPLE_WINDOW];
+            audioClip.GetData(audioSamples, startPosition);
+
+            float sum = 0;
+            for (int i = 0; i < AUDIO_SAMPLE_WINDOW; i++)
+            {
+                sum += Mathf.Abs(audioSamples[i]);
+            }
+
+            Amplitude = Mathf.Clamp01(sum / AUDIO_SAMPLE_WINDOW * AMPLITUDE_MULTIPLIER);
+        }
+
+        private void OnDestroy()
+        {
+            if (IsListening)
+            {
+                NeocortexMicrophone.End(SelectedMicrophone);
+            }
+        }
+#endif
 
         // ── Permission ──────────────────────────────────────────────────────────────────────────
 
@@ -216,7 +335,6 @@ namespace Neocortex
             yield return Application.RequestUserAuthorization(UserAuthorization.Microphone);
             ResolvePermission(Application.HasUserAuthorization(UserAuthorization.Microphone));
 #else
-            // Desktop: no runtime prompt. WebGL: the browser prompts via the template's JS.
             ResolvePermission(true);
             yield break;
 #endif

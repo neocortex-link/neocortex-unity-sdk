@@ -130,7 +130,6 @@ namespace Neocortex
         private void HandleRequestFailed(string error)
         {
             ShowThinking(false);
-            AddMessage(null, $"[Something went wrong] {error}", false);
             RearmMicrophone(); // a failed turn must not leave the mic locked
         }
 

@@ -6,5 +6,6 @@ namespace Neocortex.API
     public class ApiErrorResponse
     {
         public string error;
+        public string code;
     }
 }

@@ -680,13 +680,6 @@ namespace Neocortex
             audioSource ??= GetComponent<AudioSource>();
             audioSource ??= AddAudioSource();
 
-            // A microphone is a convenience here, not a requirement. Only ever one per hierarchy,
-            // two would record the player twice.
-            if (transform.root.GetComponentInChildren<AudioReceiver>(true) == null)
-            {
-                gameObject.AddComponent<NeocortexAudioReceiver>();
-            }
-
             UnityEditor.EditorUtility.SetDirty(this);
         }
 #endif
