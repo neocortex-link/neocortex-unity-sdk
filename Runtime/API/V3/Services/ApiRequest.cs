@@ -20,7 +20,7 @@ namespace Neocortex.API
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
         {
             NullValueHandling = NullValueHandling.Ignore,
-            Converters = { new StringEnumConverter() }
+            Converters = { new SafeStringEnumConverter() }
         };
 
         public event Action<string> OnTranscriptionReceived;
