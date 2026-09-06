@@ -30,6 +30,7 @@ namespace Neocortex.API
         public event Action<ChatHistoryEntry[]> OnChatHistoryReceived;
 
         private string message;
+        private string spokenMessage;
         private string emotion;
 
         private void SetHeaders()
@@ -103,7 +104,7 @@ namespace Neocortex.API
                     ChatResponse chatResponse = ToChatResponse(speaker, response.metadata);
 
                     message = chatResponse.message;
-                    string speechText = !string.IsNullOrEmpty(chatResponse.spokenMessage) ? chatResponse.spokenMessage : chatResponse.message;
+                    spokenMessage = chatResponse.spokenMessage;
                     emotion = chatResponse.emotion.ToString().ToUpper();
                     OnChatResponseReceived?.Invoke(chatResponse);
                 }
@@ -111,7 +112,8 @@ namespace Neocortex.API
                 // here audio request
                 if (typeof(TOutput) == typeof(AudioClip))
                 {
-                    AudioClip audioClip = await GenerateAudio(characterId, speechText, emotion, chatResponse.spokenMessage);
+                    string speechText = !string.IsNullOrEmpty(spokenMessage) ? spokenMessage : message;
+                    AudioClip audioClip = await GenerateAudio(characterId, speechText, emotion, spokenMessage);
 
                     if (audioClip != null)
                     {
