@@ -86,8 +86,8 @@ namespace Neocortex
                 // Lip-sync is driven by the ACTUAL audio: no clip, no face animation. The clip is
                 // paired with the text it voices (the whole reply in Single Audio / Off modes, the
                 // current line in Per-Line Audio).
-                agent.OnChatResponseReceived.AddListener(response => lastReplyText = response.message);
-                agent.OnChatLineStarted.AddListener(line => lastLineText = line.text);
+                agent.OnChatResponseReceived.AddListener(response => lastReplyText = !string.IsNullOrEmpty(response.spokenMessage) ? response.spokenMessage : response.message);
+                agent.OnChatLineStarted.AddListener(line => lastLineText = !string.IsNullOrEmpty(line.spokenText) ? line.spokenText : line.text);
                 agent.OnAudioResponseReceived.AddListener(HandleAudioClip);
                 agent.OnReplyFinished.AddListener(Rest);
             }

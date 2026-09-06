@@ -3,6 +3,8 @@ namespace Neocortex.Data
     public class ChatResponse
     {
         public string message;
+        // The spoken phonetic text with numbers, dates, times and currencies verbalized for speech synthesis.
+        public string spokenMessage;
         // Name of the first of <see cref="actions"/>, kept for existing integrations that read a single action.
         public string action;
         // All stacked actions the character triggered this turn, each with the entity it targets. Empty when none.

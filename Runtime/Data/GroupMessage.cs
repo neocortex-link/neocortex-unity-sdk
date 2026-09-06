@@ -16,5 +16,6 @@ namespace Neocortex.Data
         public ChatLine[] lines;
         public ChatAction[] actions;
         public string flowState;
+        public string spokenMessage;
     }
 }

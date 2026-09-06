@@ -103,6 +103,7 @@ namespace Neocortex.API
                     ChatResponse chatResponse = ToChatResponse(speaker, response.metadata);
 
                     message = chatResponse.message;
+                    string speechText = !string.IsNullOrEmpty(chatResponse.spokenMessage) ? chatResponse.spokenMessage : chatResponse.message;
                     emotion = chatResponse.emotion.ToString().ToUpper();
                     OnChatResponseReceived?.Invoke(chatResponse);
                 }
@@ -110,7 +111,7 @@ namespace Neocortex.API
                 // here audio request
                 if (typeof(TOutput) == typeof(AudioClip))
                 {
-                    AudioClip audioClip = await GenerateAudio(characterId, message, emotion);
+                    AudioClip audioClip = await GenerateAudio(characterId, speechText, emotion, chatResponse.spokenMessage);
 
                     if (audioClip != null)
                     {
@@ -201,6 +202,9 @@ namespace Neocortex.API
         {
             ChatLine[] lines = message?.lines ?? Array.Empty<ChatLine>();
             ChatAction[] actions = message?.actions ?? Array.Empty<ChatAction>();
+            string derivedSpoken = lines.Any(l => !string.IsNullOrEmpty(l.spokenText))
+                ? string.Concat(lines.Select(l => !string.IsNullOrEmpty(l.spokenText) ? l.spokenText : l.text))
+                : message?.spokenMessage;
 
             return new ChatResponse
             {
@@ -209,6 +213,7 @@ namespace Neocortex.API
                 lines = lines,
                 actions = actions,
                 message = string.Concat(lines.Select(l => l.text)),
+                spokenMessage = !string.IsNullOrEmpty(derivedSpoken) ? derivedSpoken : string.Concat(lines.Select(l => l.text)),
                 emotion = lines.Length > 0 ? lines[0].emotion : Emotions.Neutral,
                 action = actions.Length > 0 ? actions[0].name : string.Empty,
                 flowState = message?.flowState,
@@ -381,16 +386,19 @@ namespace Neocortex.API
         ///     the audio cost of a reply by the number of lines.
         ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
         /// </summary>
-        public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion)
+        public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion, string spokenText = null)
         {
             try
             {
                 SetHeaders();
 
+                string speechText = !string.IsNullOrEmpty(spokenText) ? spokenText : message;
+
                 var data = new
                 {
                     characterId,
-                    message,
+                    message = speechText,
+                    spokenText = speechText,
                     emotion,
                 };
 

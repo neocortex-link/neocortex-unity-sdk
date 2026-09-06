@@ -189,7 +189,8 @@ namespace Neocortex
         /// <param name="line">The chat line to voice.</param>
         public Task<AudioClip> GenerateChatLineAudio(ChatLine line)
         {
-            return apiRequest.GenerateAudio(characterID, line.text, line.emotion.ToString().ToUpper());
+            string speechText = !string.IsNullOrEmpty(line?.spokenText) ? line.spokenText : line?.text;
+            return apiRequest.GenerateAudio(characterID, speechText, line.emotion.ToString().ToUpper(), line?.spokenText);
         }
 
         /// <summary>Assigns the coroutine that performs an action keyword, as authored on the character's Actions node.</summary>
@@ -429,7 +430,8 @@ namespace Neocortex
         // "speaking" state until the clip ends so queued input doesn't cut in mid-sentence.
         private async Task PlayOneClipAndDrop(string fullText, ChatLine[] lines, int token)
         {
-            AudioClip clip = await GenerateChatLineAudio(new ChatLine { text = fullText, emotion = lines[0].emotion });
+            string fullSpokenText = JoinSpokenText(lines);
+            AudioClip clip = await GenerateChatLineAudio(new ChatLine { text = fullText, spokenText = fullSpokenText, emotion = lines[0].emotion });
             if (this == null || token != playbackToken) return;
 
             if (clip != null)
@@ -611,6 +613,9 @@ namespace Neocortex
         }
 
         private static string JoinText(ChatLine[] lines) => string.Concat(lines.Select(l => l.text));
+
+        private static string JoinSpokenText(ChatLine[] lines) =>
+            string.Concat(lines.Select(l => !string.IsNullOrEmpty(l.spokenText) ? l.spokenText : l.text));
 
         private static bool NeedsAudio(ChatLinesMode mode)
         {

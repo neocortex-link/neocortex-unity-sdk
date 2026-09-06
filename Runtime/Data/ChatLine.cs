@@ -10,6 +10,7 @@ namespace Neocortex.Data
     public class ChatLine
     {
         public string text;
+        public string spokenText;
         public Emotions emotion;
     }
 }
