@@ -516,6 +516,7 @@ GameObject:
   - component: {fileID: 185442671}
   - component: {fileID: 185442670}
   - component: {fileID: 185442673}
+  - component: {fileID: 185442674}
   m_Layer: 0
   m_Name: Object 2
   m_TagString: Untagged
@@ -613,6 +614,27 @@ MonoBehaviour:
     value: blue
   - name: shape
     value: square
+--- !u!65 &185442674
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 185442668}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &312268091
 GameObject:
   m_ObjectHideFlags: 0
@@ -934,6 +956,7 @@ GameObject:
   - component: {fileID: 574200626}
   - component: {fileID: 574200625}
   - component: {fileID: 574200628}
+  - component: {fileID: 574200629}
   m_Layer: 0
   m_Name: Object 3
   m_TagString: Untagged
@@ -1031,6 +1054,27 @@ MonoBehaviour:
     value: yellow
   - name: shape
     value: circle
+--- !u!65 &574200629
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574200623}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &578083548
 GameObject:
   m_ObjectHideFlags: 0
@@ -2189,6 +2233,7 @@ GameObject:
   - component: {fileID: 1226000863}
   - component: {fileID: 1226000862}
   - component: {fileID: 1226000865}
+  - component: {fileID: 1226000866}
   m_Layer: 0
   m_Name: Object 1
   m_TagString: Untagged
@@ -2286,6 +2331,27 @@ MonoBehaviour:
     value: red
   - name: shape
     value: square
+--- !u!65 &1226000866
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1226000860}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1283267762
 GameObject:
   m_ObjectHideFlags: 0
@@ -4212,7 +4278,7 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrngerup001d7k1kjxvtn6lu
+      value: cms68icil0001jr04u0o252f2
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart

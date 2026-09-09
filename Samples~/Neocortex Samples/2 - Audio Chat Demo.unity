@@ -851,6 +851,8 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Microphone (Steam Streaming Microphone)
       m_Image: {fileID: 0}
+    - m_Text: Headset (WH-1000XM4)
+      m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -3471,7 +3473,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
-  director: {fileID: 0}
   playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 0}
@@ -5100,7 +5101,7 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: 6a1390f41d9227a1cf21aa76
+      value: cm9qurmiq0001l503rapmxln6
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart

@@ -2374,6 +2374,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexChatUI
   agent: {fileID: 1488510517}
+  playerName: You
   chatPanel: {fileID: 1583252999}
   textInput: {fileID: 1374893883}
   audioInput: {fileID: 0}
@@ -3522,7 +3523,7 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrngerup001d7k1kjxvtn6lu
+      value: cmsxs45u4000d7k08e16519hk
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode
