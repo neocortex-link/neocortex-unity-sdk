@@ -5,6 +5,7 @@ using Neocortex.API;
 using Neocortex.Data;
 using UnityEngine.Events;
 using System.Collections;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -16,26 +17,22 @@ namespace Neocortex
     [AddComponentMenu("Neocortex/Neocortex Smart Agent", 0)]
     public class NeocortexSmartAgent : MonoBehaviour
     {
-        // How many line clips are generated at once in Per-Line Audio mode.
-        private const int MAX_CONCURRENT_AUDIO = 2;
-
         [Tooltip("The character (project) id this agent talks to.")]
         public string characterID;
 
         [Tooltip("Off: always single message replies.\n" +
                  "Text: multiple chat lines drop in with separate emotions.\n" +
                  "Single Audio: same, plus ONE voice clip for the whole reply.\n" +
-                 "Per-Line Audio: same, but each line is voiced separately for faster responses.")]
+                 "Per-Line Audio: same, but each line is voiced separately so emotion changes land with the words.\n" +
+                 "Both audio modes start speaking as the voice arrives, rather than waiting for the whole clip.")]
         public ChatLinesMode chatLinesMode = ChatLinesMode.PerLineAudio;
+
 
         [Tooltip("Where line clips play. Added automatically when you pick an audio mode; falls back to an AudioSource on this GameObject.")]
         public AudioSource audioSource;
 
         [Tooltip("Fetch and replay this character's stored conversation via OnChatHistoryReceived when the scene starts.")]
         public bool loadHistoryOnStart;
-
-        [Tooltip("Log each chat line the character speaks, and any action it asks for, to the Console.")]
-        public bool logToConsole = true;
 
         [Tooltip("Listen through a microphone on this GameObject and answer by itself. Turn off when a Chat UI, a group director, or your own script feeds the agent instead.")]
         public bool autoVoiceInput = true;
@@ -62,6 +59,8 @@ namespace Neocortex
         [Tooltip("Raised once the whole reply has finished playing.")]
         [Space] public UnityEvent OnReplyFinished = new();
 
+        [Header("Streaming (Experimental)")]
+
         [Header("Actions")]
         [Tooltip("Raised once a reply's actions have all been run.")]
         [Space] public UnityEvent OnActionsCompleted = new();
@@ -74,6 +73,9 @@ namespace Neocortex
         private readonly Queue<Action> pendingInputs = new();
         private int playbackToken;
         private NeocortexUsageGate usageGate;
+
+        private NeocortexStreamingAudioPlayer streamPlayer;
+        private CancellationTokenSource audioCts;
 
         private readonly Dictionary<string, Func<ChatAction, IEnumerator>> actionHandlers = new();
         private readonly Queue<ChatAction> actionQueue = new();
@@ -134,6 +136,22 @@ namespace Neocortex
         private void OnDestroy()
         {
             playbackToken++; // cancel any in-flight chat-line playback
+            CancelAudio();
+        }
+
+        // Aborts an in-flight speech download and silences anything already playing.
+        private void CancelAudio()
+        {
+            if (audioCts != null)
+            {
+                audioCts.Cancel();
+                audioCts.Dispose();
+                audioCts = null;
+            }
+
+            // The download is only half of it: a player mid-playback keeps speaking.
+            streamPlayer?.Reset();
+            streamPlayer = null;
         }
 
         public void TextToText(string message)
@@ -262,11 +280,6 @@ namespace Neocortex
 
         private void HandleTranscription(string transcription)
         {
-            if (logToConsole)
-            {
-                Debug.Log($"[Neocortex] Player: {transcription}", this);
-            }
-
             OnTranscriptionReceived.Invoke(transcription);
         }
 
@@ -299,6 +312,10 @@ namespace Neocortex
 
         private async Task PlayReply(ChatLine[] lines, int token)
         {
+            // A previous reply's speech must not outlive the reply that replaced it.
+            CancelAudio();
+            audioCts = new CancellationTokenSource();
+
             switch (chatLinesMode)
             {
                 case ChatLinesMode.PerLineAudio:
@@ -378,47 +395,19 @@ namespace Neocortex
                 return;
             }
 
-            // Fetch clips with a small concurrency cap; play strictly in line order, starting line 1
-            // as soon as its clip returns while later lines keep synthesizing.
-            Task<AudioClip>[] clipTasks = new Task<AudioClip>[lines.Length];
-            int nextToStart = 0;
-
-            void StartNext()
-            {
-                if (nextToStart < lines.Length)
-                {
-                    int index = nextToStart++;
-                    clipTasks[index] = FetchClip(index);
-                }
-            }
-
-            async Task<AudioClip> FetchClip(int index)
-            {
-                AudioClip c = await GenerateChatLineAudio(lines[index]);
-                StartNext();
-                return c;
-            }
-
-            for (int i = 0; i < MAX_CONCURRENT_AUDIO; i++)
-            {
-                StartNext();
-            }
-
+            // Each line is spoken as it is synthesized, so the character starts talking a
+            // fraction of a second after the reply lands rather than seconds later.
             for (int i = 0; i < lines.Length; i++)
             {
-                AudioClip clip = await clipTasks[i];
                 if (this == null || token != playbackToken) return;
 
-                // Emotion transitions exactly when this line's audio starts.
-                BeginLine(lines[i]);
+                ChatLine line = lines[i];
+                bool spoke = await SpeakStreamed(line, token, () => BeginLine(line));
+                if (this == null || token != playbackToken) return;
 
-                if (clip != null)
+                if (!spoke)
                 {
-                    // A notification for lip-sync and friends; the agent owns playback here.
-                    OnAudioResponseReceived.Invoke(clip);
-                    audioSource.clip = clip;
-                    audioSource.Play();
-                    await WaitForAudio(token);
+                    await SpeakBuffered(line, token, announce: true);
                     if (this == null || token != playbackToken) return;
                 }
             }
@@ -426,25 +415,49 @@ namespace Neocortex
             FinishReply(token);
         }
 
-        // Plays one clip for the whole reply while the lines drop in on top of it, holding the
-        // "speaking" state until the clip ends so queued input doesn't cut in mid-sentence.
+        // Speaks the whole reply as one piece of audio while the lines drop in on top of
+        // it, holding the "speaking" state until it ends so queued input doesn't cut in
+        // mid-sentence.
         private async Task PlayOneClipAndDrop(string fullText, ChatLine[] lines, int token)
         {
-            string fullSpokenText = JoinSpokenText(lines);
-            AudioClip clip = await GenerateChatLineAudio(new ChatLine { text = fullText, spokenText = fullSpokenText, emotion = lines[0].emotion });
-            if (this == null || token != playbackToken) return;
-
-            if (clip != null)
+            ChatLine whole = new ChatLine
             {
-                OnAudioResponseReceived.Invoke(clip);
-                audioSource.clip = clip;
-                audioSource.Play();
-            }
+                text = fullText,
+                spokenText = JoinSpokenText(lines),
+                emotion = lines[0].emotion
+            };
 
-            // The clip covers the gap, so no "typing…" cue while the character speaks aloud.
+            // Speech begins as the audio arrives, so the lines and the voice start together.
+            Task<bool> speaking = SpeakStreamed(whole, token, null);
+
+            // The voice covers the gap, so no "typing..." cue while the character speaks.
             await DropLines(lines, token, signalComposing: false);
             if (this == null || token != playbackToken) return;
 
+            bool spoke = await speaking;
+            if (this == null || token != playbackToken) return;
+
+            if (!spoke)
+            {
+                await SpeakBuffered(whole, token, announce: false);
+            }
+        }
+
+        // The pre-streaming path, kept as the fallback for an older server or a failed
+        // stream: fetch the whole clip, then play it.
+        private async Task SpeakBuffered(ChatLine line, int token, bool announce)
+        {
+            if (announce)
+            {
+                BeginLine(line);
+            }
+
+            AudioClip clip = await GenerateChatLineAudio(line);
+            if (this == null || token != playbackToken || clip == null) return;
+
+            OnAudioResponseReceived.Invoke(clip);
+            audioSource.clip = clip;
+            audioSource.Play();
             await WaitForAudio(token);
         }
 
@@ -473,11 +486,6 @@ namespace Neocortex
 
         private void BeginLine(ChatLine line)
         {
-            if (logToConsole)
-            {
-                Debug.Log($"[Neocortex] {name} [{line.emotion}]: {line.text}", this);
-            }
-
             OnChatLineStarted.Invoke(line);
             OnEmotionChanged.Invoke(line.emotion);
 
@@ -511,6 +519,78 @@ namespace Neocortex
             state = ReplyState.WaitingForReply;
             next();
         }
+
+        // ── Speech ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        ///     Voices one chat line, playing it as it is synthesized rather than waiting for the
+        ///     whole clip. Returns false when nothing was spoken, so the caller can fall back.
+        /// </summary>
+        /// <param name="onStarted">Raised once the first audio is actually audible.</param>
+        private async Task<bool> SpeakStreamed(ChatLine line, int token, Action onStarted)
+        {
+            if (audioSource == null) return false;
+            if (await IsOutOfCredits(token)) return false;
+            if (this == null || token != playbackToken) return false;
+
+            NeocortexStreamingAudioPlayer player = new NeocortexStreamingAudioPlayer(audioSource);
+            streamPlayer = player;
+
+            CancellationToken cancellation = audioCts?.Token ?? CancellationToken.None;
+            string speechText = !string.IsNullOrEmpty(line.spokenText) ? line.spokenText : line.text;
+
+            Task<bool> request = apiRequest.GenerateAudioStream(
+                characterID,
+                speechText,
+                line.emotion.ToString().ToUpper(),
+                (rate, channels) => player.Begin(rate, channels),
+                samples => player.Feed(samples),
+                cancellation,
+                // A failure here is recoverable: the caller falls back to a whole clip, and
+                // that path reports if it fails too.
+                reportErrors: false);
+
+            bool announced = false;
+
+            // Drives playback while the audio is still downloading.
+            while (!request.IsCompleted)
+            {
+                if (this == null || token != playbackToken) return announced;
+
+                player.Tick();
+                if (player.HasStarted && !announced)
+                {
+                    announced = true;
+                    onStarted?.Invoke();
+                }
+
+                await Task.Yield();
+            }
+
+            if (this == null || token != playbackToken) return announced;
+
+            // Audio short enough to arrive in one go never passes through the loop above.
+            player.Tick();
+            if (player.HasStarted && !announced)
+            {
+                announced = true;
+                onStarted?.Invoke();
+            }
+
+            player.Complete();
+            await player.WaitUntilFinished(() => this != null && token == playbackToken);
+            if (this == null || token != playbackToken) return announced;
+
+            // A clip for listeners that want the whole line, lip-sync among them.
+            AudioClip finished = player.ToTrimmedClip();
+            if (finished != null)
+            {
+                OnAudioResponseReceived.Invoke(finished);
+            }
+
+            return announced || player.HasStarted;
+        }
+
 
         // ── Actions ─────────────────────────────────────────────────────────────────────────────
 
@@ -566,11 +646,6 @@ namespace Neocortex
 
                 if (actionHandlers.TryGetValue(action.name, out Func<ChatAction, IEnumerator> handler))
                 {
-                    if (logToConsole)
-                    {
-                        Debug.Log($"[Neocortex] {name} action: {action.name} {action.targetId}", this);
-                    }
-
                     yield return handler(action);
                 }
                 else

@@ -11,5 +11,8 @@ namespace Neocortex.API
         public string method = UnityWebRequest.kHttpVerbPOST;
         public object data;
         public ApiResponseType responseType;
+
+        /// <summary>Handler used when <see cref="responseType"/> is Stream, so the body can be read as it arrives.</summary>
+        [NonSerialized] public DownloadHandler downloadHandler;
     }
 }

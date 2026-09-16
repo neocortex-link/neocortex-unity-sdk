@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- **Removed `Log To Console` from the Smart Agent**, along with the lines it printed. A shipped game should not be narrating every reply to the player log, and anything you do want logged is already available through the events. Failures still report themselves
+- Characters now start speaking as the voice arrives instead of waiting for the whole clip to download, in both Single Audio and Per-Line Audio. Nothing to turn on, and measurably the largest latency win in this release: the first sound lands in well under a second rather than after two to four. `Off` mode still hands your game a finished `AudioClip`, and an older server falls back to the previous behaviour automatically
+- A failed request no longer repeats the whole response body. A proxy or tunnel answers with an entire HTML page, which used to land in the Smart Agent inspector and the Console in full; an unrecognised body is now reported as its status code instead, and any other long one is trimmed
+- `ApiRequest.GenerateAudioStream` reads streamed audio; `ApiResponseType.Stream` and a cancellation token on `WebRequest.Send` support it
+
 ## [0.5.2] - 09 September 2026
 - SpokenText field for STT backend.
 

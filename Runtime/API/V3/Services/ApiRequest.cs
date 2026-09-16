@@ -4,6 +4,7 @@ using UnityEngine;
 using Neocortex.Data;
 using Newtonsoft.Json;
 using UnityEngine.Networking;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json.Converters;
@@ -15,6 +16,10 @@ namespace Neocortex.API
     public class ApiRequest : WebRequest
     {
         public static string BaseUrlOverride;
+
+        // Cleared for good the first time a server answers 404 for streamed speech.
+        private static bool streamedSpeechSupported = true;
+
         private static string BaseURL => string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v3" : BaseUrlOverride;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
@@ -28,6 +33,7 @@ namespace Neocortex.API
         public event Action<ChatResponse> OnChatResponseReceived;
         public event Action<string> OnRequestFailed;
         public event Action<ChatHistoryEntry[]> OnChatHistoryReceived;
+
 
         private string message;
         private string spokenMessage;
@@ -88,6 +94,7 @@ namespace Neocortex.API
                     };
 
                     UnityWebRequest request = await Send(payload);
+
                     if (request == null)
                     {
                         throw new Exception(GetRequestError());
@@ -366,6 +373,7 @@ namespace Neocortex.API
                 };
 
                 UnityWebRequest request = await Send(payload);
+
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -412,6 +420,7 @@ namespace Neocortex.API
                 };
 
                 UnityWebRequest request = await Send(payload);
+
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -542,6 +551,99 @@ namespace Neocortex.API
             }
         }
 
+        /// <summary>
+        ///     EXPERIMENTAL. Generates speech and delivers it as it is synthesized, so playback can
+        ///     start before the whole line is ready.
+        ///     Returns false and raises <see cref="OnRequestFailed"/> when nothing could be played.
+        /// </summary>
+        /// <param name="characterId">The character whose voice is used.</param>
+        /// <param name="message">The line to speak.</param>
+        /// <param name="emotion">Emotion the line is voiced in.</param>
+        /// <param name="onFormat">Raised once with sample rate and channel count.</param>
+        /// <param name="onSamples">Raised repeatedly with the audio as it arrives.</param>
+        /// <param name="cancellationToken">Cancels this request only.</param>
+        /// <summary>
+        ///     Speaks text by playing it as it is generated. Returns false when nothing could be
+        ///     streamed, so the caller can fall back to a whole clip.
+        /// </summary>
+        /// <param name="reportErrors">
+        ///     Whether a failure raises OnRequestFailed. A caller that falls back should leave this
+        ///     off, so a recovered turn does not look like a broken one.
+        /// </param>
+        public async Task<bool> GenerateAudioStream(
+            string characterId,
+            string message,
+            string emotion,
+            Action<int, int> onFormat,
+            Action<float[]> onSamples,
+            CancellationToken cancellationToken = default,
+            bool reportErrors = true)
+        {
+            // A server without the streaming endpoint will not grow one mid-session, so stop
+            // paying for a doomed request before every single line.
+            if (!streamedSpeechSupported) return false;
+
+            try
+            {
+                SetHeaders();
+
+                var data = new
+                {
+                    characterId,
+                    message,
+                    spokenText = message,
+                    emotion,
+                };
+
+                // Wrapped so the moment sound becomes possible is recorded without the
+                // caller having to time it, since that is the number this path exists for.
+                PcmStreamDownloadHandler handler = new PcmStreamDownloadHandler(onFormat, onSamples);
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BaseURL}/audio/stream",
+                    data = GetBytes(data),
+                    responseType = ApiResponseType.Stream,
+                    downloadHandler = handler
+                };
+
+                UnityWebRequest request = await Send(payload, cancellationToken);
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                if (request == null)
+                {
+                    if (LastResponseCode == 404) streamedSpeechSupported = false;
+                    if (reportErrors) OnRequestFailed?.Invoke(GetRequestError());
+                    return false;
+                }
+
+                if (handler.IsNotAudio)
+                {
+                    if (reportErrors)
+                    {
+                        OnRequestFailed?.Invoke(string.IsNullOrEmpty(handler.RawText) ? "Speech stream returned no audio." : handler.RawText);
+                    }
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                if (reportErrors)
+                {
+                    OnRequestFailed?.Invoke(e.Message);
+                    Debug.LogError(e.Message);
+                }
+                return false;
+            }
+        }
+
+
         private string GetRequestError()
         {
             try
@@ -554,10 +656,10 @@ namespace Neocortex.API
             }
             catch
             {
-                // Body was not the { "error": ... } shape; fall back to the raw text below.
+                // Not the { "error": ... } shape, so whatever answered was not the API.
             }
 
-            return string.IsNullOrEmpty(LastError) ? $"Request failed ({LastResponseCode})" : LastError;
+            return DescribeFailure(LastError, LastResponseCode, null);
         }
     }
 }
