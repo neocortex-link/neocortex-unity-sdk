@@ -3523,7 +3523,7 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmsxs45u4000d7k08e16519hk
+      value: cmsxs1u4m00017k08ltmu0si7
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode

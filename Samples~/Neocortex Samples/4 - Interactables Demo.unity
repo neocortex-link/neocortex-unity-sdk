@@ -4282,7 +4282,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3901730872563175734, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_Name

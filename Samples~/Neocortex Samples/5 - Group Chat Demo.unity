@@ -2522,10 +2522,14 @@ PrefabInstance:
       objectReference: {fileID: 1213402656}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrngeiyw001b7k1k1whtneup
+      value: cmsxs1u4m00017k08ltmu0si7
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: lastEditorMode
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
@@ -2579,7 +2583,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
-  actionTrigger: 1
 --- !u!82 &1213402656 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 7381639974643083343, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
@@ -3463,7 +3466,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
-  actionTrigger: 1
 --- !u!143 &1488510528
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4382,10 +4384,14 @@ PrefabInstance:
       objectReference: {fileID: 1818373521}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrkiw4f100017k7sfnicq08e
+      value: cmsxs1u4m00017k08ltmu0si7
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: lastEditorMode
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
@@ -4439,7 +4445,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e6726b6a76dc27458cfb50d0d840e9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Neocortex.Runtime::Neocortex.NeocortexSmartAgent
-  actionTrigger: 1
 --- !u!82 &1818373521 stripped
 AudioSource:
   m_CorrespondingSourceObject: {fileID: 7381639974643083343, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
@@ -4731,10 +4736,6 @@ MonoBehaviour:
     offstage: {fileID: 1701973618}
     startsPresent: 0
     toggle: {fileID: 1436139156}
-  chatPanel: {fileID: 1583252999}
-  playerName: You
-  voiceInput: {fileID: 1953285530}
-  audioInput: {fileID: 1369384347}
   faceTarget: {fileID: 1438537460}
   moveSpeed: 2
   stopDistance: 0.1
@@ -5185,10 +5186,14 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cmrngerup001d7k1kjxvtn6lu
+      value: cmsxs45u4000d7k08e16519hk
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: chatLinesMode
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: lastEditorMode
       value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}

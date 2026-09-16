@@ -851,8 +851,6 @@ MonoBehaviour:
       m_Image: {fileID: 0}
     - m_Text: Microphone (Steam Streaming Microphone)
       m_Image: {fileID: 0}
-    - m_Text: Headset (WH-1000XM4)
-      m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -5101,7 +5099,11 @@ PrefabInstance:
       objectReference: {fileID: 1488510516}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: characterID
-      value: cm9qurmiq0001l503rapmxln6
+      value: cmsxs45u4000d7k08e16519hk
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: streamReplies
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart
