@@ -6,8 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 16 September 2026
 - Characters start speaking as the voice arrives instead of waiting for the whole clip. First sound in well under a second, rather than two to four. Nothing to turn on; `Off` mode still returns a finished `AudioClip`, and an older server falls back automatically.
-- Removed `Log To Console` from the Smart Agent. Failures still report themselves, and the events carry anything else worth logging.
-- Failed requests report their status code instead of the whole response body, so a proxy's HTML page no longer fills the inspector and the Console.
 - Added `ApiRequest.GenerateAudioStream`, `ApiResponseType.Stream`, and a cancellation token on `WebRequest.Send`.
 
 ## [0.5.2] - 09 September 2026
