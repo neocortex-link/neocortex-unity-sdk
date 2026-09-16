@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.6.0] - 16 September 2026
 - Characters start speaking as the voice arrives instead of waiting for the whole clip. First sound in well under a second, rather than two to four. Nothing to turn on; `Off` mode still returns a finished `AudioClip`, and an older server falls back automatically.
+- Added `com.unity.cloud.gltfast` and `com.unity.cloud.draco` as dependencies. The sample scenes load Cora as a Draco-compressed glb, so without them the character is missing on import.
 - Added `ApiRequest.GenerateAudioStream`, `ApiResponseType.Stream`, and a cancellation token on `WebRequest.Send`.
 
 ## [0.5.2] - 09 September 2026
