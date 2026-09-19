@@ -18,6 +18,9 @@ namespace Neocortex.Editor
         [MenuItem("GameObject/Neocortex/Complete Voice Chat", false, -1999)]
         public static void CreateCompleteVoiceChat() => Scaffold(withVoice: true);
 
+        [MenuItem("GameObject/Neocortex/Complete Quiz", false, -1998)]
+        public static void CreateCompleteQuiz() => ScaffoldQuiz();
+
         private static void Scaffold(bool withVoice)
         {
             Canvas canvas = Object.FindFirstObjectByType<Canvas>();
@@ -99,6 +102,63 @@ namespace Neocortex.Editor
             Selection.activeObject = characterGO;
             EditorGUIUtility.PingObject(agent);
             Debug.Log("[Neocortex] Chat rig created and wired. Pick your character on the 'Neocortex Character' object, then press Play.", characterGO);
+        }
+
+        /// <summary>
+        ///     A playable quiz rig: the chat panel for the host, a text box for answers, and a quiz
+        ///     agent wired to both. Fill in the character and the question set and press Play.
+        /// </summary>
+        private static void ScaffoldQuiz()
+        {
+            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+            if (canvas == null)
+            {
+                canvas = EditorUtilities.LoadAndInstantiate<Canvas>("Canvas");
+            }
+
+            EventSystem eventSystem = Object.FindFirstObjectByType<EventSystem>();
+            if (eventSystem == null)
+            {
+                eventSystem = EditorUtilities.LoadAndInstantiate<EventSystem>("Event System");
+            }
+
+            NeocortexChatPanel panel = EditorUtilities.LoadAndInstantiate<NeocortexChatPanel>("Chat Panel", canvas.transform);
+            panel.name = "Neocortex Quiz Panel";
+            if (panel.transform is RectTransform panelRect)
+            {
+                panelRect.anchoredPosition = Vector2.zero;
+            }
+
+            NeocortexTextChatInput textInput = EditorUtilities.LoadAndInstantiate<NeocortexTextChatInput>("Text Chat Input", canvas.transform);
+            textInput.name = "Neocortex Quiz Answer Input";
+            ((RectTransform)textInput.transform).anchoredPosition = new Vector2(0, -188);
+
+            NeocortexThinkingIndicator thinking = EditorUtilities.LoadAndInstantiate<NeocortexThinkingIndicator>("Thinking Indicator", canvas.transform);
+            thinking.name = "Neocortex Quiz Thinking Indicator";
+            ((RectTransform)thinking.transform).anchoredPosition = new Vector2(0, 180);
+
+            GameObject hostGO = new GameObject("Neocortex Quiz Host");
+            NeocortexQuizAgent agent = hostGO.AddComponent<NeocortexQuizAgent>();
+            AudioSource audioSource = hostGO.AddComponent<AudioSource>();
+            NeocortexQuizUI quizUI = hostGO.AddComponent<NeocortexQuizUI>();
+
+            SerializedObject agentSo = new SerializedObject(agent);
+            agentSo.FindProperty("audioSource").objectReferenceValue = audioSource;
+            agentSo.FindProperty("beginOnStart").boolValue = true;
+            agentSo.ApplyModifiedPropertiesWithoutUndo();
+
+            SerializedObject uiSo = new SerializedObject(quizUI);
+            uiSo.FindProperty("agent").objectReferenceValue = agent;
+            uiSo.FindProperty("chatPanel").objectReferenceValue = panel;
+            uiSo.FindProperty("textInput").objectReferenceValue = textInput;
+            uiSo.FindProperty("thinkingIndicator").objectReferenceValue = thinking;
+            uiSo.ApplyModifiedPropertiesWithoutUndo();
+
+            Undo.RegisterCreatedObjectUndo(hostGO, "Create Neocortex Quiz");
+
+            Selection.activeObject = hostGO;
+            EditorGUIUtility.PingObject(agent);
+            Debug.Log("[Neocortex] Quiz rig created and wired. Set the character and question set on the 'Neocortex Quiz Host' object, then press Play.", hostGO);
         }
     }
 }
