@@ -21,6 +21,12 @@ namespace Neocortex.API
         private static bool streamedSpeechSupported = true;
 
         private static string BaseURL => string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v3" : BaseUrlOverride;
+
+        // Ceilings, not expectations: a turn that takes this long has already failed the player,
+        // and without one a request that never answers leaves an agent busy for the session.
+        private const int TurnTimeoutSeconds = 30;
+        private const int AudioTimeoutSeconds = 20;
+        private const int LookupTimeoutSeconds = 15;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
         {
@@ -89,11 +95,12 @@ namespace Neocortex.API
                     ApiPayload payload = new ApiPayload()
                     {
                         url = $"{BaseURL}/chat",
+                        timeoutSeconds = TurnTimeoutSeconds,
                         data = GetBytes(data),
                         responseType = ApiResponseType.Text
                     };
 
-                    UnityWebRequest request = await Send(payload);
+                    using UnityWebRequest request = await Send(payload);
 
                     if (request == null)
                     {
@@ -271,11 +278,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/chat",
+                    timeoutSeconds = TurnTimeoutSeconds,
                     data = GetBytes(data),
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -327,11 +335,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/chat/session",
+                    timeoutSeconds = LookupTimeoutSeconds,
                     data = GetBytes(data),
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -368,11 +377,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/audio/transcribe",
+                    timeoutSeconds = AudioTimeoutSeconds,
                     data = form,
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
 
                 if (request == null)
                 {
@@ -415,11 +425,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/audio/generate",
+                    timeoutSeconds = AudioTimeoutSeconds,
                     data = GetBytes(data),
                     responseType = ApiResponseType.Audio
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
 
                 if (request == null)
                 {
@@ -449,11 +460,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/account",
+                    timeoutSeconds = LookupTimeoutSeconds,
                     method = UnityWebRequest.kHttpVerbGET,
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -483,11 +495,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/characters",
+                    timeoutSeconds = LookupTimeoutSeconds,
                     method = UnityWebRequest.kHttpVerbGET,
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -531,11 +544,12 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/usage{queryString}",
+                    timeoutSeconds = LookupTimeoutSeconds,
                     method = UnityWebRequest.kHttpVerbGET,
                     responseType = ApiResponseType.Text
                 };
 
-                UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
                     throw new Exception(GetRequestError());
@@ -602,12 +616,13 @@ namespace Neocortex.API
                 ApiPayload payload = new ApiPayload()
                 {
                     url = $"{BaseURL}/audio/stream",
+                    timeoutSeconds = AudioTimeoutSeconds,
                     data = GetBytes(data),
                     responseType = ApiResponseType.Stream,
                     downloadHandler = handler
                 };
 
-                UnityWebRequest request = await Send(payload, cancellationToken);
+                using UnityWebRequest request = await Send(payload, cancellationToken);
 
                 if (cancellationToken.IsCancellationRequested)
                 {

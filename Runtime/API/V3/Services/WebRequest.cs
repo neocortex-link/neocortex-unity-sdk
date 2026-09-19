@@ -13,11 +13,31 @@ namespace Neocortex.API
         public float Progress { get; private set; }
         public long LastResponseCode { get; private set; }
         public string LastError { get; private set; }
+
+        /// <summary>
+        ///     The API's own machine readable code for the last failure ("quiz_finished",
+        ///     "operation_in_progress"), when it sent one. Null for a transport failure and for
+        ///     anything that did not come from the API.
+        /// </summary>
+        public string LastErrorCode { get; private set; }
+
         protected Dictionary<string, string> Headers = new();
 
         /// <summary>How much of an unrecognised error body is worth repeating.</summary>
         private const int MaxErrorLength = 200;
 
+        /// <summary>
+        ///     How long past its own timeout a request is given before this side gives up on it.
+        ///     UnityWebRequest normally reports the timeout itself; this only covers an operation
+        ///     that never completes at all.
+        /// </summary>
+        private const float TimeoutGraceSeconds = 5f;
+
+        /// <summary>
+        ///     Cancels everything this instance has in flight. Replaced rather than reused on
+        ///     <see cref="Abort"/>, because a cancelled source stays cancelled: sharing one across
+        ///     the life of the object meant a single Abort poisoned every request after it.
+        /// </summary>
         protected CancellationTokenSource CtxSource = new();
 
         protected async Task<UnityWebRequest> Send(ApiPayload payload, CancellationToken cancellationToken = default)
@@ -26,6 +46,7 @@ namespace Neocortex.API
 
             LastResponseCode = 0;
             LastError = null;
+            LastErrorCode = null;
 
             if (payload.data == null)
             {
@@ -70,12 +91,35 @@ namespace Neocortex.API
                     break;
             }
 
+            if (payload.timeoutSeconds > 0)
+            {
+                webRequest.timeout = payload.timeoutSeconds;
+            }
+
+            // One token for this call: the caller's own cancellation and this instance's Abort,
+            // with neither outliving the request nor silencing the next one.
+            using CancellationTokenSource linked =
+                CancellationTokenSource.CreateLinkedTokenSource(CtxSource.Token, cancellationToken);
+
             AsyncOperation asyncOperation = webRequest.SendWebRequest();
+
+            // The timeout above is the transport's; this one is ours. An operation that never
+            // reports done (a suspended app, a socket that answers nothing at all) would
+            // otherwise spin this loop for the rest of the session.
+            float deadline = payload.timeoutSeconds > 0
+                ? Time.realtimeSinceStartup + payload.timeoutSeconds + TimeoutGraceSeconds
+                : float.MaxValue;
+            bool timedOut = false;
 
             while (!asyncOperation.isDone)
             {
-                if ((CtxSource != null && CtxSource.IsCancellationRequested) || cancellationToken.IsCancellationRequested)
+                if (linked.IsCancellationRequested)
                 {
+                    webRequest.Abort();
+                }
+                else if (Time.realtimeSinceStartup > deadline)
+                {
+                    timedOut = true;
                     webRequest.Abort();
                 }
 
@@ -86,6 +130,7 @@ namespace Neocortex.API
 
             if (webRequest.result == UnityWebRequest.Result.Success)
             {
+                // Handed over still open, because the body is read from it. The caller disposes.
                 return webRequest;
             }
 
@@ -93,10 +138,20 @@ namespace Neocortex.API
             // away) is not an error and must not be logged as one.
             if (cancellationToken.IsCancellationRequested)
             {
+                webRequest.Dispose();
                 return null;
             }
 
             LastResponseCode = webRequest.responseCode;
+            string transportError = webRequest.error;
+
+            if (timedOut)
+            {
+                LastError = $"The request timed out after {payload.timeoutSeconds}s.";
+                Debug.LogError($"[Neocortex] {LastError} ({payload.url})");
+                webRequest.Dispose();
+                return null;
+            }
 
             if (payload.responseType == ApiResponseType.Audio && webRequest.result == UnityWebRequest.Result.ProtocolError)
             {
@@ -105,15 +160,38 @@ namespace Neocortex.API
                     ? System.Text.Encoding.UTF8.GetString(rawData)
                     : webRequest.downloadHandler?.text;
 
-                LastError = string.IsNullOrEmpty(error) ? webRequest.error : error;
-                Debug.LogError($"[{webRequest.error}] {DescribeFailure(LastError, LastResponseCode, webRequest.error)}");
-                return null;
+                LastError = string.IsNullOrEmpty(error) ? transportError : error;
+            }
+            else
+            {
+                string body = webRequest.downloadHandler != null ? webRequest.downloadHandler.text : null;
+                LastError = string.IsNullOrEmpty(body) ? transportError : body;
             }
 
-            string body = webRequest.downloadHandler != null ? webRequest.downloadHandler.text : null;
-            LastError = string.IsNullOrEmpty(body) ? webRequest.error : body;
-            Debug.LogError($"[{webRequest.error}] {DescribeFailure(LastError, LastResponseCode, webRequest.error)}");
+            LastErrorCode = ReadErrorCode(LastError);
+            Debug.LogError($"[{transportError}] {DescribeFailure(LastError, LastResponseCode, transportError)}");
+            webRequest.Dispose();
             return null;
+        }
+
+        /// <summary>
+        ///     Pulls the API's own error code out of a failure body, so a caller can branch on
+        ///     what happened rather than on the wording of a sentence.
+        /// </summary>
+        private static string ReadErrorCode(string body)
+        {
+            string text = body?.TrimStart();
+            if (string.IsNullOrEmpty(text) || text[0] != '{') return null;
+
+            try
+            {
+                return JsonConvert.DeserializeObject<ApiErrorResponse>(text)?.code;
+            }
+            catch
+            {
+                // Not our shape, so whatever answered was not the API.
+                return null;
+            }
         }
 
         /// <summary>
@@ -151,9 +229,16 @@ namespace Neocortex.API
             return text;
         }
 
+        /// <summary>Cancels everything this instance has in flight, and leaves it usable after.</summary>
         public void Abort()
         {
-            CtxSource.Cancel();
+            CancellationTokenSource aborted = CtxSource;
+
+            // Swapped BEFORE cancelling, so anything started during the cancel gets the fresh
+            // source rather than an already-cancelled one. The old source is deliberately not
+            // disposed: requests still unwinding hold tokens linked to it.
+            CtxSource = new CancellationTokenSource();
+            aborted.Cancel();
         }
 
         protected byte[] GetBytes(object payload)
