@@ -27,6 +27,12 @@ namespace Neocortex.API
         private const int TurnTimeoutSeconds = 30;
         private const int AudioTimeoutSeconds = 20;
         private const int LookupTimeoutSeconds = 15;
+
+        // A session lock is held for one turn, so waiting it out costs less than failing.
+        private const string QuizFinishedCode = "quiz_finished";
+        private const string OperationInProgressCode = "operation_in_progress";
+        private const int QuizBusyRetries = 2;
+        private const int QuizBusyRetryDelayMs = 1500;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
         private readonly JsonSerializerSettings jsonSerializerSettings = new()
         {
@@ -512,6 +518,237 @@ namespace Neocortex.API
             {
                 OnRequestFailed?.Invoke(e.Message);
                 Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     The team's question sets, id and name only, for editor tooling that offers a picker
+        ///     instead of a pasted id. Read only and unmetered.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        public async Task<ApiQuestionSetsResponse> GetQuestionSets()
+        {
+            try
+            {
+                SetHeaders();
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BaseURL}/question-sets",
+                    timeoutSeconds = LookupTimeoutSeconds,
+                    method = UnityWebRequest.kHttpVerbGET,
+                    responseType = ApiResponseType.Text
+                };
+
+                using UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                return JsonConvert.DeserializeObject<ApiQuestionSetsResponse>(request.downloadHandler.text, jsonSerializerSettings);
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     Starts a quiz and returns its first turn: the host's welcome, the first question, and
+        ///     the id of the one after it.
+        ///
+        ///     A character and a question set are the whole setup. Question order, retries, hints,
+        ///     the opening and closing words and when the run ends are authored on the set and
+        ///     decided server side. Keep <see cref="QuizTurnResponse.sessionId"/> and pass it to
+        ///     <see cref="ContinueQuiz"/> for every turn after this one.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        /// <param name="characterId">The character (project) id that hosts the quiz.</param>
+        /// <param name="questionSetId">The question set to play.</param>
+        /// <param name="playerId">Your own id for this player. Defaults to this device.</param>
+        /// <param name="participants">The players. Leave null for a single player.</param>
+        public async Task<QuizTurnResponse> BeginQuiz(
+            string characterId,
+            string questionSetId,
+            string playerId = null,
+            QuizParticipant[] participants = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(characterId)) throw new Exception("Character ID is required");
+                if (string.IsNullOrEmpty(questionSetId)) throw new Exception("Question Set ID is required");
+
+                SetHeaders();
+
+                var data = new Dictionary<string, object>
+                {
+                    ["characterId"] = characterId,
+                    ["questionSetId"] = questionSetId,
+                    ["playerId"] = string.IsNullOrEmpty(playerId) ? SystemInfo.deviceUniqueIdentifier : playerId
+                };
+                if (participants is { Length: > 0 }) data["participants"] = participants;
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BaseURL}/quiz",
+                    timeoutSeconds = TurnTimeoutSeconds,
+                    data = GetBytes(data),
+                    responseType = ApiResponseType.Text
+                };
+
+                using UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                return JsonConvert.DeserializeObject<QuizTurnResponse>(request.downloadHandler.text, jsonSerializerSettings);
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     Sends whatever the player just did and returns the next turn.
+        ///
+        ///     Pass speech or typing as <paramref name="say"/>, or the id of a tapped choice as
+        ///     <paramref name="optionId"/>. The host works out whether that was an answer, a yes, a
+        ///     request for the clue or nothing it could make out, so a game never has to parse it.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        /// <param name="sessionId">From <see cref="BeginQuiz"/>.</param>
+        /// <param name="say">
+        ///     What the player said or typed. An empty string passes on the question, which costs
+        ///     no credit; an empty transcription is not the same thing and should not be sent here.
+        /// </param>
+        /// <param name="optionId">The chosen option's id, when they tapped one.</param>
+        /// <param name="participantId">Who spoke, in a game with more than one player.</param>
+        public async Task<QuizTurnResponse> ContinueQuiz(
+            string sessionId,
+            string say = null,
+            string optionId = null,
+            string participantId = null)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(sessionId)) throw new Exception("Session ID is required");
+
+                SetHeaders();
+
+                var data = new Dictionary<string, object> { ["sessionId"] = sessionId };
+                // An empty string is a deliberate pass, so only a null is left out.
+                if (say != null) data["say"] = say;
+                if (!string.IsNullOrEmpty(optionId)) data["optionId"] = optionId;
+                if (!string.IsNullOrEmpty(participantId)) data["participantId"] = participantId;
+
+                byte[] body = GetBytes(data);
+
+                for (int attempt = 0; ; attempt++)
+                {
+                    ApiPayload payload = new ApiPayload()
+                    {
+                        url = $"{BaseURL}/quiz",
+                        timeoutSeconds = TurnTimeoutSeconds,
+                        data = body,
+                        responseType = ApiResponseType.Text
+                    };
+
+                    using UnityWebRequest request = await Send(payload);
+
+                    if (request != null)
+                    {
+                        return JsonConvert.DeserializeObject<QuizTurnResponse>(request.downloadHandler.text, jsonSerializerSettings);
+                    }
+
+                    if (LastResponseCode != 409)
+                    {
+                        throw new Exception(GetRequestError());
+                    }
+
+                    // The run is over and the server is handing back the closing turn it already
+                    // gave. That is an answer, not a failure: speak it and let the game end
+                    // properly, which is what a client whose last response was lost needs.
+                    if (LastErrorCode == QuizFinishedCode)
+                    {
+                        QuizTurnResponse replay = ReadQuizErrorTurn(LastError);
+                        if (replay != null) return replay;
+                        throw new Exception(GetRequestError());
+                    }
+
+                    // Another call holds this session. Almost always our own previous turn still
+                    // landing, so it is worth waiting out rather than failing the player.
+                    if (LastErrorCode != OperationInProgressCode || attempt >= QuizBusyRetries)
+                    {
+                        throw new Exception(GetRequestError());
+                    }
+
+                    await Task.Delay(QuizBusyRetryDelayMs);
+                }
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///     Reads a run back: the standings, the question on the table and what the host is
+        ///     waiting for. Read-only and unmetered, so it is the cheap way to recover after a
+        ///     turn whose response never arrived.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        /// </summary>
+        /// <param name="sessionId">From <see cref="BeginQuiz"/>.</param>
+        public async Task<ApiQuizSessionResponse> GetQuizSession(string sessionId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(sessionId)) throw new Exception("Session ID is required");
+
+                SetHeaders();
+
+                ApiPayload payload = new ApiPayload()
+                {
+                    url = $"{BaseURL}/quiz/session?sessionId={UnityWebRequest.EscapeURL(sessionId)}",
+                    timeoutSeconds = LookupTimeoutSeconds,
+                    method = UnityWebRequest.kHttpVerbGET,
+                    responseType = ApiResponseType.Text
+                };
+
+                using UnityWebRequest request = await Send(payload);
+                if (request == null)
+                {
+                    throw new Exception(GetRequestError());
+                }
+
+                return JsonConvert.DeserializeObject<ApiQuizSessionResponse>(request.downloadHandler.text, jsonSerializerSettings);
+            }
+            catch (Exception e)
+            {
+                OnRequestFailed?.Invoke(e.Message);
+                Debug.LogError(e.Message);
+                return null;
+            }
+        }
+
+        /// <summary>The turn a 409 carried, or null when the body was not that shape.</summary>
+        private QuizTurnResponse ReadQuizErrorTurn(string body)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<ApiQuizErrorResponse>(body, jsonSerializerSettings)?.turn;
+            }
+            catch
+            {
                 return null;
             }
         }
