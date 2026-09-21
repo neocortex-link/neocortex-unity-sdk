@@ -4,31 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- Quiz support. `NeocortexQuizAgent` runs a whole quiz, game show or spoken test from a character id and a question set id. Your scene only has to say what the player did, with `Say` or `Choose`; question order, retries, hints, scoring and when the run ends are decided on the server from the question set.
-- Each question carries the author's scene `keyword` (SHOW_RED_APPLE), on the current question and on the one after it, so a game can put the right thing on screen and preload the next while the host is still talking. Generated question ids stay out of your scene code.
-- `OnExpectingChanged` says whether to collect an answer, a yes or no, or nothing at all, which is what a voice game needs to know when to open the microphone.
-- `ApiRequest.BeginQuiz` and `ApiRequest.ContinueQuiz` for driving it yourself, `NeocortexQuizUI` to bind the standard chat widgets, and `GameObject > Neocortex > Complete Quiz` to build the whole rig in one click.
-- `OnBusyChanged` says when a turn is in flight, so a thinking indicator no longer has to be inferred from `OnExpectingChanged`, which left it spinning forever once a run had finished.
-- The Quiz Agent inspector picks the character AND the question set from dropdowns of your own team's, fetched with your API key, instead of two pasted ids. Question sets show how many questions they hold. Both raw id fields stay visible and editable, and a missing key or failed fetch leaves plain text boxes.
-- Added `ApiRequest.GetQuestionSets()`, the question set half of the existing `GetCharacters()`.
-- Host lines carry a `role`: `Greeting`, `Reaction`, `Question` or `Closing`. A turn often reacts to the last answer AND asks the next question, so `NeocortexQuizAgent` now raises `OnQuestionChanged` as the `Question` line begins rather than when the turn arrives. The scene changes on the right beat instead of while the host is still talking about the previous answer, which is what a voice game needs.
-- The host now greets the player as its own turn and asks the first question on the next one, so a game can put the question's scene on screen when the question arrives rather than while the host is still saying hello. `NeocortexQuizAgent` fetches that second turn itself.
-- Added a Quiz sample: press Start, type an answer, read what the host decides, and watch the scene follow the question's keyword. Three shapes are wired to SHAPE_TRIANGLE, SHAPE_SQUARE and SHAPE_CIRCLE; the sample never decides which one to show.
-- Every request now has a deadline (30s for a turn, 20s for speech, 15s for a lookup) and every `UnityWebRequest` is disposed. Without one, a request that never answered left an agent busy, and the microphone shut, for the rest of the session.
-- `WebRequest.Abort()` no longer poisons the requests that follow it. Cancellation is per call and linked to a source that is replaced on abort, rather than one source shared for the life of the object.
-- `NeocortexQuizAgent` survives a scene change, a restart and a listener that throws: the turn in flight is identified by a token that every resume point checks, `OnDestroy` cancels and silences it, and the busy flag clears in a `finally`. A game bug in an `OnHostLine` handler no longer ends the run.
-- Added `NeocortexQuizAgent.Abort()`, and `Begin()` on a live run now calls it rather than being ignored, so starting a second run cannot leave two answering into the same scene.
-- The first question is fetched while the welcome is still being spoken, saving a second or two of silence at the start of every run.
-- Each line's speech is requested while the line before it is still playing, so the gap between two spoken lines is a frame rather than a whole round trip. `OnHostLine` is now raised as its line starts rather than when the turn arrived, so a caption and the voice saying it are one event.
-- Spoken clips are destroyed after they play. A run used to leak twenty to forty of them.
-- Playback no longer waits on `AudioSource.isPlaying` alone: a paused `AudioListener`, a disabled source or a zeroed `timeScale` each left that wait either cutting the host off or hanging the turn for good.
-- `OnEmotionChanged` is raised when the emotion changes, not once per line.
-- What the player says while the host is talking is held rather than silently dropped: the newest one is sent when the turn lands, anything older than `maxPendingInputAge` (4s) is let go, and every drop is reported through the new `OnInputDropped(string, QuizInputDropReason)` with a reason. Turn it off with `queueInputWhileBusy`.
-- Sending to a run that has already finished returns that run's closing turn instead of an error, so a client whose response was lost can still speak the sign off. A turn refused because the session is busy is retried twice before it fails.
-- Added `ApiRequest.GetQuizSession(sessionId)` and `NeocortexQuizAgent.Resync()`. After a turn whose response never arrived, the run is read back from the server (the question on the table, the standings, what the host is waiting for) rather than guessed at locally. The lost utterance is never re-sent. Called automatically when a turn fails.
-- `WebRequest.LastErrorCode` carries the API's own code for a failure, so a caller can branch on what happened rather than on the wording of a sentence.
-- The Quiz UI answers a dropped utterance instead of ignoring it, and shows failures in the panel. The Quiz sample re-enables Start after a failure (one bad turn used to brick the demo) and sends an empty submit as the documented pass.
+## [0.7.0] - 21 September 2026
+- Quiz: `NeocortexQuizAgent` runs a quiz from a character and a question set. Call `Begin`, then `Say` or `Choose`; question order, retries, hints and scoring come from the server.
+- Scene events: `OnQuestionChanged` and `OnUpcomingQuestion` carry the question's `keyword`, `OnHostLine` carries the line's `role`, plus `OnExpectingChanged`, `OnBusyChanged`, `OnResult`, `OnLeaderboardChanged`, `OnQuizFinished` and `OnInputDropped`.
+- `NeocortexQuizUI` wires the agent to the chat widgets, `GameObject > Neocortex > Complete Quiz` builds the rig, and the inspector picks the character and question set from dropdowns.
+- Added `ApiRequest.BeginQuiz`, `ContinueQuiz`, `GetQuizSession` and `GetQuestionSets`.
+- Added the Quiz sample scene.
+- Every request has a timeout and is disposed. `WebRequest.Abort()` no longer breaks later requests. `WebRequest.LastErrorCode` carries the API's error code.
+- Cora ships as an FBX with its textures instead of a Draco glb. The glTFast and Draco dependencies are gone.
 
 ## [0.6.0] - 16 September 2026
 - Characters start speaking as the voice arrives instead of waiting for the whole clip. First sound in well under a second, rather than two to four. Nothing to turn on; `Off` mode still returns a finished `AudioClip`, and an older server falls back automatically.

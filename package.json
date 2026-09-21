@@ -1,13 +1,11 @@
 {
   "name": "link.neocortex.sdk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "displayName": "Neocortex Unity SDK",
   "description": "Conversational AI for Games Simplified. With Neocortex SDK, create dynamic in-game conversations with AI-powered smart characters using our node-based editor and SDKs.",
   "unity": "6000.0",
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json": "3.2.1",
-    "com.unity.cloud.gltfast": "6.19.0",
-    "com.unity.cloud.draco": "5.4.3"
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
   },
   "keywords": [
     "conversational ai",
@@ -30,7 +28,7 @@
   "samples": [
     {
       "displayName": "Neocortex Samples",
-      "description": "Text, audio, and advanced samples: chat, chat lines, audio conversations, interactables, multi-character, and usage gating.",
+      "description": "Text, audio, and advanced samples: chat, chat lines, audio conversations, interactables, multi-character, usage gating and quiz.",
       "path": "Samples~/Neocortex Samples"
     }
   ]
