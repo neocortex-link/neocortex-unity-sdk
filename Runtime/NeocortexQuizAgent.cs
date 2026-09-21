@@ -428,13 +428,23 @@ namespace Neocortex
             // the truth rather than "still playing".
             IsFinished = turn.done;
 
-            // A turn with no question that is not the end is the welcome: the host has greeted
-            // the player and the first question comes next. That turn is asked for NOW, while
-            // the greeting is still being spoken, because the server has already persisted this
-            // one and released its lock. It is a second or two the player would otherwise spend
-            // listening to nothing. The guard stops a server that keeps answering with no
-            // question from looping.
-            bool isWelcome = !turn.done && turn.question == null && !resumedFromWelcome;
+            // The welcome: the host has greeted the player and the first question comes next.
+            // That turn is asked for NOW, while the greeting is still being spoken, because the
+            // server has already persisted this one and released its lock. It is a second or
+            // two the player would otherwise spend listening to nothing.
+            //
+            // A missing question does NOT mean the welcome. A retry offer, a clue, a repeat and
+            // a turn the host could not make out all leave the question where it was and send
+            // no new one. What marks the welcome is that there is nothing for the player to do
+            // yet: expecting is Nothing. Keying on the missing question alone sent a turn with
+            // nothing said into an open question, which the server rightly refused with 422
+            // nothing_said, on every single wrong answer that earned another go.
+            //
+            // resumedFromWelcome stops a server that keeps answering with no question looping.
+            bool isWelcome = !turn.done
+                && turn.question == null
+                && turn.expecting == QuizExpecting.Nothing
+                && !resumedFromWelcome;
             Task<QuizTurnResponse> upNext = isWelcome ? apiRequest.ContinueQuiz(SessionId) : null;
 
             await SpeakLines(turn.lines, questionChanged ? turn.question : null, token);
