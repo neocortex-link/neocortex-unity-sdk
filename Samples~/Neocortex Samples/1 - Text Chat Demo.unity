@@ -3477,6 +3477,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: audioSource
+      value: 
+      objectReference: {fileID: 1488510516}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: characterID
+      value: cmsxs1u4m00017k08ltmu0si7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: chatLinesMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: loadHistoryOnStart
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: m_Avatar
+      value: 
+      objectReference: {fileID: 9000000, guid: bee80de4f38077049911ce84802b2541, type: 2}
+    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 49bba1215536e0341a55818874511302, type: 2}
+    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4854317298289175584, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
+      propertyPath: m_Name
+      value: Cora
+      objectReference: {fileID: 0}
     - target: {fileID: 5194391385100203674, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.1
@@ -3516,38 +3548,6 @@ PrefabInstance:
     - target: {fileID: 5194391385100203674, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: audioSource
-      value: 
-      objectReference: {fileID: 1488510516}
-    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: characterID
-      value: cmsxs1u4m00017k08ltmu0si7
-      objectReference: {fileID: 0}
-    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: chatLinesMode
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: loadHistoryOnStart
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4854317298289175584, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: m_Name
-      value: Cora
-      objectReference: {fileID: 0}
-    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: m_Avatar
-      value: 
-      objectReference: {fileID: 9000000, guid: bee80de4f38077049911ce84802b2541, type: 2}
-    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: m_Controller
-      value: 
-      objectReference: {fileID: 9100000, guid: 49bba1215536e0341a55818874511302, type: 2}
-    - target: {fileID: 2230974672885968096, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: m_ApplyRootMotion
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
