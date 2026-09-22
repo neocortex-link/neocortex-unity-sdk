@@ -28,7 +28,7 @@
   "samples": [
     {
       "displayName": "Neocortex Samples",
-      "description": "Text, audio, and advanced samples: chat, chat lines, audio conversations, interactables, multi-character, usage gating and quiz.",
+      "description": "Text, audio, and advanced samples: chat, chat lines, audio conversations, interactables, multi-character and usage gating.",
       "path": "Samples~/Neocortex Samples"
     }
   ]

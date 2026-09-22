@@ -5,11 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.7.0] - 21 September 2026
-- Quiz: `NeocortexQuizAgent` runs a quiz from a character and a question set. Call `Begin`, then `Say` or `Choose`; question order, retries, hints and scoring come from the server.
-- Scene events: `OnQuestionChanged` and `OnUpcomingQuestion` carry the question's `keyword`, `OnHostLine` carries the line's `role`, plus `OnExpectingChanged`, `OnBusyChanged`, `OnResult`, `OnLeaderboardChanged`, `OnQuizFinished` and `OnInputDropped`.
-- `NeocortexQuizUI` wires the agent to the chat widgets, `GameObject > Neocortex > Complete Quiz` builds the rig, and the inspector picks the character and question set from dropdowns.
-- Added `ApiRequest.BeginQuiz`, `ContinueQuiz`, `GetQuizSession` and `GetQuestionSets`.
-- Added the Quiz sample scene.
 - Every request has a timeout and is disposed. `WebRequest.Abort()` no longer breaks later requests. `WebRequest.LastErrorCode` carries the API's error code.
 - Cora ships as an FBX with its textures instead of a Draco glb. The glTFast and Draco dependencies are gone.
 

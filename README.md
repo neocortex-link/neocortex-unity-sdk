@@ -13,7 +13,6 @@ Bring the characters you build on the [Neocortex web platform](https://neocortex
 - **Group scenes.** Several characters in one shared conversation with an AI director deciding who speaks, plus a roster that can change while the game runs.
 - **A complete chat UI.** Panel, avatars, inputs and indicators, scaffolded into your scene in one click.
 - **Usage aware.** Read your plan, credits and per player limits, and gate features before spending anything.
-- **Quizzes.** A character hosts a quiz from a question set you author. Your scene reports what the player said; order, retries, hints and scoring are decided for you.
 
 ## Requirements
 
@@ -35,7 +34,7 @@ The [Quick Start](https://docs.neocortex.link/integrations/unity/quick-start) wa
 
 ## Samples
 
-Seven scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables, group chat, usage gating and quiz. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
+Six scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables, group chat and usage gating. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
 
 ## Documentation
 

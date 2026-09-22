@@ -62,3 +62,14 @@ crashlytics-build.properties
 # Samples meta files 
 **/Samples~.meta
 **/Samples.meta
+
+# Quiz sample: the quiz code ships, the demo scene does not while it is experimental.
+# Listed under both spellings because the sample folder gets renamed for local editing.
+[Ss]amples/Neocortex Samples/7 - Quiz Demo.unity
+[Ss]amples/Neocortex Samples/7 - Quiz Demo.unity.meta
+[Ss]amples/Neocortex Samples/Scripts/Samples/QuizSample.cs
+[Ss]amples/Neocortex Samples/Scripts/Samples/QuizSample.cs.meta
+[Ss]amples~/Neocortex Samples/7 - Quiz Demo.unity
+[Ss]amples~/Neocortex Samples/7 - Quiz Demo.unity.meta
+[Ss]amples~/Neocortex Samples/Scripts/Samples/QuizSample.cs
+[Ss]amples~/Neocortex Samples/Scripts/Samples/QuizSample.cs.meta
