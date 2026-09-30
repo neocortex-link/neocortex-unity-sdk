@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- `NeocortexQuizAgent` retries a turn the server refused with `state_changed`, the way it already retried `operation_in_progress`. The player's words used to be dropped with a failure.
+- `NeocortexQuizAgent.LastErrorCode` exposes the API's error code to game code.
+- Running out of credit no longer reopens the microphone. `insufficient_credits`, `character_credit_limit` and `player_credit_limit` keep input closed and raise the new `OnCreditsExhausted` event; call `Resync()` to carry on once there is credit.
+
 ## [0.7.0] - 21 September 2026
 - Every request has a timeout and is disposed. `WebRequest.Abort()` no longer breaks later requests. `WebRequest.LastErrorCode` carries the API's error code.
 - Cora ships as an FBX with its textures instead of a Draco glb. The glTFast and Draco dependencies are gone.

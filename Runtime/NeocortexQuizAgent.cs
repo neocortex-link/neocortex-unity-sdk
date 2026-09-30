@@ -77,6 +77,8 @@ namespace Neocortex
         [Tooltip("Raised with anything the player said that never reached the host, and why.")]
         [Space] public UnityEvent<string, QuizInputDropReason> OnInputDropped = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Tooltip("Raised with the error code when the account or this API key has run out of credits for the run. Input stays closed until you call Resync().")]
+        [Space] public UnityEvent<string> OnCreditsExhausted = new();
 
         /// <summary>The run in progress, or null before <see cref="Begin"/>.</summary>
         public string SessionId { get; private set; }
@@ -98,6 +100,21 @@ namespace Neocortex
 
         /// <summary>True once the host has signed off.</summary>
         public bool IsFinished { get; private set; }
+
+        /// <summary>
+        ///     The API's machine readable code for the last failed request ("character_credit_limit",
+        ///     "operation_in_progress"), or null for a transport failure. Read it in an
+        ///     <see cref="OnRequestFailed"/> listener to tell a problem worth retrying from one that is not.
+        /// </summary>
+        public string LastErrorCode => apiRequest?.LastErrorCode;
+
+        // Refusals that another attempt cannot fix until someone adds credit or raises a cap.
+        private static readonly string[] CreditCodes =
+        {
+            "insufficient_credits",
+            "character_credit_limit",
+            "player_credit_limit",
+        };
 
         /// <summary>Something the player said, held until the host is ready for it.</summary>
         private struct PendingInput
@@ -347,7 +364,21 @@ namespace Neocortex
                     if (failed)
                     {
                         DropPending(QuizInputDropReason.Failed);
-                        Resync();
+
+                        // Out of credit is not a lost response. Reading the run back would reopen the
+                        // microphone and let the player talk into the same refusal over and over, so
+                        // input stays shut and the game is told why. Resync() picks the run up again
+                        // once there is credit.
+                        string code = LastErrorCode;
+                        if (code != null && Array.IndexOf(CreditCodes, code) >= 0)
+                        {
+                            SetExpecting(QuizExpecting.Nothing);
+                            OnCreditsExhausted?.Invoke(code);
+                        }
+                        else
+                        {
+                            Resync();
+                        }
                     }
                     else
                     {

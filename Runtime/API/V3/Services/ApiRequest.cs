@@ -31,6 +31,9 @@ namespace Neocortex.API
         // A session lock is held for one turn, so waiting it out costs less than failing.
         private const string QuizFinishedCode = "quiz_finished";
         private const string OperationInProgressCode = "operation_in_progress";
+        // Another call finished between this one reading the session and locking it. The
+        // server says to retry, and there is nothing left to wait for.
+        private const string StateChangedCode = "state_changed";
         private const int QuizBusyRetries = 2;
         private const int QuizBusyRetryDelayMs = 1500;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
@@ -683,14 +686,19 @@ namespace Neocortex.API
                         throw new Exception(GetRequestError());
                     }
 
-                    // Another call holds this session. Almost always our own previous turn still
-                    // landing, so it is worth waiting out rather than failing the player.
-                    if (LastErrorCode != OperationInProgressCode || attempt >= QuizBusyRetries)
+                    // Another call holds this session, or finished just ahead of this one. Almost
+                    // always our own previous turn still landing, so it is worth waiting out rather
+                    // than failing the player and losing what they said. A state_changed call has
+                    // already finished, so that retry goes straight out.
+                    bool busy = LastErrorCode == OperationInProgressCode;
+                    bool moved = LastErrorCode == StateChangedCode;
+
+                    if ((!busy && !moved) || attempt >= QuizBusyRetries)
                     {
                         throw new Exception(GetRequestError());
                     }
 
-                    await Task.Delay(QuizBusyRetryDelayMs);
+                    if (busy) await Task.Delay(QuizBusyRetryDelayMs);
                 }
             }
             catch (Exception e)
