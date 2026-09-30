@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 30 September 2026
+- Quiz turns retry on `state_changed`.
+- Added `NeocortexQuizAgent.LastErrorCode` and `OnCreditsExhausted`. Running out of credits keeps input closed until `Resync()`.
+- `GenerateAudio` skips lines with nothing to speak instead of sending them.
+
 ## [0.7.0] - 21 September 2026
 - Every request has a timeout and is disposed. `WebRequest.Abort()` no longer breaks later requests. `WebRequest.LastErrorCode` carries the API's error code.
 - Cora ships as an FBX with its textures instead of a Draco glb. The glTFast and Draco dependencies are gone.

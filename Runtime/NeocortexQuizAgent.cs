@@ -77,6 +77,8 @@ namespace Neocortex
         [Tooltip("Raised with anything the player said that never reached the host, and why.")]
         [Space] public UnityEvent<string, QuizInputDropReason> OnInputDropped = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Tooltip("Raised with the error code when credits run out. Input stays closed until Resync().")]
+        [Space] public UnityEvent<string> OnCreditsExhausted = new();
 
         /// <summary>The run in progress, or null before <see cref="Begin"/>.</summary>
         public string SessionId { get; private set; }
@@ -98,6 +100,16 @@ namespace Neocortex
 
         /// <summary>True once the host has signed off.</summary>
         public bool IsFinished { get; private set; }
+
+        /// <summary>The API error code of the last failed request, or null for a transport failure.</summary>
+        public string LastErrorCode => apiRequest?.LastErrorCode;
+
+        private static readonly string[] CreditCodes =
+        {
+            "insufficient_credits",
+            "character_credit_limit",
+            "player_credit_limit",
+        };
 
         /// <summary>Something the player said, held until the host is ready for it.</summary>
         private struct PendingInput
@@ -347,7 +359,18 @@ namespace Neocortex
                     if (failed)
                     {
                         DropPending(QuizInputDropReason.Failed);
-                        Resync();
+
+                        // Resyncing would reopen input into the same refusal.
+                        string code = LastErrorCode;
+                        if (code != null && Array.IndexOf(CreditCodes, code) >= 0)
+                        {
+                            SetExpecting(QuizExpecting.Nothing);
+                            OnCreditsExhausted?.Invoke(code);
+                        }
+                        else
+                        {
+                            Resync();
+                        }
                     }
                     else
                     {
@@ -576,10 +599,7 @@ namespace Neocortex
 
         private Task<AudioClip> RequestClip(QuizLine line)
         {
-            // spokenText is the phonetic reading the host supplies when a line has numbers
-            // in it, so "+100" is heard as "plus one hundred points".
-            string speech = string.IsNullOrEmpty(line.spokenText) ? line.text : line.spokenText;
-            return apiRequest.GenerateAudio(characterID, speech, line.emotion.ToString());
+            return apiRequest.GenerateAudio(characterID, line.text, line.emotion.ToString(), line.spokenText);
         }
 
         private async Task PlayClip(AudioClip clip, int token)

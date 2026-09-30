@@ -31,6 +31,7 @@ namespace Neocortex.API
         // A session lock is held for one turn, so waiting it out costs less than failing.
         private const string QuizFinishedCode = "quiz_finished";
         private const string OperationInProgressCode = "operation_in_progress";
+        private const string StateChangedCode = "state_changed";
         private const int QuizBusyRetries = 2;
         private const int QuizBusyRetryDelayMs = 1500;
         private readonly NeocortexSettings settings = Resources.Load<NeocortexSettings>("Neocortex/NeocortexSettings");
@@ -406,19 +407,34 @@ namespace Neocortex.API
             }
         }
 
+        /// <summary>True when the text has a letter or digit to speak.</summary>
+        private static bool HasSomethingToSay(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+
+            foreach (char character in text)
+            {
+                if (char.IsLetterOrDigit(character)) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         ///     Generates speech for a piece of text, voiced in the given emotion.
         ///     IMPORTANT: every call costs 1 audio credit, generating audio per line multiplies
         ///     the audio cost of a reply by the number of lines.
-        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure. Returns null
+        ///     without a request for a line with nothing to speak ("...", an emoji).
         /// </summary>
         public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion, string spokenText = null)
         {
+            string speechText = HasSomethingToSay(spokenText) ? spokenText : message;
+            if (!HasSomethingToSay(speechText)) return null;
+
             try
             {
                 SetHeaders();
-
-                string speechText = !string.IsNullOrEmpty(spokenText) ? spokenText : message;
 
                 var data = new
                 {
@@ -683,14 +699,16 @@ namespace Neocortex.API
                         throw new Exception(GetRequestError());
                     }
 
-                    // Another call holds this session. Almost always our own previous turn still
-                    // landing, so it is worth waiting out rather than failing the player.
-                    if (LastErrorCode != OperationInProgressCode || attempt >= QuizBusyRetries)
+                    // Usually our own previous turn still landing. state_changed has already finished, so no wait.
+                    bool busy = LastErrorCode == OperationInProgressCode;
+                    bool moved = LastErrorCode == StateChangedCode;
+
+                    if ((!busy && !moved) || attempt >= QuizBusyRetries)
                     {
                         throw new Exception(GetRequestError());
                     }
 
-                    await Task.Delay(QuizBusyRetryDelayMs);
+                    if (busy) await Task.Delay(QuizBusyRetryDelayMs);
                 }
             }
             catch (Exception e)
