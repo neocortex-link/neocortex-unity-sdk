@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NeocortexQuizAgent` retries a turn the server refused with `state_changed`, the way it already retried `operation_in_progress`. The player's words used to be dropped with a failure.
 - `NeocortexQuizAgent.LastErrorCode` exposes the API's error code to game code.
 - Running out of credit no longer reopens the microphone. `insufficient_credits`, `character_credit_limit` and `player_credit_limit` keep input closed and raise the new `OnCreditsExhausted` event; call `Resync()` to carry on once there is credit.
+- `GenerateAudio` returns no clip, with no request and no credit spent, for a line with no letter or digit in it ("...", an emoji). The server refuses such a line with a 422. A `spokenText` with nothing in it falls back to the line's own text. `NeocortexQuizAgent` uses the same rule.
 
 ## [0.7.0] - 21 September 2026
 - Every request has a timeout and is disposed. `WebRequest.Abort()` no longer breaks later requests. `WebRequest.LastErrorCode` carries the API's error code.

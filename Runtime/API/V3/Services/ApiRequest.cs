@@ -409,19 +409,37 @@ namespace Neocortex.API
             }
         }
 
+        /// <summary>True when the text has at least one letter or digit, the server's rule for speech.</summary>
+        private static bool HasSomethingToSay(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+
+            foreach (char character in text)
+            {
+                if (char.IsLetterOrDigit(character)) return true;
+            }
+
+            return false;
+        }
+
         /// <summary>
         ///     Generates speech for a piece of text, voiced in the given emotion.
         ///     IMPORTANT: every call costs 1 audio credit, generating audio per line multiplies
         ///     the audio cost of a reply by the number of lines.
         ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
+        ///     A line with no letter or digit in it ("...", an emoji) has nothing to say: it
+        ///     returns null straight away, with no request, no error and no credit spent. The
+        ///     server refuses such a line with a 422.
         /// </summary>
         public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion, string spokenText = null)
         {
+            // The phonetic reading when it has words in it, otherwise the line as written.
+            string speechText = HasSomethingToSay(spokenText) ? spokenText : message;
+            if (!HasSomethingToSay(speechText)) return null;
+
             try
             {
                 SetHeaders();
-
-                string speechText = !string.IsNullOrEmpty(spokenText) ? spokenText : message;
 
                 var data = new
                 {

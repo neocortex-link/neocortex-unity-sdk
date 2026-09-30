@@ -608,9 +608,9 @@ namespace Neocortex
         private Task<AudioClip> RequestClip(QuizLine line)
         {
             // spokenText is the phonetic reading the host supplies when a line has numbers
-            // in it, so "+100" is heard as "plus one hundred points".
-            string speech = string.IsNullOrEmpty(line.spokenText) ? line.text : line.spokenText;
-            return apiRequest.GenerateAudio(characterID, speech, line.emotion.ToString());
+            // in it, so "+100" is heard as "plus one hundred points". GenerateAudio prefers it
+            // and returns no clip for a line with nothing to say.
+            return apiRequest.GenerateAudio(characterID, line.text, line.emotion.ToString(), line.spokenText);
         }
 
         private async Task PlayClip(AudioClip clip, int token)
