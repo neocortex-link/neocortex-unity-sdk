@@ -31,8 +31,6 @@ namespace Neocortex.API
         // A session lock is held for one turn, so waiting it out costs less than failing.
         private const string QuizFinishedCode = "quiz_finished";
         private const string OperationInProgressCode = "operation_in_progress";
-        // Another call finished between this one reading the session and locking it. The
-        // server says to retry, and there is nothing left to wait for.
         private const string StateChangedCode = "state_changed";
         private const int QuizBusyRetries = 2;
         private const int QuizBusyRetryDelayMs = 1500;
@@ -409,7 +407,7 @@ namespace Neocortex.API
             }
         }
 
-        /// <summary>True when the text has at least one letter or digit, the server's rule for speech.</summary>
+        /// <summary>True when the text has a letter or digit to speak.</summary>
         private static bool HasSomethingToSay(string text)
         {
             if (string.IsNullOrEmpty(text)) return false;
@@ -426,14 +424,11 @@ namespace Neocortex.API
         ///     Generates speech for a piece of text, voiced in the given emotion.
         ///     IMPORTANT: every call costs 1 audio credit, generating audio per line multiplies
         ///     the audio cost of a reply by the number of lines.
-        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure.
-        ///     A line with no letter or digit in it ("...", an emoji) has nothing to say: it
-        ///     returns null straight away, with no request, no error and no credit spent. The
-        ///     server refuses such a line with a 422.
+        ///     Returns null and raises <see cref="OnRequestFailed"/> on failure. Returns null
+        ///     without a request for a line with nothing to speak ("...", an emoji).
         /// </summary>
         public async Task<AudioClip> GenerateAudio(string characterId, string message, string emotion, string spokenText = null)
         {
-            // The phonetic reading when it has words in it, otherwise the line as written.
             string speechText = HasSomethingToSay(spokenText) ? spokenText : message;
             if (!HasSomethingToSay(speechText)) return null;
 
@@ -704,10 +699,7 @@ namespace Neocortex.API
                         throw new Exception(GetRequestError());
                     }
 
-                    // Another call holds this session, or finished just ahead of this one. Almost
-                    // always our own previous turn still landing, so it is worth waiting out rather
-                    // than failing the player and losing what they said. A state_changed call has
-                    // already finished, so that retry goes straight out.
+                    // Usually our own previous turn still landing. state_changed has already finished, so no wait.
                     bool busy = LastErrorCode == OperationInProgressCode;
                     bool moved = LastErrorCode == StateChangedCode;
 

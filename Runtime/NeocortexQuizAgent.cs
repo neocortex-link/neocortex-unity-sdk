@@ -77,7 +77,7 @@ namespace Neocortex
         [Tooltip("Raised with anything the player said that never reached the host, and why.")]
         [Space] public UnityEvent<string, QuizInputDropReason> OnInputDropped = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
-        [Tooltip("Raised with the error code when the account or this API key has run out of credits for the run. Input stays closed until you call Resync().")]
+        [Tooltip("Raised with the error code when credits run out. Input stays closed until Resync().")]
         [Space] public UnityEvent<string> OnCreditsExhausted = new();
 
         /// <summary>The run in progress, or null before <see cref="Begin"/>.</summary>
@@ -101,14 +101,9 @@ namespace Neocortex
         /// <summary>True once the host has signed off.</summary>
         public bool IsFinished { get; private set; }
 
-        /// <summary>
-        ///     The API's machine readable code for the last failed request ("character_credit_limit",
-        ///     "operation_in_progress"), or null for a transport failure. Read it in an
-        ///     <see cref="OnRequestFailed"/> listener to tell a problem worth retrying from one that is not.
-        /// </summary>
+        /// <summary>The API error code of the last failed request, or null for a transport failure.</summary>
         public string LastErrorCode => apiRequest?.LastErrorCode;
 
-        // Refusals that another attempt cannot fix until someone adds credit or raises a cap.
         private static readonly string[] CreditCodes =
         {
             "insufficient_credits",
@@ -365,10 +360,7 @@ namespace Neocortex
                     {
                         DropPending(QuizInputDropReason.Failed);
 
-                        // Out of credit is not a lost response. Reading the run back would reopen the
-                        // microphone and let the player talk into the same refusal over and over, so
-                        // input stays shut and the game is told why. Resync() picks the run up again
-                        // once there is credit.
+                        // Resyncing would reopen input into the same refusal.
                         string code = LastErrorCode;
                         if (code != null && Array.IndexOf(CreditCodes, code) >= 0)
                         {
@@ -607,9 +599,6 @@ namespace Neocortex
 
         private Task<AudioClip> RequestClip(QuizLine line)
         {
-            // spokenText is the phonetic reading the host supplies when a line has numbers
-            // in it, so "+100" is heard as "plus one hundred points". GenerateAudio prefers it
-            // and returns no clip for a line with nothing to say.
             return apiRequest.GenerateAudio(characterID, line.text, line.emotion.ToString(), line.spokenText);
         }
 
