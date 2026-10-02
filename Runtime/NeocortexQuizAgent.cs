@@ -28,6 +28,20 @@ namespace Neocortex
         [Tooltip("The question set to play. Create one under Question Sets in the dashboard.")]
         public string questionSetID;
 
+        /// <summary>The order a run asks its questions in.</summary>
+        public enum QuestionOrder
+        {
+            SetDefault,
+            InOrder,
+            Shuffled
+        }
+
+        [Tooltip("Questions in one run. 0 uses the question set's count.")]
+        [Min(0)] public int questionCount;
+
+        [Tooltip("Ask the questions in order, shuffled, or as the question set says.")]
+        public QuestionOrder questionOrder = QuestionOrder.SetDefault;
+
         [Tooltip("Your own id for this player. Leave empty to use this device.")]
         public string playerID;
 
@@ -182,7 +196,7 @@ namespace Neocortex
             emotionRaised = false;
 
             QuizParticipant[] participants = null;
-            RunTurn(() => apiRequest.BeginQuiz(characterID, questionSetID, playerID, participants));
+            RunTurn(() => apiRequest.BeginQuiz(characterID, questionSetID, playerID, participants, questionCount, SelectionModeFor(questionOrder)));
         }
 
         /// <summary>
@@ -499,6 +513,19 @@ namespace Neocortex
             }
 
             SetExpecting(turn.expecting);
+        }
+
+        private static string SelectionModeFor(QuestionOrder order)
+        {
+            switch (order)
+            {
+                case QuestionOrder.InOrder:
+                    return "sequential";
+                case QuestionOrder.Shuffled:
+                    return "random";
+                default:
+                    return null;
+            }
         }
 
         private void SetBusy(bool next)

@@ -591,7 +591,9 @@ namespace Neocortex.API
             string characterId,
             string questionSetId,
             string playerId = null,
-            QuizParticipant[] participants = null)
+            QuizParticipant[] participants = null,
+            int questionCount = 0,
+            string selectionMode = null)
         {
             try
             {
@@ -607,6 +609,9 @@ namespace Neocortex.API
                     ["playerId"] = string.IsNullOrEmpty(playerId) ? SystemInfo.deviceUniqueIdentifier : playerId
                 };
                 if (participants is { Length: > 0 }) data["participants"] = participants;
+                // Left out, the question set's own count and order apply.
+                if (questionCount > 0) data["questionCount"] = questionCount;
+                if (!string.IsNullOrEmpty(selectionMode)) data["selectionMode"] = selectionMode;
 
                 ApiPayload payload = new ApiPayload()
                 {
