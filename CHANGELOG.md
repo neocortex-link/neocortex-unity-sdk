@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The quiz host's lines play as their voice arrives instead of after the whole clip (`streamHostSpeech`, on by default). The next line is fetched while the current one plays; an older server falls back to whole clips.
 - Fixed a `MissingReferenceException` when the quiz host is destroyed mid-line.
 - Added `ApiRequest.StreamedSpeechSupported`.
+- `NeocortexQuizAgent.questionCount` and `questionOrder` set a run's length and order over the question set's defaults. `ApiRequest.BeginQuiz` takes them too.
 
 ## [0.7.1] - 30 September 2026
 - Quiz turns retry on `state_changed`.
