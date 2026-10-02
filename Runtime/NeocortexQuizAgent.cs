@@ -4,6 +4,7 @@ using UnityEngine;
 using Neocortex.API;
 using Neocortex.Data;
 using UnityEngine.Events;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neocortex
@@ -36,6 +37,9 @@ namespace Neocortex
 
         [Tooltip("Speak the host's lines out loud using the character's voice.")]
         public bool speakHostLines = true;
+
+        [Tooltip("Play each line as its voice arrives instead of waiting for the whole clip. Falls back to whole clips on a server without streamed speech.")]
+        public bool streamHostSpeech = true;
 
         [Tooltip("Where the host's voice plays. Falls back to an AudioSource on this GameObject.")]
         public AudioSource audioSource;
@@ -136,6 +140,17 @@ namespace Neocortex
         private bool hasPending;
         private Emotions lastEmotion;
         private bool emotionRaised;
+        private CancellationTokenSource speechCts = new CancellationTokenSource();
+        private NeocortexStreamingAudioPlayer streamPlayer;
+
+        /// <summary>One line's voice, asked for before the line is due: streamed, or a whole clip.</summary>
+        private sealed class LineSpeech
+        {
+            public QuizLine line;
+            public NeocortexStreamingAudioPlayer player;
+            public Task<bool> stream;
+            public Task<AudioClip> clip;
+        }
 
         private void Awake()
         {
@@ -557,44 +572,154 @@ namespace Neocortex
             if (!anyAsks) RevealQuestion(ref pendingQuestion);
 
             bool voicing = speakHostLines && audioSource != null && !string.IsNullOrEmpty(characterID);
-            Task<AudioClip> clipRequest = voicing && spoken.Count > 0 ? RequestClip(spoken[0]) : null;
+            LineSpeech next = voicing && spoken.Count > 0 ? RequestSpeech(spoken[0]) : null;
 
             for (int i = 0; i < spoken.Count; i++)
             {
                 QuizLine line = spoken[i];
-                AudioClip clip = null;
+                LineSpeech speech = next;
+                next = null;
 
-                if (voicing)
+                // Raised as the line becomes audible rather than when the turn arrived, so a
+                // caption and the voice saying it are one event. The next line is asked for
+                // here, so it never competes with this one for its first sound.
+                bool started = false;
+                void BeginLine()
                 {
-                    clip = clipRequest == null ? null : await clipRequest;
-                    if (this == null || token != turnToken)
-                    {
-                        DestroyClip(clip);
-                        return;
-                    }
-
-                    clipRequest = i + 1 < spoken.Count ? RequestClip(spoken[i + 1]) : null;
+                    if (started) return;
+                    started = true;
+                    if (voicing && i + 1 < spoken.Count) next = RequestSpeech(spoken[i + 1]);
+                    if (line.IsQuestion) RevealQuestion(ref pendingQuestion);
+                    OnHostLine?.Invoke(line);
+                    RaiseEmotion(line.emotion);
                 }
 
-                // Raised as the line starts rather than when the turn arrived, so a caption and
-                // the voice saying it are one event.
-                if (line.IsQuestion) RevealQuestion(ref pendingQuestion);
-                OnHostLine?.Invoke(line);
-                RaiseEmotion(line.emotion);
-
-                if (clip == null) continue;
-
-                await PlayClip(clip, token);
-                DestroyClip(clip);
-
-                if (this == null || token != turnToken)
+                if (speech != null) await PlaySpeech(speech, token, BeginLine);
+                if (!IsCurrent(token))
                 {
-                    DiscardClip(clipRequest);
+                    DiscardSpeech(next);
                     return;
                 }
+
+                BeginLine();
             }
 
             RevealQuestion(ref pendingQuestion);
+        }
+
+        private bool IsCurrent(int token) => this != null && token == turnToken && audioSource != null;
+
+        private LineSpeech RequestSpeech(QuizLine line)
+        {
+            LineSpeech speech = new LineSpeech { line = line };
+
+            if (streamHostSpeech && ApiRequest.StreamedSpeechSupported)
+            {
+                NeocortexStreamingAudioPlayer player = new NeocortexStreamingAudioPlayer(audioSource);
+                speech.player = player;
+                speech.stream = apiRequest.GenerateAudioStream(
+                    characterID,
+                    string.IsNullOrEmpty(line.spokenText) ? line.text : line.spokenText,
+                    line.emotion.ToString(),
+                    player.Begin,
+                    player.Feed,
+                    speechCts.Token,
+                    // Recoverable: the line falls back to a whole clip, which reports if it fails too.
+                    reportErrors: false);
+            }
+            else
+            {
+                speech.clip = RequestClip(line);
+            }
+
+            return speech;
+        }
+
+        /// <summary>Plays one line, calling <paramref name="onStart"/> as it becomes audible.</summary>
+        private async Task PlaySpeech(LineSpeech speech, int token, Action onStart)
+        {
+            if (speech.player != null)
+            {
+                if (await PlayStreamed(speech, token, onStart) || !IsCurrent(token)) return;
+
+                // Nothing arrived, so the line is fetched whole instead.
+                speech.clip = RequestClip(speech.line);
+            }
+
+            AudioClip clip = speech.clip == null ? null : await speech.clip;
+            if (!IsCurrent(token))
+            {
+                DestroyClip(clip);
+                return;
+            }
+
+            if (clip == null) return;
+
+            onStart();
+            await PlayClip(clip, token);
+            DestroyClip(clip);
+        }
+
+        /// <summary>False when no audio arrived at all, so the caller can fall back.</summary>
+        private async Task<bool> PlayStreamed(LineSpeech speech, int token, Action onStart)
+        {
+            NeocortexStreamingAudioPlayer player = speech.player;
+            streamPlayer = player;
+
+            while (!speech.stream.IsCompleted)
+            {
+                if (!IsCurrent(token)) return true;
+
+                player.Tick();
+                if (player.HasStarted) onStart();
+                await Task.Yield();
+            }
+
+            if (!IsCurrent(token)) return true;
+
+            // A stream that ends early still plays what it delivered.
+            player.Complete();
+            player.Tick();
+            if (!player.HasStarted)
+            {
+                player.Release();
+                streamPlayer = null;
+                return false;
+            }
+
+            onStart();
+
+            // A deadline for the same reason as PlayClip: a paused listener must not hang the turn.
+            float pitch = Mathf.Max(0.01f, Mathf.Abs(audioSource.pitch));
+            float deadline = Time.realtimeSinceStartup + (player.BufferedSeconds / pitch) + 0.25f;
+
+            while (IsCurrent(token) && !player.IsFinished && Time.realtimeSinceStartup < deadline)
+            {
+                await Task.Yield();
+                if (IsCurrent(token)) player.Tick();
+            }
+
+            if (IsCurrent(token))
+            {
+                player.Release();
+                streamPlayer = null;
+            }
+
+            return true;
+        }
+
+        /// <summary>Frees a line that was fetched ahead but never played.</summary>
+        private static async void DiscardSpeech(LineSpeech speech)
+        {
+            if (speech == null) return;
+
+            if (speech.stream != null)
+            {
+                await speech.stream;
+                speech.player.Release();
+            }
+
+            DiscardClip(speech.clip);
         }
 
         private Task<AudioClip> RequestClip(QuizLine line)
@@ -613,15 +738,22 @@ namespace Neocortex
             float pitch = Mathf.Max(0.01f, Mathf.Abs(audioSource.pitch));
             float deadline = Time.realtimeSinceStartup + (clip.length / pitch) + 0.25f;
 
-            while (audioSource.isPlaying && Time.realtimeSinceStartup < deadline)
+            while (IsCurrent(token) && audioSource.isPlaying && Time.realtimeSinceStartup < deadline)
             {
-                if (this == null || token != turnToken) return;
                 await Task.Yield();
             }
         }
 
         private void StopSpeaking()
         {
+            // Stops the downloads too, including lines fetched ahead.
+            speechCts.Cancel();
+            speechCts.Dispose();
+            speechCts = new CancellationTokenSource();
+
+            streamPlayer?.Release();
+            streamPlayer = null;
+
             if (audioSource == null) return;
 
             AudioClip clip = audioSource.clip;

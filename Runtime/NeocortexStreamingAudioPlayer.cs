@@ -46,7 +46,8 @@ namespace Neocortex
         /// <summary>Allocates the clip. Called when the format is known, before any samples.</summary>
         public void Begin(int rate, int channelCount)
         {
-            Reset();
+            // Not Reset: a line fetched ahead must not stop the one still playing.
+            ClearState();
 
             sampleRate = rate > 0 ? rate : 24000;
             channels = channelCount > 0 ? channelCount : 1;
@@ -185,9 +186,25 @@ namespace Neocortex
             complete = true;
         }
 
+        /// <summary>Seconds of audio received so far.</summary>
+        public float BufferedSeconds => sampleRate > 0 ? (float)written / channels / sampleRate : 0f;
+
         public void Reset()
         {
             Stop();
+            ClearState();
+        }
+
+        /// <summary>Stops this line if it is the one playing and frees its clip.</summary>
+        public void Release()
+        {
+            if (started) Stop();
+            if (clip != null) UnityEngine.Object.Destroy(clip);
+            ClearState();
+        }
+
+        private void ClearState()
+        {
             clip = null;
             written = 0;
             started = false;

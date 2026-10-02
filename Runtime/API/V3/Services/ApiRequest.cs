@@ -20,6 +20,9 @@ namespace Neocortex.API
         // Cleared for good the first time a server answers 404 for streamed speech.
         private static bool streamedSpeechSupported = true;
 
+        /// <summary>False once the server has shown it has no streamed speech endpoint.</summary>
+        public static bool StreamedSpeechSupported => streamedSpeechSupported;
+
         private static string BaseURL => string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v3" : BaseUrlOverride;
 
         // Ceilings, not expectations: a turn that takes this long has already failed the player,
