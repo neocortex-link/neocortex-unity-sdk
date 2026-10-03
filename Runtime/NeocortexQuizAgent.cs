@@ -4,6 +4,7 @@ using UnityEngine;
 using Neocortex.API;
 using Neocortex.Data;
 using UnityEngine.Events;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Neocortex
@@ -28,14 +29,34 @@ namespace Neocortex
         [Tooltip("The question set to play. Create one under Question Sets in the dashboard.")]
         public string questionSetID;
 
+        /// <summary>The order a run asks its questions in.</summary>
+        public enum QuestionOrder
+        {
+            SetDefault,
+            InOrder,
+            Shuffled
+        }
+
+        [Tooltip("Questions in one run. 0 uses the question set's count.")]
+        [Min(0)] public int questionCount;
+
+        [Tooltip("Ask the questions in order, shuffled, or as the question set says.")]
+        public QuestionOrder questionOrder = QuestionOrder.SetDefault;
+
         [Tooltip("Your own id for this player. Leave empty to use this device.")]
         public string playerID;
+
+        [Tooltip("Everyone playing, for a game with more than one player. Leave empty for one player.")]
+        public QuizParticipant[] participants = Array.Empty<QuizParticipant>();
 
         [Tooltip("Start the quiz as soon as the scene runs.")]
         public bool beginOnStart;
 
         [Tooltip("Speak the host's lines out loud using the character's voice.")]
         public bool speakHostLines = true;
+
+        [Tooltip("Play each line as its voice arrives instead of waiting for the whole clip. Falls back to whole clips on a server without streamed speech.")]
+        public bool streamHostSpeech = true;
 
         [Tooltip("Where the host's voice plays. Falls back to an AudioSource on this GameObject.")]
         public AudioSource audioSource;
@@ -74,6 +95,8 @@ namespace Neocortex
         [Space] public UnityEvent<QuizLeaderboardEntry[]> OnQuizFinished = new();
         [Tooltip("Raised true while a turn is in flight and false when it lands. Drive a spinner here.")]
         [Space] public UnityEvent<bool> OnBusyChanged = new();
+        [Tooltip("Raised with the players the round is still waiting on, whenever that changes. Empty when nobody is owed.")]
+        [Space] public UnityEvent<string[]> OnPendingChanged = new();
         [Tooltip("Raised with anything the player said that never reached the host, and why.")]
         [Space] public UnityEvent<string, QuizInputDropReason> OnInputDropped = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
@@ -100,6 +123,24 @@ namespace Neocortex
 
         /// <summary>True once the host has signed off.</summary>
         public bool IsFinished { get; private set; }
+
+        /// <summary>Players the round is still waiting on, in roster order. Empty with one player.</summary>
+        public string[] PendingParticipants { get; private set; } = Array.Empty<string>();
+
+        /// <summary>Players who have answered this round. Empty with one player.</summary>
+        public string[] AnsweredParticipants { get; private set; } = Array.Empty<string>();
+
+        /// <summary>Which attempt at the open question this is, from 1. One player only; 0 in a group.</summary>
+        public int Attempt { get; private set; }
+
+        /// <summary>How many more goes the open question allows. One player only.</summary>
+        public int AttemptsLeft { get; private set; }
+
+        /// <summary>Whether the host has already given the clue for the open question.</summary>
+        public bool HintGiven { get; private set; }
+
+        /// <summary>How the host read the last thing said.</summary>
+        public QuizIntent LastIntent { get; private set; }
 
         /// <summary>The API error code of the last failed request, or null for a transport failure.</summary>
         public string LastErrorCode => apiRequest?.LastErrorCode;
@@ -132,10 +173,21 @@ namespace Neocortex
         /// </summary>
         private int turnToken;
 
-        private PendingInput pending;
-        private bool hasPending;
+        // One held input per player, oldest first: a second player's answer must not replace the first's.
+        private readonly List<PendingInput> pending = new List<PendingInput>();
         private Emotions lastEmotion;
         private bool emotionRaised;
+        private CancellationTokenSource speechCts = new CancellationTokenSource();
+        private NeocortexStreamingAudioPlayer streamPlayer;
+
+        /// <summary>One line's voice, asked for before the line is due: streamed, or a whole clip.</summary>
+        private sealed class LineSpeech
+        {
+            public QuizLine line;
+            public NeocortexStreamingAudioPlayer player;
+            public Task<bool> stream;
+            public Task<AudioClip> clip;
+        }
 
         private void Awake()
         {
@@ -169,6 +221,13 @@ namespace Neocortex
             StopSpeaking();
         }
 
+        /// <summary>Starts the quiz with these players. The host welcomes them and asks the first question.</summary>
+        public void Begin(QuizParticipant[] players)
+        {
+            participants = players ?? Array.Empty<QuizParticipant>();
+            Begin();
+        }
+
         /// <summary>Starts the quiz. The host welcomes the players and asks the first question.</summary>
         public void Begin()
         {
@@ -180,9 +239,10 @@ namespace Neocortex
             CurrentQuestion = null;
             Progress = new QuizProgress();
             emotionRaised = false;
+            SetRound(Array.Empty<string>(), Array.Empty<string>(), 0, 0, false);
 
-            QuizParticipant[] participants = null;
-            RunTurn(() => apiRequest.BeginQuiz(characterID, questionSetID, playerID, participants));
+            QuizParticipant[] cast = participants is { Length: > 0 } ? participants : null;
+            RunTurn(() => apiRequest.BeginQuiz(characterID, questionSetID, playerID, cast, questionCount, SelectionModeFor(questionOrder)));
         }
 
         /// <summary>
@@ -225,6 +285,27 @@ namespace Neocortex
             Send(new PendingInput { text = text, participantId = participantId, at = Time.realtimeSinceStartup });
         }
 
+        /// <summary>The same as <see cref="Choose"/>, naming which player tapped in a multi player game.</summary>
+        public void ChooseAs(string participantId, string optionId)
+        {
+            Send(new PendingInput { optionId = optionId, participantId = participantId, at = Time.realtimeSinceStartup });
+        }
+
+        /// <summary>
+        ///     The player gives no answer: their time ran out, or they chose to skip. The question
+        ///     is recorded unanswered for them. Your game owns the timer; call this when it ends.
+        /// </summary>
+        public void Pass()
+        {
+            Say(string.Empty);
+        }
+
+        /// <summary>The same as <see cref="Pass"/>, for one player of a multi player game.</summary>
+        public void PassAs(string participantId)
+        {
+            SayAs(participantId, string.Empty);
+        }
+
         /// <summary>
         ///     Reads the run back from the server and puts this agent in step with it.
         ///
@@ -252,6 +333,12 @@ namespace Neocortex
 
                 IsFinished = state.IsFinished;
                 CurrentQuestion = state.activeQuestion;
+                SetRound(
+                    state.pendingParticipantIds ?? Array.Empty<string>(),
+                    state.answeredParticipantIds ?? Array.Empty<string>(),
+                    state.attempt,
+                    state.attemptsLeft,
+                    state.hintGiven);
                 Progress = new QuizProgress
                 {
                     asked = Mathf.Max(0, state.totalQuestions - state.questionsRemaining),
@@ -260,17 +347,17 @@ namespace Neocortex
 
                 if (state.leaderboard is { Length: > 0 })
                 {
-                    OnLeaderboardChanged?.Invoke(state.leaderboard);
+                    Raise(() => OnLeaderboardChanged?.Invoke(state.leaderboard));
                 }
 
                 if (CurrentQuestion != null)
                 {
-                    OnQuestionChanged?.Invoke(CurrentQuestion);
+                    Raise(() => OnQuestionChanged?.Invoke(CurrentQuestion));
                 }
 
                 if (IsFinished)
                 {
-                    OnQuizFinished?.Invoke(state.leaderboard ?? Array.Empty<QuizLeaderboardEntry>());
+                    Raise(() => OnQuizFinished?.Invoke(state.leaderboard ?? Array.Empty<QuizLeaderboardEntry>()));
                 }
             }
             finally
@@ -289,15 +376,15 @@ namespace Neocortex
         {
             if (string.IsNullOrEmpty(SessionId))
             {
-                OnRequestFailed?.Invoke("Call Begin() before sending answers to the quiz.");
-                OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.NoSession);
+                Raise(() => OnRequestFailed?.Invoke("Call Begin() before sending answers to the quiz."));
+                Raise(() => OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.NoSession));
                 return;
             }
 
             if (IsFinished)
             {
-                OnRequestFailed?.Invoke("This quiz has already finished.");
-                OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.Finished);
+                Raise(() => OnRequestFailed?.Invoke("This quiz has already finished."));
+                Raise(() => OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.Finished));
                 return;
             }
 
@@ -305,16 +392,20 @@ namespace Neocortex
             {
                 if (!queueInputWhileBusy)
                 {
-                    OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.Busy);
+                    Raise(() => OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.Busy));
                     return;
                 }
 
-                // Last one wins. A player who says "triangle... TRIANGLE" means one answer, and
-                // the freshest words are the ones aimed at what the host has just asked; a queue
-                // would answer question two with question one's answer.
-                DropPending(QuizInputDropReason.Superseded);
-                pending = input;
-                hasPending = true;
+                // Last one wins, per player. A player who says "triangle... TRIANGLE" means one
+                // answer, and the freshest words are the ones aimed at what the host has just
+                // asked; another player's answer is theirs and waits its turn.
+                int same = pending.FindIndex(held => held.participantId == input.participantId);
+                if (same >= 0)
+                {
+                    Raise(() => OnInputDropped?.Invoke(pending[same].Spoken, QuizInputDropReason.Superseded));
+                    pending.RemoveAt(same);
+                }
+                pending.Add(input);
                 return;
             }
 
@@ -350,6 +441,13 @@ namespace Neocortex
 
                 await Apply(turn, token);
             }
+            catch (Exception e)
+            {
+                // A listener that throws is a game bug. The run is read back and put in step
+                // rather than left with the microphone shut on a question the server has asked.
+                Debug.LogException(e);
+                failed = true;
+            }
             finally
             {
                 if (this != null && token == turnToken)
@@ -365,7 +463,7 @@ namespace Neocortex
                         if (code != null && Array.IndexOf(CreditCodes, code) >= 0)
                         {
                             SetExpecting(QuizExpecting.Nothing);
-                            OnCreditsExhausted?.Invoke(code);
+                            Raise(() => OnCreditsExhausted?.Invoke(code));
                         }
                         else
                         {
@@ -382,14 +480,14 @@ namespace Neocortex
 
         private void FlushPending()
         {
-            if (!hasPending) return;
+            if (pending.Count == 0) return;
 
-            PendingInput next = pending;
-            hasPending = false;
+            PendingInput next = pending[0];
+            pending.RemoveAt(0);
 
             if (IsFinished || Expecting == QuizExpecting.Nothing)
             {
-                OnInputDropped?.Invoke(next.Spoken, QuizInputDropReason.Finished);
+                Raise(() => OnInputDropped?.Invoke(next.Spoken, QuizInputDropReason.Finished));
                 return;
             }
 
@@ -397,7 +495,7 @@ namespace Neocortex
             // all, so anything that waited out a whole turn is let go rather than sent late.
             if (Time.realtimeSinceStartup - next.at > maxPendingInputAge)
             {
-                OnInputDropped?.Invoke(next.Spoken, QuizInputDropReason.Expired);
+                Raise(() => OnInputDropped?.Invoke(next.Spoken, QuizInputDropReason.Expired));
                 return;
             }
 
@@ -406,16 +504,48 @@ namespace Neocortex
 
         private void DropPending(QuizInputDropReason reason)
         {
-            if (!hasPending) return;
+            PendingInput[] dropped = pending.ToArray();
+            pending.Clear();
+            foreach (PendingInput held in dropped)
+            {
+                Raise(() => OnInputDropped?.Invoke(held.Spoken, reason));
+            }
+        }
 
-            hasPending = false;
-            OnInputDropped?.Invoke(pending.Spoken, reason);
+        private void SetRound(string[] waitingOn, string[] answered, int attempt, int attemptsLeft, bool hintGiven)
+        {
+            AnsweredParticipants = answered;
+            Attempt = attempt;
+            AttemptsLeft = attemptsLeft;
+            HintGiven = hintGiven;
+
+            if (SameIds(PendingParticipants, waitingOn)) return;
+
+            PendingParticipants = waitingOn;
+            Raise(() => OnPendingChanged?.Invoke(waitingOn));
+        }
+
+        private static bool SameIds(string[] a, string[] b)
+        {
+            if (a.Length != b.Length) return false;
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i] != b[i]) return false;
+            }
+            return true;
         }
 
         private async Task Apply(QuizTurnResponse turn, int token, bool resumedFromWelcome = false)
         {
             SessionId = turn.sessionId ?? SessionId;
-            OnTurnReceived?.Invoke(turn);
+            LastIntent = turn.intent;
+            SetRound(
+                turn.pending ?? Array.Empty<string>(),
+                turn.answered ?? Array.Empty<string>(),
+                turn.attempt,
+                turn.attemptsLeft,
+                turn.hintGiven);
+            Raise(() => OnTurnReceived?.Invoke(turn));
 
             // A turn carries the question only when it changes, so a retry or a confirmation
             // leaves what is already on screen alone. Its arrival IS the change.
@@ -433,17 +563,17 @@ namespace Neocortex
 
             if (turn.upcoming != null)
             {
-                OnUpcomingQuestion?.Invoke(turn.upcoming);
+                Raise(() => OnUpcomingQuestion?.Invoke(turn.upcoming));
             }
 
             if (turn.result is { Length: > 0 })
             {
-                OnResult?.Invoke(turn.result);
+                Raise(() => OnResult?.Invoke(turn.result));
             }
 
             if (turn.leaderboard is { Length: > 0 })
             {
-                OnLeaderboardChanged?.Invoke(turn.leaderboard);
+                Raise(() => OnLeaderboardChanged?.Invoke(turn.leaderboard));
             }
 
             // The run is over the moment the turn says so, even though the host still has its
@@ -473,7 +603,7 @@ namespace Neocortex
             await SpeakLines(turn.lines, questionChanged ? turn.question : null, token);
             if (this == null || token != turnToken) return;
 
-            OnHostFinished?.Invoke();
+            Raise(() => OnHostFinished?.Invoke());
 
             if (upNext != null)
             {
@@ -494,11 +624,37 @@ namespace Neocortex
 
             if (turn.done)
             {
-                OnQuizFinished?.Invoke(turn.leaderboard ?? Array.Empty<QuizLeaderboardEntry>());
+                Raise(() => OnQuizFinished?.Invoke(turn.leaderboard ?? Array.Empty<QuizLeaderboardEntry>()));
                 return;
             }
 
             SetExpecting(turn.expecting);
+        }
+
+        private static string SelectionModeFor(QuestionOrder order)
+        {
+            switch (order)
+            {
+                case QuestionOrder.InOrder:
+                    return "sequential";
+                case QuestionOrder.Shuffled:
+                    return "random";
+                default:
+                    return null;
+            }
+        }
+
+        // A listener that throws is a game bug: it is logged, and the agent carries on with the run.
+        private static void Raise(Action raise)
+        {
+            try
+            {
+                raise();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         private void SetBusy(bool next)
@@ -506,7 +662,7 @@ namespace Neocortex
             if (IsBusy == next) return;
 
             IsBusy = next;
-            OnBusyChanged?.Invoke(next);
+            Raise(() => OnBusyChanged?.Invoke(next));
         }
 
         private void SetExpecting(QuizExpecting next)
@@ -514,7 +670,7 @@ namespace Neocortex
             if (Expecting == next) return;
 
             Expecting = next;
-            OnExpectingChanged?.Invoke(next);
+            Raise(() => OnExpectingChanged?.Invoke(next));
         }
 
         private void RaiseEmotion(Emotions emotion)
@@ -523,7 +679,7 @@ namespace Neocortex
 
             emotionRaised = true;
             lastEmotion = emotion;
-            OnEmotionChanged?.Invoke(emotion);
+            Raise(() => OnEmotionChanged?.Invoke(emotion));
         }
 
         /// <summary>
@@ -557,44 +713,154 @@ namespace Neocortex
             if (!anyAsks) RevealQuestion(ref pendingQuestion);
 
             bool voicing = speakHostLines && audioSource != null && !string.IsNullOrEmpty(characterID);
-            Task<AudioClip> clipRequest = voicing && spoken.Count > 0 ? RequestClip(spoken[0]) : null;
+            LineSpeech next = voicing && spoken.Count > 0 ? RequestSpeech(spoken[0]) : null;
 
             for (int i = 0; i < spoken.Count; i++)
             {
                 QuizLine line = spoken[i];
-                AudioClip clip = null;
+                LineSpeech speech = next;
+                next = null;
 
-                if (voicing)
+                // Raised as the line becomes audible rather than when the turn arrived, so a
+                // caption and the voice saying it are one event. The next line is asked for
+                // here, so it never competes with this one for its first sound.
+                bool started = false;
+                void BeginLine()
                 {
-                    clip = clipRequest == null ? null : await clipRequest;
-                    if (this == null || token != turnToken)
-                    {
-                        DestroyClip(clip);
-                        return;
-                    }
-
-                    clipRequest = i + 1 < spoken.Count ? RequestClip(spoken[i + 1]) : null;
+                    if (started) return;
+                    started = true;
+                    if (voicing && i + 1 < spoken.Count) next = RequestSpeech(spoken[i + 1]);
+                    if (line.IsQuestion) RevealQuestion(ref pendingQuestion);
+                    Raise(() => OnHostLine?.Invoke(line));
+                    RaiseEmotion(line.emotion);
                 }
 
-                // Raised as the line starts rather than when the turn arrived, so a caption and
-                // the voice saying it are one event.
-                if (line.IsQuestion) RevealQuestion(ref pendingQuestion);
-                OnHostLine?.Invoke(line);
-                RaiseEmotion(line.emotion);
-
-                if (clip == null) continue;
-
-                await PlayClip(clip, token);
-                DestroyClip(clip);
-
-                if (this == null || token != turnToken)
+                if (speech != null) await PlaySpeech(speech, token, BeginLine);
+                if (!IsCurrent(token))
                 {
-                    DiscardClip(clipRequest);
+                    DiscardSpeech(next);
                     return;
                 }
+
+                BeginLine();
             }
 
             RevealQuestion(ref pendingQuestion);
+        }
+
+        private bool IsCurrent(int token) => this != null && token == turnToken && audioSource != null;
+
+        private LineSpeech RequestSpeech(QuizLine line)
+        {
+            LineSpeech speech = new LineSpeech { line = line };
+
+            if (streamHostSpeech && ApiRequest.StreamedSpeechSupported)
+            {
+                NeocortexStreamingAudioPlayer player = new NeocortexStreamingAudioPlayer(audioSource);
+                speech.player = player;
+                speech.stream = apiRequest.GenerateAudioStream(
+                    characterID,
+                    string.IsNullOrEmpty(line.spokenText) ? line.text : line.spokenText,
+                    line.emotion.ToString(),
+                    player.Begin,
+                    player.Feed,
+                    speechCts.Token,
+                    // Recoverable: the line falls back to a whole clip, which reports if it fails too.
+                    reportErrors: false);
+            }
+            else
+            {
+                speech.clip = RequestClip(line);
+            }
+
+            return speech;
+        }
+
+        /// <summary>Plays one line, calling <paramref name="onStart"/> as it becomes audible.</summary>
+        private async Task PlaySpeech(LineSpeech speech, int token, Action onStart)
+        {
+            if (speech.player != null)
+            {
+                if (await PlayStreamed(speech, token, onStart) || !IsCurrent(token)) return;
+
+                // Nothing arrived, so the line is fetched whole instead.
+                speech.clip = RequestClip(speech.line);
+            }
+
+            AudioClip clip = speech.clip == null ? null : await speech.clip;
+            if (!IsCurrent(token))
+            {
+                DestroyClip(clip);
+                return;
+            }
+
+            if (clip == null) return;
+
+            onStart();
+            await PlayClip(clip, token);
+            DestroyClip(clip);
+        }
+
+        /// <summary>False when no audio arrived at all, so the caller can fall back.</summary>
+        private async Task<bool> PlayStreamed(LineSpeech speech, int token, Action onStart)
+        {
+            NeocortexStreamingAudioPlayer player = speech.player;
+            streamPlayer = player;
+
+            while (!speech.stream.IsCompleted)
+            {
+                if (!IsCurrent(token)) return true;
+
+                player.Tick();
+                if (player.HasStarted) onStart();
+                await Task.Yield();
+            }
+
+            if (!IsCurrent(token)) return true;
+
+            // A stream that ends early still plays what it delivered.
+            player.Complete();
+            player.Tick();
+            if (!player.HasStarted)
+            {
+                player.Release();
+                streamPlayer = null;
+                return false;
+            }
+
+            onStart();
+
+            // A deadline for the same reason as PlayClip: a paused listener must not hang the turn.
+            float pitch = Mathf.Max(0.01f, Mathf.Abs(audioSource.pitch));
+            float deadline = Time.realtimeSinceStartup + (player.BufferedSeconds / pitch) + 0.25f;
+
+            while (IsCurrent(token) && !player.IsFinished && Time.realtimeSinceStartup < deadline)
+            {
+                await Task.Yield();
+                if (IsCurrent(token)) player.Tick();
+            }
+
+            if (IsCurrent(token))
+            {
+                player.Release();
+                streamPlayer = null;
+            }
+
+            return true;
+        }
+
+        /// <summary>Frees a line that was fetched ahead but never played.</summary>
+        private static async void DiscardSpeech(LineSpeech speech)
+        {
+            if (speech == null) return;
+
+            if (speech.stream != null)
+            {
+                await speech.stream;
+                speech.player.Release();
+            }
+
+            DiscardClip(speech.clip);
         }
 
         private Task<AudioClip> RequestClip(QuizLine line)
@@ -613,15 +879,22 @@ namespace Neocortex
             float pitch = Mathf.Max(0.01f, Mathf.Abs(audioSource.pitch));
             float deadline = Time.realtimeSinceStartup + (clip.length / pitch) + 0.25f;
 
-            while (audioSource.isPlaying && Time.realtimeSinceStartup < deadline)
+            while (IsCurrent(token) && audioSource.isPlaying && Time.realtimeSinceStartup < deadline)
             {
-                if (this == null || token != turnToken) return;
                 await Task.Yield();
             }
         }
 
         private void StopSpeaking()
         {
+            // Stops the downloads too, including lines fetched ahead.
+            speechCts.Cancel();
+            speechCts.Dispose();
+            speechCts = new CancellationTokenSource();
+
+            streamPlayer?.Release();
+            streamPlayer = null;
+
             if (audioSource == null) return;
 
             AudioClip clip = audioSource.clip;
@@ -653,7 +926,7 @@ namespace Neocortex
 
             QuizQuestion question = pendingQuestion;
             pendingQuestion = null;
-            OnQuestionChanged?.Invoke(question);
+            Raise(() => OnQuestionChanged?.Invoke(question));
         }
     }
 }

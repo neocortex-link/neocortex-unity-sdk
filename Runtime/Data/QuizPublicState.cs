@@ -31,6 +31,15 @@ namespace Neocortex.Data
         /// <summary>Who the round is still waiting on.</summary>
         public string[] pendingParticipantIds;
 
+        /// <summary>Which attempt at the open question this is, from 1. One player only; 0 in a group.</summary>
+        public int attempt;
+
+        /// <summary>How many more goes the open question allows. One player only.</summary>
+        public int attemptsLeft;
+
+        /// <summary>Whether the host has already given the clue for the open question.</summary>
+        public bool hintGiven;
+
         public QuizLeaderboardEntry[] leaderboard;
 
         /// <summary>What the game should be collecting, the same value a turn carries.</summary>

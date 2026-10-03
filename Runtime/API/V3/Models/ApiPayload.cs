@@ -21,5 +21,8 @@ namespace Neocortex.API
         ///     otherwise leaves an agent busy for the rest of the session.
         /// </summary>
         public int timeoutSeconds;
+
+        /// <summary>Error codes the caller handles itself, so a failure carrying one is not logged as an error.</summary>
+        [NonSerialized] public string[] handledCodes;
     }
 }

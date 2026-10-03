@@ -20,6 +20,9 @@ namespace Neocortex.API
         // Cleared for good the first time a server answers 404 for streamed speech.
         private static bool streamedSpeechSupported = true;
 
+        /// <summary>False once the server has shown it has no streamed speech endpoint.</summary>
+        public static bool StreamedSpeechSupported => streamedSpeechSupported;
+
         private static string BaseURL => string.IsNullOrEmpty(BaseUrlOverride) ? "https://api.neocortex.link/v3" : BaseUrlOverride;
 
         // Ceilings, not expectations: a turn that takes this long has already failed the player,
@@ -591,7 +594,9 @@ namespace Neocortex.API
             string characterId,
             string questionSetId,
             string playerId = null,
-            QuizParticipant[] participants = null)
+            QuizParticipant[] participants = null,
+            int questionCount = 0,
+            string selectionMode = null)
         {
             try
             {
@@ -607,6 +612,9 @@ namespace Neocortex.API
                     ["playerId"] = string.IsNullOrEmpty(playerId) ? SystemInfo.deviceUniqueIdentifier : playerId
                 };
                 if (participants is { Length: > 0 }) data["participants"] = participants;
+                // Left out, the question set's own count and order apply.
+                if (questionCount > 0) data["questionCount"] = questionCount;
+                if (!string.IsNullOrEmpty(selectionMode)) data["selectionMode"] = selectionMode;
 
                 ApiPayload payload = new ApiPayload()
                 {
@@ -619,6 +627,7 @@ namespace Neocortex.API
                 using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
+                    if (WasCancelled) return null;
                     throw new Exception(GetRequestError());
                 }
 
@@ -674,7 +683,9 @@ namespace Neocortex.API
                         url = $"{BaseURL}/quiz",
                         timeoutSeconds = TurnTimeoutSeconds,
                         data = body,
-                        responseType = ApiResponseType.Text
+                        responseType = ApiResponseType.Text,
+                        // Each is answered below: a replay, a wait or a retry.
+                        handledCodes = new[] { "quiz_finished", "operation_in_progress", "state_changed" }
                     };
 
                     using UnityWebRequest request = await Send(payload);
@@ -683,6 +694,8 @@ namespace Neocortex.API
                     {
                         return JsonConvert.DeserializeObject<QuizTurnResponse>(request.downloadHandler.text, jsonSerializerSettings);
                     }
+
+                    if (WasCancelled) return null;
 
                     if (LastResponseCode != 409)
                     {
@@ -745,6 +758,7 @@ namespace Neocortex.API
                 using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
+                    if (WasCancelled) return null;
                     throw new Exception(GetRequestError());
                 }
 
