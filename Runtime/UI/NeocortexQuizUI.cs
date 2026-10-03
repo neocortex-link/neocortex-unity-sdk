@@ -106,7 +106,7 @@ namespace Neocortex
                 chatPanel.AddMessage($"{playerName}: {message}", true);
             }
 
-            agent.Say(message);
+            agent.Say(message, typed: true);
         }
 
         private void SetInputInteractable(QuizExpecting expecting)
