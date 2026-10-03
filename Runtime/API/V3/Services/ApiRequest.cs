@@ -660,7 +660,8 @@ namespace Neocortex.API
             string sessionId,
             string say = null,
             string optionId = null,
-            string participantId = null)
+            string participantId = null,
+            bool typed = false)
         {
             try
             {
@@ -673,6 +674,8 @@ namespace Neocortex.API
                 if (say != null) data["say"] = say;
                 if (!string.IsNullOrEmpty(optionId)) data["optionId"] = optionId;
                 if (!string.IsNullOrEmpty(participantId)) data["participantId"] = participantId;
+                // Typed words are judged as written; a misspelling is not a mishearing.
+                if (typed && !string.IsNullOrEmpty(say)) data["typed"] = true;
 
                 byte[] body = GetBytes(data);
 

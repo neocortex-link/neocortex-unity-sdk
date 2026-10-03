@@ -158,6 +158,7 @@ namespace Neocortex
             public string text;
             public string optionId;
             public string participantId;
+            public bool typed;
             public float at;
 
             /// <summary>What to report if this one is dropped: what the player actually said.</summary>
@@ -270,7 +271,16 @@ namespace Neocortex
         /// </summary>
         public void Say(string text)
         {
-            Send(new PendingInput { text = text, at = Time.realtimeSinceStartup });
+            Say(text, false);
+        }
+
+        /// <summary>
+        ///     The same as <see cref="Say(string)"/>, saying whether the player typed it. A typed
+        ///     answer is judged as written: a misspelling is not taken for a mishearing.
+        /// </summary>
+        public void Say(string text, bool typed)
+        {
+            Send(new PendingInput { text = text, typed = typed, at = Time.realtimeSinceStartup });
         }
 
         /// <summary>Hands the host a tapped choice, for a multiple choice or true or false question.</summary>
@@ -282,7 +292,13 @@ namespace Neocortex
         /// <summary>The same as <see cref="Say"/>, naming which player spoke in a multi player game.</summary>
         public void SayAs(string participantId, string text)
         {
-            Send(new PendingInput { text = text, participantId = participantId, at = Time.realtimeSinceStartup });
+            SayAs(participantId, text, false);
+        }
+
+        /// <summary>The same as <see cref="SayAs(string, string)"/>, saying whether the player typed it.</summary>
+        public void SayAs(string participantId, string text, bool typed)
+        {
+            Send(new PendingInput { text = text, participantId = participantId, typed = typed, at = Time.realtimeSinceStartup });
         }
 
         /// <summary>The same as <see cref="Choose"/>, naming which player tapped in a multi player game.</summary>
@@ -409,7 +425,7 @@ namespace Neocortex
                 return;
             }
 
-            RunTurn(() => apiRequest.ContinueQuiz(SessionId, input.text, input.optionId, input.participantId));
+            RunTurn(() => apiRequest.ContinueQuiz(SessionId, input.text, input.optionId, input.participantId, input.typed));
         }
 
         /// <summary>
