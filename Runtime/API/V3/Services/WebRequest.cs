@@ -21,6 +21,9 @@ namespace Neocortex.API
         /// </summary>
         public string LastErrorCode { get; private set; }
 
+        /// <summary>The last request was cancelled on purpose, so its missing response is not a failure.</summary>
+        public bool WasCancelled { get; private set; }
+
         protected Dictionary<string, string> Headers = new();
 
         /// <summary>How much of an unrecognised error body is worth repeating.</summary>
@@ -101,6 +104,7 @@ namespace Neocortex.API
             using CancellationTokenSource linked =
                 CancellationTokenSource.CreateLinkedTokenSource(CtxSource.Token, cancellationToken);
 
+            WasCancelled = false;
             AsyncOperation asyncOperation = webRequest.SendWebRequest();
 
             // The timeout above is the transport's; this one is ours. An operation that never
@@ -135,9 +139,10 @@ namespace Neocortex.API
             }
 
             // A caller that cancelled on purpose (the agent moved on, the object went
-            // away) is not an error and must not be logged as one.
-            if (cancellationToken.IsCancellationRequested)
+            // away, Abort was called) is not an error and must not be logged as one.
+            if (linked.IsCancellationRequested && !timedOut)
             {
+                WasCancelled = true;
                 webRequest.Dispose();
                 return null;
             }
@@ -169,7 +174,10 @@ namespace Neocortex.API
             }
 
             LastErrorCode = ReadErrorCode(LastError);
-            Debug.LogError($"[{transportError}] {DescribeFailure(LastError, LastResponseCode, transportError)}");
+            if (payload.handledCodes == null || System.Array.IndexOf(payload.handledCodes, LastErrorCode) < 0)
+            {
+                Debug.LogError($"[{transportError}] {DescribeFailure(LastError, LastResponseCode, transportError)}");
+            }
             webRequest.Dispose();
             return null;
         }

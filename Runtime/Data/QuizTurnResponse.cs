@@ -61,6 +61,18 @@ namespace Neocortex.Data
         /// <summary>Players the round is still waiting on, for a game with more than one player.</summary>
         public string[] pending;
 
+        /// <summary>Players who have answered this round, for a game with more than one player.</summary>
+        public string[] answered;
+
+        /// <summary>Which attempt at the open question this is, from 1. One player only; 0 in a group.</summary>
+        public int attempt;
+
+        /// <summary>How many more goes the open question allows after this one. One player only.</summary>
+        public int attemptsLeft;
+
+        /// <summary>Whether the host has already given the clue for the open question.</summary>
+        public bool hintGiven;
+
         /// <summary>True once the host has signed off. Stop sending turns.</summary>
         public bool done;
     }

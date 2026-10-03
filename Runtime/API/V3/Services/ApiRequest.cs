@@ -627,6 +627,7 @@ namespace Neocortex.API
                 using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
+                    if (WasCancelled) return null;
                     throw new Exception(GetRequestError());
                 }
 
@@ -682,7 +683,9 @@ namespace Neocortex.API
                         url = $"{BaseURL}/quiz",
                         timeoutSeconds = TurnTimeoutSeconds,
                         data = body,
-                        responseType = ApiResponseType.Text
+                        responseType = ApiResponseType.Text,
+                        // Each is answered below: a replay, a wait or a retry.
+                        handledCodes = new[] { "quiz_finished", "operation_in_progress", "state_changed" }
                     };
 
                     using UnityWebRequest request = await Send(payload);
@@ -691,6 +694,8 @@ namespace Neocortex.API
                     {
                         return JsonConvert.DeserializeObject<QuizTurnResponse>(request.downloadHandler.text, jsonSerializerSettings);
                     }
+
+                    if (WasCancelled) return null;
 
                     if (LastResponseCode != 409)
                     {
@@ -753,6 +758,7 @@ namespace Neocortex.API
                 using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
+                    if (WasCancelled) return null;
                     throw new Exception(GetRequestError());
                 }
 

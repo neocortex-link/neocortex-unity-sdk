@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- `NeocortexQuizAgent.participants` and `Begin(QuizParticipant[])` start a game with several players. `ChooseAs`, `Pass` and `PassAs` (a timeout) join `SayAs`.
+- Held input is kept per player, so one player's answer no longer replaces another's.
+- `PendingParticipants`, `AnsweredParticipants`, `Attempt`, `AttemptsLeft`, `HintGiven`, `LastIntent` and `OnPendingChanged` say where a round stands; `Resync()` restores them.
+- A listener that throws no longer stops the quiz agent mid run, and a request cancelled on purpose or a quiz conflict the SDK handles is no longer logged as an error.
+
 ## [0.7.2] - 02 October 2026
 - The quiz host's lines play as their voice arrives instead of after the whole clip (`streamHostSpeech`, on by default). The next line is fetched while the current one plays; an older server falls back to whole clips.
 - Fixed a `MissingReferenceException` when the quiz host is destroyed mid-line.
