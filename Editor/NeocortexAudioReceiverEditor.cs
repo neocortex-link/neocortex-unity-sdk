@@ -20,6 +20,8 @@ namespace Neocortex.Editor
         private SerializedProperty amplitudeThreshold;
         private SerializedProperty maxWaitTime;
         private SerializedProperty requestPermissionOnStart;
+        private SerializedProperty keepMicrophoneOpen;
+        private SerializedProperty leadIn;
         private SerializedProperty onAudioRecorded;
         private SerializedProperty onRecordingFailed;
         private SerializedProperty onPermissionGranted;
@@ -34,6 +36,8 @@ namespace Neocortex.Editor
             amplitudeThreshold = serializedObject.FindProperty("amplitudeThreshold");
             maxWaitTime = serializedObject.FindProperty("maxWaitTime");
             requestPermissionOnStart = serializedObject.FindProperty("requestPermissionOnStart");
+            keepMicrophoneOpen = serializedObject.FindProperty("keepMicrophoneOpen");
+            leadIn = serializedObject.FindProperty("leadIn");
             onAudioRecorded = serializedObject.FindProperty("OnAudioRecorded");
             onRecordingFailed = serializedObject.FindProperty("OnRecordingFailed");
             onPermissionGranted = serializedObject.FindProperty("OnPermissionGranted");
@@ -53,7 +57,10 @@ namespace Neocortex.Editor
             {
                 EditorGUILayout.PropertyField(amplitudeThreshold, new GUIContent("Speech Threshold"));
                 EditorGUILayout.PropertyField(maxWaitTime, new GUIContent("Silence Timeout"));
+                EditorGUILayout.PropertyField(leadIn, new GUIContent("Lead In"));
             }
+
+            EditorGUILayout.PropertyField(keepMicrophoneOpen, new GUIContent("Keep Microphone Open"));
 
             EditorGUILayout.PropertyField(requestPermissionOnStart, new GUIContent("Ask Permission Early"));
 

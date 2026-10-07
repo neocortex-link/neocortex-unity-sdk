@@ -16,6 +16,12 @@ namespace Neocortex
     /// <summary>
     ///     Unified microphone component for all platforms (Standalone Windows/Mac, Android, iOS, WebGL).
     /// </summary>
+    /// <remarks>
+    ///     On native platforms the device records into a short ring, and a recording is cut out of
+    ///     it: from <see cref="leadIn"/> before the voice crossed the threshold (never before
+    ///     listening began) to a moment after it went quiet. The first sound of an answer, which is
+    ///     often softer than the threshold, is kept that way.
+    /// </remarks>
     [AddComponentMenu("Neocortex/Neocortex Audio Receiver", 0)]
     public class NeocortexAudioReceiver : AudioReceiver
     {
@@ -40,13 +46,36 @@ namespace Neocortex
         private const int AUDIO_SAMPLE_WINDOW = 64;
         private const int AMPLITUDE_MULTIPLIER = 10;
 
-        private AudioClip audioClip;
+        // The ring the device records into. A recording is never longer than this, less a second.
+        private const int RING_SECONDS = 30;
+        // Kept after the last loud sound, so the end of the last word is not cut.
+        private const float TAIL_SECONDS = 0.3f;
+        // A loud sound shorter than this is a click or a knock, not speech, and does not end listening.
+        private const float SHORTEST_SPEECH_SECONDS = 0.15f;
+
+        private AudioClip ring;
         private int startedMicIndex = -1;
         private bool wasPushToTalk;
+        private bool opening;
+        private int ringOrigin;
+        private int lastPosition;
+        private int listenRequest;
+
+        // Sample positions counted from when the device opened, so they never wrap with the ring.
+        private long written;
+        private long listenStart;
+        private long speechStart = -1;
+        private long lastVoice;
 #endif
 
         [Tooltip("Ask for microphone permission (Android/iOS) as soon as this component starts. Off = asked on first record.")]
         [SerializeField] private bool requestPermissionOnStart = true;
+
+        [Tooltip("Keep the device recording between recordings, so the next one starts at once instead of waiting for the device to start (and losing the first sound). Off = the device stops after every recording.")]
+        public bool keepMicrophoneOpen;
+
+        [Tooltip("Voice-activity mode: seconds kept from before the voice crossed the threshold, so a soft first sound is not cut. Never reaches back before listening began. Native platforms only.")]
+        [Range(0f, 1f)] public float leadIn = 0.3f;
 
         [Space] public UnityEvent OnPermissionGranted = new();
         [Space] public UnityEvent OnPermissionDenied = new();
@@ -88,6 +117,14 @@ namespace Neocortex
             {
                 yield return EnsurePermission();
             }
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+            // Started up front, so even the first recording does not wait for the device.
+            if (keepMicrophoneOpen && permissionGranted)
+            {
+                yield return OpenDevice();
+            }
+#endif
         }
 
         public override void StartMicrophone()
@@ -105,27 +142,41 @@ namespace Neocortex
                 yield break;
             }
 
+#if UNITY_WEBGL && !UNITY_EDITOR
             try
             {
-#if UNITY_WEBGL && !UNITY_EDITOR
                 if (microphoneState == MicrophoneState.NotActive)
                 {
                     microphoneState = MicrophoneState.Booting;
                     WebGL_StartRecording();
                 }
-#else
-                string[] devices = NeocortexMicrophone.devices;
-                startedMicIndex = Mathf.Clamp(PlayerPrefs.GetInt(MIC_INDEX_KEY, 0), 0, devices.Length - 1);
-                SelectedMicrophone = devices.Length > 0 ? devices[startedMicIndex] : null;
-                audioClip = NeocortexMicrophone.Start(SelectedMicrophone, true, 999, NATIVE_FREQUENCY);
-                IsListening = true;
-                IsUserSpeaking = usePushToTalk;
-#endif
             }
             catch (Exception e)
             {
                 OnRecordingFailed?.Invoke(e.Message);
             }
+#else
+            if (IsListening)
+            {
+                yield break;
+            }
+
+            int request = ++listenRequest;
+            yield return OpenDevice();
+
+            // Shut again while the device was starting, or listening was asked for once more since.
+            if (request != listenRequest || ring == null || IsListening)
+            {
+                yield break;
+            }
+
+            SyncPosition();
+            listenStart = written;
+            speechStart = -1;
+            ElapsedWaitTime = 0;
+            IsListening = true;
+            IsUserSpeaking = usePushToTalk;
+#endif
         }
 
         public override void StopMicrophone()
@@ -133,11 +184,10 @@ namespace Neocortex
 #if UNITY_WEBGL && !UNITY_EDITOR
             WebGL_StopRecording();
 #else
-            NeocortexMicrophone.End(SelectedMicrophone);
-            IsListening = false;
-            IsUserSpeaking = false;
-            Amplitude = 0;
-            EmitRecordedClip(audioClip);
+            if (IsListening)
+            {
+                FinishRecording(true);
+            }
 #endif
         }
 
@@ -159,49 +209,80 @@ namespace Neocortex
             if (usePushToTalk != wasPushToTalk)
             {
                 wasPushToTalk = usePushToTalk;
+
+                // Switching to push to talk while listening shuts the microphone and drops what it heard.
                 if (usePushToTalk && IsListening)
                 {
-                    NeocortexMicrophone.End(SelectedMicrophone);
-                    IsListening = false;
-                    IsUserSpeaking = false;
-                    ElapsedWaitTime = 0;
+                    CloseListening();
+
+                    if (!keepMicrophoneOpen)
+                    {
+                        CloseDevice();
+                    }
                 }
             }
 
-            if (!IsListening) return;
+            if (!IsListening || ring == null) return;
 
             if (!usePushToTalk && !IsUserSpeaking && PlayerPrefs.GetInt(MIC_INDEX_KEY, 0) != startedMicIndex)
             {
-                NeocortexMicrophone.End(SelectedMicrophone);
-                ElapsedWaitTime = 0;
+                CloseListening();
+                CloseDevice();
                 StartMicrophone();
                 return;
             }
 
+            SyncPosition();
             UpdateAmplitude();
 
-            if (usePushToTalk) return;
+            long longest = (long)(RING_SECONDS - 1) * ring.frequency;
 
-            if (!IsUserSpeaking && Amplitude > amplitudeThreshold)
+            if (usePushToTalk)
             {
-                IsUserSpeaking = true;
+                if (written - listenStart >= longest)
+                {
+                    FinishRecording(true);
+                }
+
+                return;
             }
 
-            if (IsUserSpeaking)
+            if (Amplitude > amplitudeThreshold)
             {
-                if (Amplitude < amplitudeThreshold)
+                if (speechStart < 0)
                 {
-                    ElapsedWaitTime += Time.deltaTime;
-                    if (ElapsedWaitTime >= maxWaitTime)
-                    {
-                        ElapsedWaitTime = 0;
-                        StopMicrophone();
-                    }
+                    speechStart = written;
                 }
-                else
+
+                lastVoice = written;
+                ElapsedWaitTime = 0;
+                IsUserSpeaking = true;
+            }
+            else if (IsUserSpeaking)
+            {
+                ElapsedWaitTime += Time.deltaTime;
+                if (ElapsedWaitTime >= maxWaitTime)
                 {
                     ElapsedWaitTime = 0;
+
+                    if (lastVoice - speechStart < (long)(SHORTEST_SPEECH_SECONDS * ring.frequency))
+                    {
+                        // A click or a knock: listening goes on.
+                        speechStart = -1;
+                        IsUserSpeaking = false;
+                    }
+                    else
+                    {
+                        FinishRecording(false);
+                    }
+
+                    return;
                 }
+            }
+
+            if (IsUserSpeaking && written - speechStart >= longest)
+            {
+                FinishRecording(true);
             }
 #endif
         }
@@ -270,13 +351,156 @@ namespace Neocortex
             EmitRecordedClip(clip);
         }
 #else
+        /// <summary>
+        ///     Cuts the recording out of the ring and hands it on. <paramref name="stopped"/> means
+        ///     it was ended on purpose (StopMicrophone or the length limit) rather than by silence,
+        ///     so everything up to now is kept, even speech too soft to have crossed the threshold.
+        /// </summary>
+        private void FinishRecording(bool stopped)
+        {
+            SyncPosition();
+
+            int frequency = ring.frequency;
+            bool heardSpeech = speechStart >= 0;
+
+            long from = heardSpeech ? Math.Max(listenStart, speechStart - (long)(leadIn * frequency)) : listenStart;
+            long to = heardSpeech && !stopped ? Math.Min(written, lastVoice + (long)(TAIL_SECONDS * frequency)) : written;
+            from = Math.Max(from, written - (ring.samples - frequency));
+
+            float[] samples = to > from ? ReadRing(from, to) : Array.Empty<float>();
+
+            CloseListening();
+
+            if (!keepMicrophoneOpen)
+            {
+                CloseDevice();
+            }
+
+            AudioClip recording = AudioClip.Create("Recording", Math.Max(1, samples.Length), 1, frequency, false);
+            if (samples.Length > 0)
+            {
+                recording.SetData(samples, 0);
+            }
+
+            EmitRecordedClip(recording);
+            Destroy(recording);
+        }
+
+        private void CloseListening()
+        {
+            listenRequest++;
+            IsListening = false;
+            IsUserSpeaking = false;
+            Amplitude = 0;
+            ElapsedWaitTime = 0;
+            speechStart = -1;
+        }
+
+        private IEnumerator OpenDevice()
+        {
+            while (opening)
+            {
+                yield return null;
+            }
+
+            string[] devices = NeocortexMicrophone.devices;
+            int micIndex = Mathf.Clamp(PlayerPrefs.GetInt(MIC_INDEX_KEY, 0), 0, Mathf.Max(0, devices.Length - 1));
+
+            if (ring != null && micIndex == startedMicIndex && NeocortexMicrophone.IsRecording(SelectedMicrophone))
+            {
+                yield break;
+            }
+
+            CloseDevice();
+            opening = true;
+
+            string error = null;
+            try
+            {
+                startedMicIndex = micIndex;
+                SelectedMicrophone = devices.Length > 0 ? devices[micIndex] : null;
+                ring = NeocortexMicrophone.Start(SelectedMicrophone, true, RING_SECONDS, NATIVE_FREQUENCY);
+                if (ring == null)
+                {
+                    error = "The microphone did not start.";
+                }
+            }
+            catch (Exception e)
+            {
+                error = e.Message;
+            }
+
+            if (error != null)
+            {
+                ring = null;
+                opening = false;
+                OnRecordingFailed?.Invoke(error);
+                yield break;
+            }
+
+            // A device takes a moment before it delivers anything, and sits at 0 until then.
+            float waited = 0;
+            while (NeocortexMicrophone.GetPosition(SelectedMicrophone) <= 0 && waited < 2f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            ringOrigin = NeocortexMicrophone.GetPosition(SelectedMicrophone);
+            lastPosition = ringOrigin;
+            written = 0;
+            opening = false;
+        }
+
+        private void CloseDevice()
+        {
+            if (ring == null) return;
+
+            NeocortexMicrophone.End(SelectedMicrophone);
+            Destroy(ring);
+            ring = null;
+        }
+
+        private void SyncPosition()
+        {
+            int position = NeocortexMicrophone.GetPosition(SelectedMicrophone);
+            int delta = position - lastPosition;
+            if (delta < 0)
+            {
+                delta += ring.samples;
+            }
+
+            written += delta;
+            lastPosition = position;
+        }
+
+        /// <summary>The samples written between two positions, unwrapped from the ring.</summary>
+        private float[] ReadRing(long from, long to)
+        {
+            int length = (int)(to - from);
+            float[] result = new float[length];
+            int start = (int)((ringOrigin + from) % ring.samples);
+
+            int first = Math.Min(length, ring.samples - start);
+            float[] head = new float[first];
+            ring.GetData(head, start);
+            Array.Copy(head, result, first);
+
+            if (first < length)
+            {
+                float[] rest = new float[length - first];
+                ring.GetData(rest, 0);
+                Array.Copy(rest, 0, result, first, rest.Length);
+            }
+
+            return result;
+        }
+
         private void UpdateAmplitude()
         {
-            if (audioClip == null) return;
-            int clipPosition = NeocortexMicrophone.GetPosition(SelectedMicrophone);
-            int startPosition = Mathf.Max(0, clipPosition - AUDIO_SAMPLE_WINDOW);
-            float[] audioSamples = new float[AUDIO_SAMPLE_WINDOW];
-            audioClip.GetData(audioSamples, startPosition);
+            if (ring == null || written < AUDIO_SAMPLE_WINDOW) return;
+
+            float[] audioSamples = ReadRing(written - AUDIO_SAMPLE_WINDOW, written);
 
             float sum = 0;
             for (int i = 0; i < AUDIO_SAMPLE_WINDOW; i++)
@@ -289,10 +513,7 @@ namespace Neocortex
 
         private void OnDestroy()
         {
-            if (IsListening)
-            {
-                NeocortexMicrophone.End(SelectedMicrophone);
-            }
+            CloseDevice();
         }
 #endif
 

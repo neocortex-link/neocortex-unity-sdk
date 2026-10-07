@@ -10,51 +10,47 @@ namespace Neocortex
     {
         private const int HeaderSize = 44;
         
-        public static AudioClip Trim(this AudioClip audioClip, float threshold = 0.001f)
+        /// <summary>
+        ///     Cuts the silence off both ends of a recording, keeping <paramref name="margin"/>
+        ///     seconds of it so the first and last sounds are whole. Pauses inside the recording
+        ///     are kept: cutting them out glued words together, which speech to text then misheard.
+        ///     Returns null when the sound in it spans 0.2 seconds or less (a click, not speech).
+        ///     The result is at least a second long, padded with silence at the end.
+        /// </summary>
+        public static AudioClip Trim(this AudioClip audioClip, float threshold = 0.001f, float margin = 0.25f)
         {
-            float[] samples = new float[audioClip.samples];
+            int channels = audioClip.channels;
+            float[] samples = new float[audioClip.samples * channels];
             audioClip.GetData(samples, 0);
-            List<float> outputSamples = new List<float>();
 
-            int silenceMinSamples = Mathf.RoundToInt(audioClip.frequency * 0.2f); // 0.2 seconds
-
-            int i = 0;
-            while (i < samples.Length)
+            int firstLoud = -1;
+            int lastLoud = -1;
+            for (int i = 0; i < samples.Length; i++)
             {
-                if (Mathf.Abs(samples[i]) < threshold)
+                if (Mathf.Abs(samples[i]) >= threshold)
                 {
-                    int silentStart = i;
-                    
-                    while (i < samples.Length && Mathf.Abs(samples[i]) < threshold)
-                    {
-                        i++;
-                    }
-                    
-                    int silentLength = i - silentStart;
-                    if (silentLength < silenceMinSamples)
-                    {
-                        for (int j = silentStart; j < i; j++)
-                        {
-                            outputSamples.Add(samples[j]);
-                        }
-                    }
-                }
-                else
-                {
-                    outputSamples.Add(samples[i]);
-                    i++;
+                    if (firstLoud < 0) firstLoud = i;
+                    lastLoud = i;
                 }
             }
 
-            // Remove 0.2 or shorter loud segments, could mouse click etc
-            if (outputSamples.Count <= silenceMinSamples)
+            int clickFrames = Mathf.RoundToInt(audioClip.frequency * 0.2f);
+            if (firstLoud < 0 || (lastLoud - firstLoud) / channels <= clickFrames)
             {
                 return null;
             }
 
-            int lengthSamples = Mathf.Max(outputSamples.Count, audioClip.frequency);
-            AudioClip tempClip = AudioClip.Create("TempClip", lengthSamples, audioClip.channels, audioClip.frequency, false);
-            tempClip.SetData(outputSamples.ToArray(), 0);
+            int marginFrames = Mathf.RoundToInt(audioClip.frequency * Mathf.Max(0f, margin));
+            int startFrame = Mathf.Max(0, firstLoud / channels - marginFrames);
+            int endFrame = Mathf.Min(audioClip.samples, lastLoud / channels + 1 + marginFrames);
+            int frames = endFrame - startFrame;
+
+            float[] kept = new float[frames * channels];
+            Array.Copy(samples, startFrame * channels, kept, 0, kept.Length);
+
+            int lengthFrames = Mathf.Max(frames, audioClip.frequency);
+            AudioClip tempClip = AudioClip.Create("TempClip", lengthFrames, channels, audioClip.frequency, false);
+            tempClip.SetData(kept, 0);
 
             return tempClip;
         }

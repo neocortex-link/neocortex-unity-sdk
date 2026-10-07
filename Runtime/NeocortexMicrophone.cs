@@ -33,6 +33,15 @@ namespace Neocortex
             #endif
         }
         
+        public static bool IsRecording(string deviceName)
+        {
+            #if !UNITY_WEBGL || UNITY_EDITOR
+            return Microphone.IsRecording(deviceName);
+            #else
+            return false;
+            #endif
+        }
+
         public static int GetPosition(string deviceName)
         {
             #if !UNITY_WEBGL || UNITY_EDITOR
