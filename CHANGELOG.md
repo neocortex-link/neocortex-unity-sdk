@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 07 October 2026
+- Fixed recordings losing the start of short answers, which speech to text then misheard. `AudioClip.Trim()` no longer cuts the pauses out of the middle of a recording (it glued words together); it only trims silence at both ends and keeps a margin of it (`margin`, 0.25 s).
+- `NeocortexAudioReceiver` on native platforms records into a short ring and keeps `leadIn` seconds (0.3 s) from before the voice crossed the threshold, so a soft first sound is not cut. It never reaches back before listening began.
+- Added `NeocortexAudioReceiver.keepMicrophoneOpen`: the device keeps running between recordings, so the next one starts at once instead of waiting for the device to start.
+- A recording no longer reads a 999 second clip when it ends; only the recorded part is copied.
+- Added `NeocortexMicrophone.IsRecording`.
+
 ## [0.7.2] - 03 October 2026
 - `Say(text, typed)` and `SayAs(id, text, typed)` tell the host an answer was typed, so a misspelling is judged as written rather than taken for a mishearing. `NeocortexQuizUI` sends its text box as typed.
 - The quiz host's lines play as their voice arrives instead of after the whole clip (`streamHostSpeech`, on by default). The next line is fetched while the current one plays; an older server falls back to whole clips.
