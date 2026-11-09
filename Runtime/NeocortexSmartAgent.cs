@@ -43,6 +43,9 @@ namespace Neocortex
                  "The last two need an audio Chat Lines Mode; Off mode falls back to firing on arrival.")]
         public ActionTrigger actionTrigger = ActionTrigger.WhenResponseReceived;
 
+        [Tooltip("Seconds to wait after one action finishes before the next one starts, when a reply carries several. 0 runs them back to back.")]
+        [Min(0)] public float delayBetweenActions;
+
         [Space] public UnityEvent<ChatResponse> OnChatResponseReceived = new();
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived = new();
         [Space] public UnityEvent<string> OnTranscriptionReceived = new();
@@ -651,6 +654,11 @@ namespace Neocortex
                 else
                 {
                     Debug.LogWarning($"[Neocortex] {name} asked for action '{action.name}', which has no handler. Register one with RegisterAction.", this);
+                }
+
+                if (delayBetweenActions > 0f && actionQueue.Count > 0)
+                {
+                    yield return new WaitForSeconds(delayBetweenActions);
                 }
             }
 
