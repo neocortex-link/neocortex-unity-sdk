@@ -5102,10 +5102,6 @@ PrefabInstance:
       value: cmsxs45u4000d7k08e16519hk
       objectReference: {fileID: 0}
     - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
-      propertyPath: streamReplies
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1305254684120524984, guid: e0bfe18a6ec6ba8469ba35cea5266c03, type: 3}
       propertyPath: loadHistoryOnStart
       value: 1
       objectReference: {fileID: 0}
