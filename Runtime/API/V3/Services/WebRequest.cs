@@ -174,6 +174,7 @@ namespace Neocortex.API
             }
 
             LastErrorCode = ReadErrorCode(LastError);
+            OutOfCreditsNotice.Report(LastErrorCode, LastError);
             if (payload.handledCodes == null || System.Array.IndexOf(payload.handledCodes, LastErrorCode) < 0)
             {
                 Debug.LogError($"[{transportError}] {DescribeFailure(LastError, LastResponseCode, transportError)}");

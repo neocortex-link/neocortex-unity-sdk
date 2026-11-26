@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+- When the workspace runs out of credits, the editor and development builds tell the developer which plan fixes it and link to it: a console warning once per play, and an Upgrade dialog once per editor session. Release builds stay silent, so players never see it. Reads the `upgrade` field the API now sends with `insufficient_credits`; an older server still gets a link to the plans page.
+- New `0 - Samples` scene in the samples: a launcher with a card for each sample, pickers for the character every sample uses and the question set the quiz plays (both loaded from your team), and the microphone. Each sample it opens gets a Back to Samples button (Escape), and the group sample gets your other characters as its cast. In the editor the samples open straight from the folder; for a build, right-click the Sample Launcher component and pick Add Samples To Build Settings.
+- New `7 - Quiz Show Demo` sample: Cora hosts a quiz from your question set for one to four players at one screen. Pick who replies with the Reply As chips, type an answer or tap an option, and use Hint, Pass, Pass Everyone, Abort and Resync; the question card shows progress, the scene keyword and the final standings.
 
 ## [0.7.3] - 07 October 2026
 - Fixed recordings losing the start of short answers, which speech to text then misheard. `AudioClip.Trim()` no longer cuts the pauses out of the middle of a recording (it glued words together); it only trims silence at both ends and keeps a margin of it (`margin`, 0.25 s).
