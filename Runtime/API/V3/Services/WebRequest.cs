@@ -21,8 +21,20 @@ namespace Neocortex.API
         /// </summary>
         public string LastErrorCode { get; private set; }
 
+        /// <summary>The last failure, classified. Null after a success or a cancel.</summary>
+        public RequestError LastRequestError { get; private set; }
+
         /// <summary>The last request was cancelled on purpose, so its missing response is not a failure.</summary>
         public bool WasCancelled { get; private set; }
+
+        /// <summary>
+        ///     How many times a request that failed with a retryable error is sent again. Applies to
+        ///     lookups, history and audio only; a chat or quiz turn is never resent on its own.
+        /// </summary>
+        public int RetryAttempts = 1;
+
+        /// <summary>Seconds between two attempts.</summary>
+        public float RetryDelaySeconds = 1.5f;
 
         protected Dictionary<string, string> Headers = new();
 
@@ -50,6 +62,7 @@ namespace Neocortex.API
             LastResponseCode = 0;
             LastError = null;
             LastErrorCode = null;
+            LastRequestError = null;
 
             if (payload.data == null)
             {
@@ -153,6 +166,7 @@ namespace Neocortex.API
             if (timedOut)
             {
                 LastError = $"The request timed out after {payload.timeoutSeconds}s.";
+                LastRequestError = new RequestError { message = LastError, timedOut = true, url = payload.url };
                 Debug.LogError($"[Neocortex] {LastError} ({payload.url})");
                 webRequest.Dispose();
                 return null;
@@ -173,7 +187,15 @@ namespace Neocortex.API
                 LastError = string.IsNullOrEmpty(body) ? transportError : body;
             }
 
-            LastErrorCode = ReadErrorCode(LastError);
+            ApiErrorResponse apiError = ReadError(LastError);
+            LastErrorCode = apiError?.code;
+            LastRequestError = new RequestError
+            {
+                status = LastResponseCode,
+                code = LastErrorCode,
+                message = !string.IsNullOrEmpty(apiError?.error) ? apiError.error : DescribeFailure(LastError, LastResponseCode, transportError),
+                url = payload.url
+            };
             OutOfCreditsNotice.Report(LastErrorCode, LastError);
             if (payload.handledCodes == null || System.Array.IndexOf(payload.handledCodes, LastErrorCode) < 0)
             {
@@ -184,17 +206,50 @@ namespace Neocortex.API
         }
 
         /// <summary>
-        ///     Pulls the API's own error code out of a failure body, so a caller can branch on
-        ///     what happened rather than on the wording of a sentence.
+        ///     Sends a request, and sends it again after <see cref="RetryDelaySeconds"/> while it fails
+        ///     with a retryable error, up to <see cref="RetryAttempts"/> more times.
         /// </summary>
-        private static string ReadErrorCode(string body)
+        protected async Task<UnityWebRequest> SendWithRetry(ApiPayload payload)
+        {
+            UnityWebRequest request = await Send(payload);
+
+            for (int attempt = 0; request == null && attempt < RetryAttempts; attempt++)
+            {
+                if (WasCancelled || LastRequestError == null || !LastRequestError.IsRetryable()) break;
+
+                // Captured before the wait, since Abort replaces the source.
+                CancellationToken token = CtxSource.Token;
+                float resumeAt = Time.realtimeSinceStartup + RetryDelaySeconds;
+                while (Time.realtimeSinceStartup < resumeAt && !token.IsCancellationRequested)
+                {
+                    await Task.Yield();
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    WasCancelled = true;
+                    LastRequestError = null;
+                    return null;
+                }
+
+                request = await Send(payload);
+            }
+
+            return request;
+        }
+
+        /// <summary>
+        ///     Reads the API's error body, so a caller can branch on its code rather than on the
+        ///     wording of a sentence. Null when the body is not the API's.
+        /// </summary>
+        private static ApiErrorResponse ReadError(string body)
         {
             string text = body?.TrimStart();
             if (string.IsNullOrEmpty(text) || text[0] != '{') return null;
 
             try
             {
-                return JsonConvert.DeserializeObject<ApiErrorResponse>(text)?.code;
+                return JsonConvert.DeserializeObject<ApiErrorResponse>(text);
             }
             catch
             {

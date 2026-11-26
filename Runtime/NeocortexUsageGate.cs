@@ -42,9 +42,12 @@ namespace Neocortex
         public event Action<ApiUsageResponse> OnCharacterOverLimit;
         /// <summary>Raised when a request fails (offline, invalid key, ...). The game keeps running.</summary>
         public event Action<string> OnRequestFailed;
+        /// <summary>Raised with every <see cref="OnRequestFailed"/>, with the failure classified.</summary>
+        public event Action<RequestError> OnRequestError;
 
         public NeocortexUsageGate()
         {
+            apiRequest.OnRequestError += error => OnRequestError?.Invoke(error);
             apiRequest.OnRequestFailed += error => OnRequestFailed?.Invoke(error);
         }
 

@@ -34,6 +34,8 @@ namespace Neocortex
         [Tooltip("Raised when every speaker in the turn has finished.")]
         [Space] public UnityEvent OnTurnFinished = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Tooltip("Raised with every failure, with its status, the API's code and checks such as IsRetryable and IsOutOfCredits.")]
+        [Space] public UnityEvent<RequestError> OnRequestError = new();
         [Tooltip("Raised with the shared session's transcript when GetHistory() returns, each entry is name-labeled.")]
         [Space] public UnityEvent<ChatHistoryEntry[]> OnHistoryReceived = new();
         [Tooltip("Raised with the transcript of the player's SPOKEN input (SendAudio) so the UI can show it.")]
@@ -54,6 +56,7 @@ namespace Neocortex
         private void Awake()
         {
             apiRequest = new ApiRequest();
+            apiRequest.OnRequestError += OnRequestError.Invoke;
             apiRequest.OnRequestFailed += HandleRequestFailed;
 
             // The director speaks for the cast, so no member may answer the player on its own.

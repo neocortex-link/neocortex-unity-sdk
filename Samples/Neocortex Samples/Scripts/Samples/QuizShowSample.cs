@@ -75,15 +75,11 @@ namespace Neocortex.Samples
         [Tooltip("Optional. Bools 'Thinking' and 'Talking' drive the host; both false = idle.")]
         [SerializeField] private Animator animator;
 
-        [Tooltip("Optional. Moves the host's mouth while its voice plays.")]
-        [SerializeField] private NeocortexFaceAnimator face;
-
         private QuizParticipant[] players = Array.Empty<QuizParticipant>();
         private Color[] verdicts = Array.Empty<Color>();
         private QuizOption[] options = Array.Empty<QuizOption>();
         private int current;
         private string errorText;
-        private bool talking;
 
         private void Start()
         {
@@ -130,13 +126,8 @@ namespace Neocortex.Samples
 
         private void Update()
         {
-            bool speaking = quiz.audioSource != null && quiz.audioSource.isPlaying;
-            if (face != null && speaking != talking)
-            {
-                if (speaking) face.StartSpeaking();
-                else face.Rest();
-            }
-            talking = speaking;
+            // The host's Face Animator follows its lines by itself.
+            bool talking = quiz.audioSource != null && quiz.audioSource.isPlaying;
 
             if (animator == null) return;
             animator.SetBool(Talking, talking);

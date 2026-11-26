@@ -7,15 +7,19 @@ namespace Neocortex
 {
     /// <summary>
     ///     Lip-syncs chat replies on any ARKit-compatible face (Ready Player Me included). Put it on
-    ///     or above a face mesh; with a <see cref="NeocortexSmartAgent"/> assigned or found on this
-    ///     object it animates spoken replies automatically, otherwise call <see cref="PlayText"/>
-    ///     yourself. Blendshape names match case-insensitively and ignore importer prefixes.
+    ///     or above a face mesh; with a <see cref="NeocortexSmartAgent"/> or a
+    ///     <see cref="NeocortexQuizAgent"/> assigned or found above it, it animates spoken lines
+    ///     automatically, otherwise call <see cref="PlayText"/> yourself. Blendshape names match
+    ///     case-insensitively and ignore importer prefixes.
     /// </summary>
     [AddComponentMenu("Neocortex/Neocortex Face Animator", 0)]
     public class NeocortexFaceAnimator : MonoBehaviour
     {
         [Tooltip("Drives lip-sync from this agent's chat lines. Auto-resolved from this object and its parents when empty.")]
         [SerializeField] private NeocortexSmartAgent agent;
+
+        [Tooltip("Drives lip-sync from this quiz host's lines when there is no Smart Agent. Auto-resolved from this object and its parents when empty.")]
+        [SerializeField] private NeocortexQuizAgent quizAgent;
 
         [Tooltip("The source the voice plays through, the mouth stops the moment it stops. Auto-resolved from the agent when empty.")]
         [SerializeField] private AudioSource audioSource;
@@ -61,17 +65,33 @@ namespace Neocortex
         private readonly List<(string viseme, float duration)> sequence = new();
         private int sequenceIndex;
 
+        // Seconds of speech per character, to time a streamed line whose length is not known yet.
+        private const float SecondsPerCharacter = 0.065f;
+
         // Audio gate: when the animation was started by a clip, the mouth is hard-stopped the
         // moment the source stops playing, clip.length can over-report (padded MP3s), and the
         // sequence must never outlive the audible voice.
         private bool audioDriven;
-        private bool waitingForAudioStart;
+        private bool heardAudio;
+
+        // Follows the voice itself: the words advance only while it is audible, close the mouth
+        // while it pauses to buffer or has stopped, and the mouth keeps moving if it runs long.
+        private bool followVoice;
+        private bool muted;
+
+        // Single Audio voices the whole reply once, so only its first line starts the mouth.
+        private bool replyFollowed;
 
         private void Awake()
         {
             if (agent == null)
             {
                 agent = GetComponentInParent<NeocortexSmartAgent>();
+            }
+
+            if (agent == null && quizAgent == null)
+            {
+                quizAgent = GetComponentInParent<NeocortexQuizAgent>();
             }
 
             if (meshes == null || meshes.Length == 0)
@@ -83,19 +103,45 @@ namespace Neocortex
 
             if (agent != null)
             {
-                // Lip-sync is driven by the ACTUAL audio: no clip, no face animation. The clip is
-                // paired with the text it voices (the whole reply in Single Audio / Off modes, the
-                // current line in Per-Line Audio).
-                agent.OnChatResponseReceived.AddListener(response => lastReplyText = !string.IsNullOrEmpty(response.spokenMessage) ? response.spokenMessage : response.message);
-                agent.OnChatLineStarted.AddListener(line => lastLineText = !string.IsNullOrEmpty(line.spokenText) ? line.spokenText : line.text);
+                // Lip-sync is driven by the ACTUAL audio: no voice, no face animation. A line is
+                // followed from the moment it is heard, streamed or whole.
+                agent.OnChatResponseReceived.AddListener(HandleReply);
+                agent.OnChatLineStarted.AddListener(HandleLine);
                 agent.OnAudioResponseReceived.AddListener(HandleAudioClip);
                 agent.OnReplyFinished.AddListener(Rest);
             }
+            else if (quizAgent != null)
+            {
+                quizAgent.OnHostLine.AddListener(line => Follow(SpeechText(line), quizAgent.audioSource));
+                quizAgent.OnHostFinished.AddListener(Rest);
+            }
         }
 
+        private void HandleReply(ChatResponse response)
+        {
+            lastReplyText = !string.IsNullOrEmpty(response.spokenMessage) ? response.spokenMessage : response.message;
+            replyFollowed = false;
+        }
+
+        private void HandleLine(ChatLine line)
+        {
+            lastLineText = SpeechText(line);
+
+            if (agent.chatLinesMode == ChatLinesMode.PerLineAudio)
+            {
+                Follow(lastLineText, agent.audioSource);
+            }
+            else if (agent.chatLinesMode == ChatLinesMode.SingleAudio && !replyFollowed)
+            {
+                replyFollowed = true;
+                Follow(lastReplyText, agent.audioSource);
+            }
+        }
+
+        // Off mode hands the clip to the game to play; the voiced modes are followed from their lines.
         private void HandleAudioClip(AudioClip clip)
         {
-            if (clip == null) return;
+            if (clip == null || agent.chatLinesMode != ChatLinesMode.Off) return;
 
             // The agent resolves its AudioSource in its own Awake, so resolve lazily here.
             if (audioSource == null)
@@ -103,11 +149,64 @@ namespace Neocortex
                 audioSource = agent.audioSource;
             }
 
-            string text = agent.chatLinesMode == ChatLinesMode.PerLineAudio ? lastLineText : lastReplyText;
-            PlayText(text ?? "", clip.length);
+            PlayText(lastReplyText ?? "", clip.length);
 
             audioDriven = true;
-            waitingForAudioStart = true; // the clip starts playing right after this event
+            heardAudio = false; // the clip starts playing right after this event
+        }
+
+        /// <summary>Lip-syncs text as the voice on a source says it, starting when it is first heard.</summary>
+        private void Follow(string text, AudioSource source)
+        {
+            if (audioSource == null)
+            {
+                audioSource = source;
+            }
+
+            if (audioSource == null) return;
+
+            text ??= "";
+            PlayText(text, Mathf.Max(0.5f, text.Length * SecondsPerCharacter));
+
+            audioDriven = true;
+            followVoice = true;
+            heardAudio = false;
+            muted = false;
+            Mute(true);
+        }
+
+        private static string SpeechText(ChatLine line) => !string.IsNullOrEmpty(line.spokenText) ? line.spokenText : line.text;
+
+        // Spreads the words over the clip's real length once it is playing. A stream's clip is
+        // sized to its capacity, so a streamed line keeps its estimate.
+        private void FitToClip()
+        {
+            AudioClip clip = audioSource.clip;
+            if (clip == null || clip.name == NeocortexStreamingAudioPlayer.ClipName || sequence.Count == 0) return;
+
+            float total = 0;
+            foreach ((_, float duration) in sequence) total += duration;
+            if (total <= 0) return;
+
+            float scale = clip.length / Mathf.Max(0.01f, Mathf.Abs(audioSource.pitch)) / total;
+            for (int i = 0; i < sequence.Count; i++)
+            {
+                sequence[i] = (sequence[i].viseme, sequence[i].duration * scale);
+            }
+
+            timer *= scale;
+            currentDuration *= scale;
+        }
+
+        // Closes the mouth while the voice is silent, and picks up where the words were when it returns.
+        private void Mute(bool silent)
+        {
+            if (muted == silent) return;
+            muted = silent;
+
+            if (silent) ApplyViseme("REST");
+            else if (babbling) PickRandomViseme();
+            else if (sequenceIndex < sequence.Count) ApplyViseme(sequence[sequenceIndex].viseme);
         }
 
         private void BuildShapeLookup()
@@ -155,7 +254,7 @@ namespace Neocortex
         public void PlayText(string text, float duration)
         {
             babbling = false;
-            audioDriven = false;
+            StopFollowing();
             sequence.Clear();
 
             var generated = new List<(string viseme, int weight)>();
@@ -201,7 +300,7 @@ namespace Neocortex
         public void StartSpeaking()
         {
             babbling = true;
-            audioDriven = false;
+            StopFollowing();
             sequence.Clear();
             PickRandomViseme();
         }
@@ -210,7 +309,7 @@ namespace Neocortex
         public void Rest()
         {
             babbling = false;
-            audioDriven = false;
+            StopFollowing();
             sequence.Clear();
             ApplyViseme("REST");
         }
@@ -219,9 +318,16 @@ namespace Neocortex
         public void PlayExpression(string blendShapeName, float weight = 1f)
         {
             babbling = false;
-            audioDriven = false;
+            StopFollowing();
             sequence.Clear();
             ApplyShapes(new[] { (blendShapeName, weight) });
+        }
+
+        private void StopFollowing()
+        {
+            audioDriven = false;
+            followVoice = false;
+            muted = false;
         }
 
         private static string VisemeFor(char c)
@@ -273,23 +379,36 @@ namespace Neocortex
 
         private void Update()
         {
-            // Audio gate: once the clip has been heard playing, the mouth may not outlive it.
+            bool advance = true;
+
             if (audioDriven && audioSource != null)
             {
-                if (waitingForAudioStart)
+                bool audible = audioSource.isPlaying;
+
+                if (audible && !heardAudio)
                 {
-                    if (audioSource.isPlaying)
-                    {
-                        waitingForAudioStart = false;
-                    }
+                    heardAudio = true;
+                    if (followVoice) FitToClip();
                 }
-                else if (!audioSource.isPlaying && (babbling || sequence.Count > 0))
+
+                if (followVoice)
                 {
+                    // Silent: not started yet, paused to buffer, or done. The words wait for it.
+                    Mute(!audible);
+                    advance = audible;
+                }
+                else if (heardAudio && !audible && (babbling || sequence.Count > 0))
+                {
+                    // Once the clip has been heard playing, the mouth may not outlive it.
                     Rest();
                 }
             }
 
-            if (babbling)
+            if (!advance)
+            {
+                // Nothing moves on while the voice is silent.
+            }
+            else if (babbling)
             {
                 timer += Time.deltaTime;
                 if (timer >= currentDuration)
@@ -309,6 +428,13 @@ namespace Neocortex
                         ApplyViseme(viseme);
                         timer -= currentDuration; // keep exactly in sync
                         currentDuration = duration;
+                    }
+                    else if (followVoice)
+                    {
+                        // The voice runs longer than the words were timed for; keep talking until it stops.
+                        sequence.Clear();
+                        babbling = true;
+                        PickRandomViseme();
                     }
                     else
                     {

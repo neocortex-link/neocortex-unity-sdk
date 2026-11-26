@@ -48,6 +48,8 @@ namespace Neocortex.API
         public event Action<AudioClip> OnAudioResponseReceived;
         public event Action<ChatResponse> OnChatResponseReceived;
         public event Action<string> OnRequestFailed;
+        /// <summary>Raised with every <see cref="OnRequestFailed"/>, with the failure classified.</summary>
+        public event Action<RequestError> OnRequestError;
         public event Action<ChatHistoryEntry[]> OnChatHistoryReceived;
 
 
@@ -83,6 +85,8 @@ namespace Neocortex.API
                 if (typeof(TInput) == typeof(AudioClip))
                 {
                     message = await RequestTranscription(characterId, input as AudioClip);
+                    // A failure was reported where it happened; a cancel is not one.
+                    if (message == null) return;
                     OnTranscriptionReceived?.Invoke(message);
                 }
                 else
@@ -114,7 +118,8 @@ namespace Neocortex.API
 
                     if (request == null)
                     {
-                        throw new Exception(GetRequestError());
+                        if (WasCancelled) return;
+                        throw Failure();
                     }
 
                     ApiChatResponse response = JsonConvert.DeserializeObject<ApiChatResponse>(request.downloadHandler.text, jsonSerializerSettings);
@@ -147,8 +152,7 @@ namespace Neocortex.API
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
             }
         }
 
@@ -296,15 +300,15 @@ namespace Neocortex.API
                 using UnityWebRequest request = await Send(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<GroupChatResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -350,18 +354,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiChatHistory>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -370,7 +374,7 @@ namespace Neocortex.API
         ///     Transcribes speech to text via the audio endpoint, WITHOUT chatting (unlike
         ///     <see cref="Send{TInput,TOutput}"/>). The character id is required for auth/metering,
         ///     any character the key owns works. Returns "" and raises
-        ///     <see cref="OnRequestFailed"/> on failure.
+        ///     <see cref="OnRequestFailed"/> on failure, null when cancelled.
         /// </summary>
         public async Task<string> RequestTranscription(string characterId, AudioClip clip)
         {
@@ -392,11 +396,12 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
 
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 ApiResponse response = JsonConvert.DeserializeObject<ApiResponse>(request.downloadHandler.text, jsonSerializerSettings);
@@ -404,8 +409,7 @@ namespace Neocortex.API
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return "";
             }
         }
@@ -455,19 +459,19 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Audio
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
 
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return DownloadHandlerAudioClip.GetContent(request);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -490,18 +494,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiAccountResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -525,18 +529,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiCharactersResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -560,18 +564,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiQuestionSetsResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -628,15 +632,14 @@ namespace Neocortex.API
                 if (request == null)
                 {
                     if (WasCancelled) return null;
-                    throw new Exception(GetRequestError());
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<QuizTurnResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -702,7 +705,7 @@ namespace Neocortex.API
 
                     if (LastResponseCode != 409)
                     {
-                        throw new Exception(GetRequestError());
+                        throw Failure();
                     }
 
                     // The run is over and the server is handing back the closing turn it already
@@ -712,7 +715,7 @@ namespace Neocortex.API
                     {
                         QuizTurnResponse replay = ReadQuizErrorTurn(LastError);
                         if (replay != null) return replay;
-                        throw new Exception(GetRequestError());
+                        throw Failure();
                     }
 
                     // Usually our own previous turn still landing. state_changed has already finished, so no wait.
@@ -721,7 +724,7 @@ namespace Neocortex.API
 
                     if ((!busy && !moved) || attempt >= QuizBusyRetries)
                     {
-                        throw new Exception(GetRequestError());
+                        throw Failure();
                     }
 
                     if (busy) await Task.Delay(QuizBusyRetryDelayMs);
@@ -729,8 +732,7 @@ namespace Neocortex.API
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -758,19 +760,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
                     if (WasCancelled) return null;
-                    throw new Exception(GetRequestError());
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiQuizSessionResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -821,18 +822,18 @@ namespace Neocortex.API
                     responseType = ApiResponseType.Text
                 };
 
-                using UnityWebRequest request = await Send(payload);
+                using UnityWebRequest request = await SendWithRetry(payload);
                 if (request == null)
                 {
-                    throw new Exception(GetRequestError());
+                    if (WasCancelled) return null;
+                    throw Failure();
                 }
 
                 return JsonConvert.DeserializeObject<ApiUsageResponse>(request.downloadHandler.text, jsonSerializerSettings);
             }
             catch (Exception e)
             {
-                OnRequestFailed?.Invoke(e.Message);
-                Debug.LogError(e.Message);
+                Report(e);
                 return null;
             }
         }
@@ -904,7 +905,7 @@ namespace Neocortex.API
                 if (request == null)
                 {
                     if (LastResponseCode == 404) streamedSpeechSupported = false;
-                    if (reportErrors) OnRequestFailed?.Invoke(GetRequestError());
+                    if (reportErrors && !WasCancelled) Report(Failure());
                     return false;
                 }
 
@@ -912,7 +913,8 @@ namespace Neocortex.API
                 {
                     if (reportErrors)
                     {
-                        OnRequestFailed?.Invoke(string.IsNullOrEmpty(handler.RawText) ? "Speech stream returned no audio." : handler.RawText);
+                        string text = string.IsNullOrEmpty(handler.RawText) ? "Speech stream returned no audio." : handler.RawText;
+                        Report(new RequestException(new RequestError { status = request.responseCode, message = text, url = payload.url }));
                     }
                     return false;
                 }
@@ -923,30 +925,42 @@ namespace Neocortex.API
             {
                 if (reportErrors)
                 {
-                    OnRequestFailed?.Invoke(e.Message);
-                    Debug.LogError(e.Message);
+                    Report(e);
                 }
                 return false;
             }
         }
 
-
-        private string GetRequestError()
+        /// <summary>A failure that carries its classified error to the catch that reports it.</summary>
+        private sealed class RequestException : Exception
         {
-            try
-            {
-                ApiErrorResponse error = JsonConvert.DeserializeObject<ApiErrorResponse>(LastError, jsonSerializerSettings);
-                if (!string.IsNullOrEmpty(error?.error))
-                {
-                    return error.error;
-                }
-            }
-            catch
-            {
-                // Not the { "error": ... } shape, so whatever answered was not the API.
-            }
+            public readonly RequestError error;
 
-            return DescribeFailure(LastError, LastResponseCode, null);
+            public RequestException(RequestError error) : base(error.message)
+            {
+                this.error = error;
+            }
+        }
+
+        /// <summary>The last request's failure, ready to throw.</summary>
+        private RequestException Failure()
+        {
+            return new RequestException(LastRequestError ?? new RequestError
+            {
+                status = LastResponseCode,
+                code = LastErrorCode,
+                message = DescribeFailure(LastError, LastResponseCode, null)
+            });
+        }
+
+        /// <summary>Logs a failure and raises <see cref="OnRequestError"/> and <see cref="OnRequestFailed"/>.</summary>
+        private void Report(Exception e)
+        {
+            RequestError error = e is RequestException failure ? failure.error : new RequestError { message = e.Message };
+
+            Debug.LogError(error.message);
+            OnRequestError?.Invoke(error);
+            OnRequestFailed?.Invoke(error.message);
         }
     }
 }

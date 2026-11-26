@@ -8230,7 +8230,6 @@ MonoBehaviour:
   passButton: {fileID: 1400000092}
   passRestButton: {fileID: 1400000102}
   animator: {fileID: 1488510521}
-  face: {fileID: 1488510523}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
