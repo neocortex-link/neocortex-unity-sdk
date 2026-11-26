@@ -11,8 +11,10 @@ Bring the characters you build on the [Neocortex web platform](https://neocortex
 - **Actions.** Characters trigger the action keywords you author, each carrying the entity it applies to, so one reply can act on several things in order.
 - **Perception.** Tag objects in your scene and characters sense them, reason about where things are, and act on the one you meant.
 - **Group scenes.** Several characters in one shared conversation with an AI director deciding who speaks, plus a roster that can change while the game runs.
+- **Lip sync.** ARKit style mouth shapes follow the voice as it streams in, for characters and quiz hosts alike.
 - **A complete chat UI.** Panel, avatars, inputs and indicators, scaffolded into your scene in one click.
 - **Usage aware.** Read your plan, credits and per player limits, and gate features before spending anything.
+- **Errors you can act on.** Every failure carries its status and the API's code, with checks such as `IsRetryable` and `IsOutOfCredits`; lookups, history and audio retry on their own.
 
 ## Requirements
 
@@ -34,7 +36,7 @@ The [Quick Start](https://docs.neocortex.link/integrations/unity/quick-start) wa
 
 ## Samples
 
-Six scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables, group chat and usage gating. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
+Seven scenes ship with the package, importable from the `Samples` tab of the Package Manager: text chat, audio chat, actions, interactables, group chat, usage gating and a quiz show. Open `0 - Samples` to browse them from one launcher and pick the character they all use. See [Sample Projects](https://docs.neocortex.link/integrations/unity/sample-projects).
 
 ## Documentation
 

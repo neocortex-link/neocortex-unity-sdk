@@ -100,6 +100,8 @@ namespace Neocortex
         [Tooltip("Raised with anything the player said that never reached the host, and why.")]
         [Space] public UnityEvent<string, QuizInputDropReason> OnInputDropped = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Tooltip("Raised with every failure, with its status, the API's code and checks such as IsRetryable and IsOutOfCredits.")]
+        [Space] public UnityEvent<RequestError> OnRequestError = new();
         [Tooltip("Raised with the error code when credits run out. Input stays closed until Resync().")]
         [Space] public UnityEvent<string> OnCreditsExhausted = new();
 
@@ -193,6 +195,7 @@ namespace Neocortex
         private void Awake()
         {
             apiRequest = new ApiRequest();
+            apiRequest.OnRequestError += error => OnRequestError?.Invoke(error);
             apiRequest.OnRequestFailed += error => OnRequestFailed?.Invoke(error);
 
             if (speakHostLines && audioSource == null)
@@ -392,14 +395,14 @@ namespace Neocortex
         {
             if (string.IsNullOrEmpty(SessionId))
             {
-                Raise(() => OnRequestFailed?.Invoke("Call Begin() before sending answers to the quiz."));
+                Fail("Call Begin() before sending answers to the quiz.");
                 Raise(() => OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.NoSession));
                 return;
             }
 
             if (IsFinished)
             {
-                Raise(() => OnRequestFailed?.Invoke("This quiz has already finished."));
+                Fail("This quiz has already finished.");
                 Raise(() => OnInputDropped?.Invoke(input.Spoken, QuizInputDropReason.Finished));
                 return;
             }
@@ -658,6 +661,14 @@ namespace Neocortex
                 default:
                     return null;
             }
+        }
+
+        /// <summary>Raises a failure found on this side, before any request.</summary>
+        private void Fail(string message)
+        {
+            RequestError error = new RequestError { message = message };
+            Raise(() => OnRequestError?.Invoke(error));
+            Raise(() => OnRequestFailed?.Invoke(message));
         }
 
         // A listener that throws is a game bug: it is logged, and the agent carries on with the run.

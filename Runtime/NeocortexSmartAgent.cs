@@ -50,6 +50,8 @@ namespace Neocortex
         [Space] public UnityEvent<AudioClip> OnAudioResponseReceived = new();
         [Space] public UnityEvent<string> OnTranscriptionReceived = new();
         [Space] public UnityEvent<string> OnRequestFailed = new();
+        [Tooltip("Raised with every failure, with its status, the API's code and checks such as IsRetryable and IsOutOfCredits.")]
+        [Space] public UnityEvent<RequestError> OnRequestError = new();
         [Space] public UnityEvent<ChatHistoryEntry[]> OnChatHistoryReceived = new();
 
         [Header("Chat Lines")]
@@ -62,11 +64,11 @@ namespace Neocortex
         [Tooltip("Raised once the whole reply has finished playing.")]
         [Space] public UnityEvent OnReplyFinished = new();
 
-        [Header("Streaming (Experimental)")]
-
         [Header("Actions")]
         [Tooltip("Raised once a reply's actions have all been run.")]
         [Space] public UnityEvent OnActionsCompleted = new();
+        [Tooltip("Raised for an action that has no handler registered with RegisterAction.")]
+        [Space] public UnityEvent<ChatAction> OnUnhandledAction = new();
 
         private enum ReplyState { Idle, WaitingForReply, Playing }
 
@@ -118,6 +120,7 @@ namespace Neocortex
             apiRequest.OnAudioResponseReceived += OnAudioResponseReceived.Invoke;
             apiRequest.OnTranscriptionReceived += HandleTranscription;
             apiRequest.OnChatHistoryReceived += OnChatHistoryReceived.Invoke;
+            apiRequest.OnRequestError += OnRequestError.Invoke;
             apiRequest.OnRequestFailed += HandleRequestFailed;
         }
 
@@ -212,6 +215,29 @@ namespace Neocortex
         {
             string speechText = !string.IsNullOrEmpty(line?.spokenText) ? line.spokenText : line?.text;
             return apiRequest.GenerateAudio(characterID, speechText, line.emotion.ToString().ToUpper(), line?.spokenText);
+        }
+
+        /// <summary>Stops whatever the character is saying and drops queued input. A reply still on its way is played when it arrives.</summary>
+        public void StopSpeaking()
+        {
+            playbackToken++;
+            CancelAudio();
+            if (audioSource != null) audioSource.Stop();
+            pendingInputs.Clear();
+
+            if (state != ReplyState.Idle)
+            {
+                state = ReplyState.Idle;
+                OnReplyFinished.Invoke();
+            }
+        }
+
+        /// <summary>Cancels the turn in flight (transcription, reply and speech) and stops speaking.</summary>
+        public void Abort()
+        {
+            apiRequest.Abort();
+            StopSpeaking();
+            RearmMicrophone();
         }
 
         /// <summary>Assigns the coroutine that performs an action keyword, as authored on the character's Actions node.</summary>
@@ -654,6 +680,7 @@ namespace Neocortex
                 else
                 {
                     Debug.LogWarning($"[Neocortex] {name} asked for action '{action.name}', which has no handler. Register one with RegisterAction.", this);
+                    OnUnhandledAction.Invoke(action);
                 }
 
                 if (delayBetweenActions > 0f && actionQueue.Count > 0)

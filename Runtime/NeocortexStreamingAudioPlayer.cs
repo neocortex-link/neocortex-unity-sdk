@@ -22,6 +22,9 @@ namespace Neocortex
         /// <summary>How much audio must be buffered before playback starts or resumes.</summary>
         private const float PREBUFFER_SECONDS = 0.15f;
 
+        /// <summary>Name of the clip a stream plays from, whose length is its capacity rather than the line's.</summary>
+        internal const string ClipName = "neocortex-stream";
+
         private readonly AudioSource source_nx;
 
         private AudioClip clip;
@@ -51,7 +54,7 @@ namespace Neocortex
 
             sampleRate = rate > 0 ? rate : 24000;
             channels = channelCount > 0 ? channelCount : 1;
-            clip = AudioClip.Create("neocortex-stream", Mathf.CeilToInt(sampleRate * CAPACITY_SECONDS), channels, sampleRate, false);
+            clip = AudioClip.Create(ClipName,Mathf.CeilToInt(sampleRate * CAPACITY_SECONDS), channels, sampleRate, false);
         }
 
         /// <summary>Appends audio. Safe to call before <see cref="Begin"/>, in which case it is dropped.</summary>
